@@ -17,7 +17,7 @@ export default {
   methods: {
     goForex() {
       // 실제 라우터가 있다면 router.push 사용, 없으면 location.href
-      window.location.href = '#/forex';
+      window.location.href = '/forex';
     },
   },
 };

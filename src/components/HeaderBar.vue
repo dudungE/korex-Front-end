@@ -27,7 +27,10 @@
         <span class="icon search" title="검색">🔍</span>
         <span class="icon menu" title="메뉴">☰</span>
       </div>
-      <div class="chatbot-bubble">하이챗봇에게 물어보세요~</div>
+      <div v-if="showChatbotBubble" class="chatbot-bubble">
+        KOSA 챗봇에게 물어보세요~
+        <button class="close-btn" @click="showChatbotBubble = false" aria-label="닫기">×</button>
+      </div>
     </div>
   </header>
 </template>
@@ -35,6 +38,11 @@
 <script>
 export default {
   name: 'HeaderBar',
+  data() {
+    return {
+      showChatbotBubble: true
+    }
+  },
 };
 </script>
 
@@ -116,5 +124,18 @@ export default {
   font-size: 1.05rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+ .close-btn {
+   background: none;
+   border: none;
+   color: #009490;
+   font-size: 1.2rem;
+   margin-left: 8px;
+   cursor: pointer;
+   padding: 0 4px;
+   line-height: 1;
+ }
 </style> 
