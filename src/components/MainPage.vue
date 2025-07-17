@@ -38,10 +38,8 @@
 </template>
 
 <script>
-import HeaderBar from './HeaderBar.vue';
 export default {
   name: 'Home',
-  components: { HeaderBar },
   methods: {
     goForex() {
       window.location.href = '/forex';
@@ -53,6 +51,9 @@ export default {
         alert('준비중인 기능입니다: ' + feature);
       }
     },
+    goAccount(){
+      window.location.href = '#/Account';
+    }
   },
 };
 </script>

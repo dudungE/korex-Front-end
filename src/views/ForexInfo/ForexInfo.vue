@@ -65,10 +65,8 @@
   </template>
   
   <script>
-  import HeaderBar from '../../components/HeaderBar.vue';
   export default {
     name: 'ForexTradingSystem',
-    components: { HeaderBar },
     data() {
       return {
         currency: '',
