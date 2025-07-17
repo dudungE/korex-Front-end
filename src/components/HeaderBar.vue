@@ -18,7 +18,7 @@
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
       <nav class="main-menu">
-        <a href="#">계좌 조회</a>
+        <a @click="goToAccount()" style="cursor: pointer">계좌 조회</a>
         <a href="#">환전</a>
         <a href="#">송금</a>
         <a href="#">환율 조회</a>
@@ -38,6 +38,8 @@
 </template>
 
 <script>
+import router from '../router/index';
+
 export default {
   name: 'HeaderBar',
   data() {
@@ -45,7 +47,13 @@ export default {
       showChatbotBubble: true
     }
   },
+  methods: {
+    goToAccount() {
+      router.push('/Account')
+    }
+  }
 };
+
 </script>
 
 <style scoped>
