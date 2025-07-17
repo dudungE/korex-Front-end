@@ -14,12 +14,14 @@
       </div>
     </div>
     <div class="header-main">
-      <img src="https://www.hanabank.com/static/images/common/logo.png" alt="하나은행 개인" class="logo" />
+      <router-link to="/">
+        <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
+      </router-link>
       <nav class="main-menu">
-        <a href="#">조회</a>
-        <a href="#">이체</a>
-        <a href="#">공과금</a>
-        <a href="#">외환</a>
+        <a href="#">계좌 조회</a>
+        <a href="#">환전</a>
+        <a href="#">송금</a>
+        <a href="#">환율 조회</a>
         <a href="#">금융상품</a>
       </nav>
       <div class="header-icons">
@@ -88,7 +90,7 @@ export default {
   position: relative;
 }
 .logo {
-  height: 38px;
+  height: 50px;
   margin-right: 48px;
 }
 .main-menu {

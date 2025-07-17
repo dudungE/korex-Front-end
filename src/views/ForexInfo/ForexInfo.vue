@@ -187,8 +187,9 @@
     background: #fff;
     padding: 24px 32px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    box-shadow: 0 2px 8px rgba(219, 17, 17, 0.03);
     margin-bottom: 32px;
+    color: #222;
   }
   .search-box form {
     display: flex;
@@ -199,7 +200,7 @@
     display: flex;
     flex-direction: column;
     font-size: 1rem;
-    color: #333;
+    color: #222;
   }
   .search-box select, .search-box input[type="date"] {
     margin-top: 6px;
@@ -207,33 +208,54 @@
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 1rem;
+    background: #fff;
+    color: #222;
+    font-family: inherit;
+    outline: none;
+    box-shadow: none;
   }
   .search-box button {
-    background: #009490;
-    color: #fff;
+    background: #fff;
+    color: #009490;
     border: none;
     padding: 10px 24px;
     border-radius: 6px;
     font-size: 1rem;
     cursor: pointer;
     transition: 0.2s;
+    border: 1.5px solid #009490;
+    font-weight: 600;
   }
   .search-box button:hover {
-    background: #007c7a;
+    background: #e0f7f4;
+    color: #007c7a;
   }
   .result-box {
     background: #f2f8f7;
     padding: 24px 32px;
     border-radius: 12px;
     margin-bottom: 24px;
+    color: #222;
   }
   .result-box h2 {
     margin: 0 0 12px 0;
-    color: #009490;
+    color: #1565c0;
+    background: none;
+    font-weight: bold;
   }
   .result-box p {
     margin: 4px 0;
     font-size: 1.1rem;
+    background: #fff;
+    color: #222;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+  }
+  .result-box strong {
+    color: #1565c0;
+    font-weight: bold;
   }
   .footer-info {
     display: flex;
