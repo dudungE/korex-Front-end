@@ -14,12 +14,14 @@
       </div>
     </div>
     <div class="header-main">
-      <img src="https://www.hanabank.com/static/images/common/logo.png" alt="하나은행 개인" class="logo" />
+      <router-link to="/">
+        <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
+      </router-link>
       <nav class="main-menu">
-        <a href="#">조회</a>
-        <a href="#">이체</a>
-        <a href="#">공과금</a>
-        <a href="#">외환</a>
+        <a href="#">계좌 조회</a>
+        <a href="#">환전</a>
+        <a href="#">송금</a>
+        <a href="#">환율 조회</a>
         <a href="#">금융상품</a>
       </nav>
       <div class="header-icons">
@@ -27,7 +29,10 @@
         <span class="icon search" title="검색">🔍</span>
         <span class="icon menu" title="메뉴">☰</span>
       </div>
-      <div class="chatbot-bubble">하이챗봇에게 물어보세요~</div>
+      <div v-if="showChatbotBubble" class="chatbot-bubble">
+        KOSA 챗봇에게 물어보세요~
+        <button class="close-btn" @click="showChatbotBubble = false" aria-label="닫기">×</button>
+      </div>
     </div>
   </header>
 </template>
@@ -35,6 +40,11 @@
 <script>
 export default {
   name: 'HeaderBar',
+  data() {
+    return {
+      showChatbotBubble: true
+    }
+  },
 };
 </script>
 
@@ -80,7 +90,7 @@ export default {
   position: relative;
 }
 .logo {
-  height: 38px;
+  height: 50px;
   margin-right: 48px;
 }
 .main-menu {
@@ -116,5 +126,18 @@ export default {
   font-size: 1.05rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+ .close-btn {
+   background: none;
+   border: none;
+   color: #009490;
+   font-size: 1.2rem;
+   margin-left: 8px;
+   cursor: pointer;
+   padding: 0 4px;
+   line-height: 1;
+ }
 </style> 

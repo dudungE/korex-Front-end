@@ -1,9 +1,11 @@
 <script setup>
 // 라우터 기반이므로 별도 import 불필요
+import FooterBar from './components/FooterBar.vue'
 </script>
 
 <template>
   <router-view />
+  <FooterBar />
 </template>
 
 <style scoped>

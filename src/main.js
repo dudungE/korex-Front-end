@@ -1,16 +1,16 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import MainPage from './components/MainPage.vue'
-import Forex from './components/Forex.vue'
+import ForexInfo from './views/ForexInfo/ForexInfo.vue'
 
 const routes = [
   { path: '/', component: MainPage },
-  { path: '/forex', component: Forex }
+  { path: '/forex', component: ForexInfo }
 ]
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes
 })
 
