@@ -1,20 +1,9 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+// 라우터 기반이므로 별도 import 불필요
 </script>
 
 <template>
-  <div id = "app">
-    <router-view></router-view>
-  </div>
-  <!-- <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div> -->
-  <!-- <HelloWorld msg="Vite + Vue" /> -->
+  <router-view />
 </template>
 
 <style scoped>
