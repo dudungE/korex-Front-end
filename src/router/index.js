@@ -1,27 +1,41 @@
-import {createRouter, createWebHistory} from 'vue-router'
+// src/router/index.js
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const routes = [
+  {
+    path: '/',
+    redirect: '/login'
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    //meta: { requiresGuest: true }
+  },
+  {
+    path: '/travel-budget',
+    name: 'TravelBudget',
+    component: () => import('@/views/TravelBudget/index.vue'),
+    //meta: { requiresAuth: true }
+  }
+]
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: [
-        {
-            path: '/',
-            name: 'MainPage',
-            component: () => import('@/components/MainPage.vue'),
-            meta: {requiresAuth: true}
-        },
-        {
-            path: '/forex',
-            name: 'Forex',
-            component: () => import('@/views/ForexInfo/ForexInfo.vue'),
-            meta: {requiresAuth: true}
-        },
-        {
-            path: '/Account',
-            name: 'Account',
-            component: () => import('@/views/Account.vue'),
-            meta: {requiresAuth: true}
-        }
-    ],
+  history: createWebHistory(),
+  routes
+})
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+  } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    next('/travel-budget')
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -1,20 +1,14 @@
+// src/main.js
 import { createApp } from 'vue'
-import './style.css'
+import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router/index'
-import { createRouter, createWebHistory } from 'vue-router'
-import MainPage from './components/MainPage.vue'
-import ForexInfo from './views/ForexInfo/ForexInfo.vue'
-import Account from './views/Account.vue'
+import router from './router'
 
-// const routes = [
-//   { path: '/', component: MainPage },
-//   { path: '/forex', component: ForexInfo },
-//   { path: '/Account', component: Account }
-// ]
-// const router = createRouter({
-//   history: createWebHistory(),
-//   routes
-// })
+import Antd from 'ant-design-vue'
+import 'ant-design-vue/dist/antd.css'
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App)
+app.use(createPinia())
+app.use(router)
+app.use(Antd)
+app.mount('#app')
