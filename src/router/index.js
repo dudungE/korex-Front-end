@@ -18,6 +18,12 @@ const routes = [
     name: 'TravelBudget',
     component: () => import('@/views/TravelBudget/index.vue'),
     //meta: { requiresAuth: true }
+  },
+  {
+    path: '/travel/:id',
+    name: 'TravelDetail',
+    component: () => import('@/views/TravelBudget/components/TravelCard.vue'),
+    //meta: { requiresAuth: true }
   }
 ]
 
