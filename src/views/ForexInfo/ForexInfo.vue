@@ -6,7 +6,10 @@
           <h2>외환</h2>
           <ul class="menu">
             <li class="active">환율/외화예금 금리</li>
-            <li>환전지갑</li>
+             <li 
+            :class="{ active: $route.name === 'CurrentExchange' }"
+            @click="$router.push('/forex/exchange')"
+            > 환전지갑</li>
             <li>외화송금</li>
             <li>외화계좌이체</li>
             <li>외환매매 예약서비스</li>
