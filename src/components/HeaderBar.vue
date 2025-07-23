@@ -18,7 +18,7 @@
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
       <nav class="main-menu">
-        <a @click="goToAccount()" style="cursor: pointer">계좌 조회</a>
+        <a @click="goToAccount()" style="cursor: pointer">환율 조회</a>
         <a href="#">환전</a>
         <a href="#">송금</a>
         <a href="#">환율 조회</a>
@@ -70,7 +70,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 8px 48px 0 48px;
-  font-size: 0.98rem;
+  font-size: 0.8rem;
   color: #444;
 }
 .header-links a {
@@ -107,11 +107,14 @@ export default {
   flex: 1;
 }
 .main-menu a {
-  color: #111;
-  font-size: 1.25rem;
+  color: #444;
+  font-size: 1.3rem;
   text-decoration: none;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.main-menu a:hover {
+  color: #009490;
 }
 .header-icons {
   display: flex;

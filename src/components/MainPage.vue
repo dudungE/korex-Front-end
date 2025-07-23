@@ -13,33 +13,53 @@
         
       </div>
 
-      <div class="mainpage-service-btns">
-            <button class="service-btn active">계좌</button>
-            <button class="service-btn">환전</button>
-          </div>
 
       <div class="mainpage-icon-menu">
     
-        <button class="icon-menu-btn" @click="onFeatureClick('forex')"><span class="icon">💱</span><span>환율 조회</span></button>
-        <button class="icon-menu-btn" @click="onFeatureClick('openbank')"><span class="icon">🏦</span><span>외화 송금</span></button>
-        <button class="icon-menu-btn" @click="onFeatureClick('cert')"><span class="icon">🔐</span><span>인증센터</span></button>
-        <button class="icon-menu-btn" @click="onFeatureClick('quick')"><span class="icon">⚡</span><span>빠른조회</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('forex')"><img src="@/assets/환율버튼.png" alt="환율조회" class="icon-img" /><span>환율조회</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('openbank')"><img src="@/assets/환전버튼.png" alt="환전" class="icon-img" /><span>환전</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/해외송금버튼.png" alt="송금" class="icon-img" /><span>송금</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('quick')"><img src="@/assets/계좌조회버튼.png" alt="계좌 조회" class="icon-img" /><span>계좌조회</span></button>
   
       </div>
-      <div class="mainpage-bottom-menu">
-        <div class="bottom-menu-item"><div class="title">예적금</div><div class="desc">부자되는 알짜정보</div></div>
-        <div class="bottom-menu-item"><div class="title">펀드</div><div class="desc">한 눈에 보는 펀드랭킹</div></div>
-        <div class="bottom-menu-item"><div class="title">환전지갑</div><div class="desc">알뜰하게 환전하기</div></div>
-        <div class="bottom-menu-item"><div class="title">퇴직연금</div><div class="desc">든든한 노후를 위해</div></div>
-        <div class="bottom-menu-item"><div class="title">대출</div><div class="desc">3분이면 한도조회 OK!</div></div>
+
+      <!-- 환율 정보 리스트 -->
+      <div class="forex-rate-list">
+        <div
+          v-for="item in forexRates"
+          :key="item.pair"
+          class="rate-row"
+          :class="item.change > 0 ? 'up' : 'down'"
+        >
+          <span class="flag" aria-hidden="true">{{ item.flag }}</span>
+          <span class="pair">{{ item.pair }}</span>
+          <span class="rate">{{ item.rate.toLocaleString() }}</span>
+          <span class="change">
+            <span v-if="item.change > 0">▲</span>
+            <span v-else>▼</span>
+            {{ item.change }} ({{ item.percent }}%)
+          </span>
+        </div>
       </div>
-    </div>
+
+
+     </div>
   </div>
 </template>
 
 <script>
 export default {
   name: 'Home',
+  data() {
+    return {
+      forexRates: [
+        { flag: '🇺🇸', pair: 'USD/KRW', rate: 1380.10, change: -2.90, percent: -0.21 },
+        { flag: '🇯🇵', pair: 'JPY/KRW', rate: 939.42, change: -5.12, percent: -0.54 },
+        { flag: '🇪🇺', pair: 'EUR/KRW', rate: 1619.82, change: -0.23, percent: -0.01 },
+        { flag: '🇬🇧', pair: 'GBP/KRW', rate: 1865.90, change: 0.09, percent: 0.00 }
+      ]
+    };
+  },
   methods: {
     goForex() {
       window.location.href = '/forex';
@@ -75,14 +95,12 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-top: 32px;
-  gap: 32px;
 }
 .carousel-area {
   flex: 1;
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(217, 18, 18, 0.06);
   padding: 40px 36px 36px 36px;
   min-width: 340px;
   min-height: 320px;
@@ -125,13 +143,7 @@ export default {
 .carousel-btn:hover {
   background: #009490;
 }
-.mainpage-service-btns {
-  display: flex;
-  flex-direction: row;
-  gap: 18px;
-  margin-top: 32px;
-  justify-content: flex-start;
-}
+
 .service-btn {
   width: 120px;
   height: 80px;
@@ -162,38 +174,76 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: none;
-  border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  padding: 24px 0 16px 0;
   width: 120px;
   height: 110px;
+  border-radius: 16px;
+  border: none;
+  background: #e0f7f4;
+  color: #009490;
+  box-shadow: 0 2px 8px rgba(0,148,144,0.08);
   font-size: 1.08rem;
-  color: #222;
-  font-weight: 500;
+  font-weight: bold;
   cursor: pointer;
-  transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s;
+}
+.icon-menu-btn .icon-img {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
 }
 .icon-menu-btn .icon {
   font-size: 2.1rem;
   margin-bottom: 10px;
 }
 .icon-menu-btn:hover {
-  background: #e0f7f4;
-  color: #009490;
-  box-shadow: 0 4px 16px rgba(0, 148, 144, 0.13);
+  background: #009490;
+  color: #fff;
 }
-.mainpage-bottom-menu {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  background: #f5f7fa;
+
+/* 환율 리스트 */
+.forex-rate-list {
+  margin-top: 32px;
+  background: #fff;
   border-radius: 18px;
-  margin-top: 48px;
-  padding: 32px 24px;
-  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
 }
+.rate-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 120px 140px;
+  align-items: center;
+  padding: 14px 20px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.rate-row + .rate-row {
+  border-top: 1px solid #f0f0f0;
+}
+.rate-row.up .change {
+  color: #d60000;
+}
+.rate-row.down .change {
+  color: #0066d6;
+}
+.flag {
+  font-size: 1.7rem;
+  margin-right: 8px;
+  color: #111;
+}
+.pair {
+  font-weight: 700;
+  color: #111;
+}
+.rate {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.change {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+
 .bottom-menu-item {
   flex: 1;
   text-align: center;
@@ -217,18 +267,8 @@ export default {
     flex-direction: column;
     gap: 18px;
   }
-  .mainpage-service-btns {
-    flex-direction: row;
-    margin-left: 0;
-    margin-top: 18px;
-    gap: 12px;
-    justify-content: center;
-  }
-  .mainpage-bottom-menu {
-    flex-direction: column;
-    gap: 18px;
-    padding: 24px 8px;
-  }
+
+
   .bottom-menu-item {
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
