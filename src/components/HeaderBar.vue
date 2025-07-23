@@ -18,11 +18,19 @@
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
       <nav class="main-menu">
-        <a @click="goToAccount()" style="cursor: pointer">환율 조회</a>
+        <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
+          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">환율조회</a>
+          <ul class="dropdown-menu" v-show="rateMenu">
+            <li @click="goToAccount()">환율조회</li>
+            <li @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
+            <li @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+          </ul>
+        </div>
         <a href="#">환전</a>
-        <a href="#">송금</a>
-        <a href="#">환율 조회</a>
-        <a href="#">금융상품</a>
+        <a href="#">친구송금</a>
+        <a href="#">해외송금</a>
+        <a href="#">계좌조회</a>
+        
       </nav>
       <div class="header-icons">
         <span class="icon chat" title="챗봇">💬</span>
@@ -44,8 +52,9 @@ export default {
   name: 'HeaderBar',
   data() {
     return {
-      showChatbotBubble: true
-    }
+      showChatbotBubble: true,
+      rateMenu: false
+    };
   },
   methods: {
     goToAccount() {
@@ -53,7 +62,6 @@ export default {
     }
   }
 };
-
 </script>
 
 <style scoped>
@@ -116,6 +124,12 @@ export default {
 .main-menu a:hover {
   color: #009490;
 }
+/* 드롭다운 스타일 */
+.dropdown { position: relative; }
+.dropdown-menu { position: absolute; top: 100%; left: 0; background: #000000; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 4px 0; min-width: 120px; z-index: 50; }
+.dropdown-menu li { padding: 8px 12px; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+.dropdown-menu li:hover { background: #f8f8f8; }
+
 .header-icons {
   display: flex;
   gap: 18px;
