@@ -231,10 +231,18 @@ export default {
 }
 
 .exchange-form {
-  flex: 1;
+  flex: 5;
   background: #fff;
   border-radius: 12px;
   padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.chart-section {
+  flex: 5; /* 전체의 40% 차지 */
+  width: auto; 
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
