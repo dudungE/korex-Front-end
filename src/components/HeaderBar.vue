@@ -17,21 +17,60 @@
       <router-link to="/">
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
+      
       <nav class="main-menu">
+
+
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
           <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">환율조회</a>
           <ul class="dropdown-menu" v-show="rateMenu">
-            <li @click="goToAccount()">환율조회</li>
-            <li @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
-            <li @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+            <li class="section-title" @click="goToAccount()">일별환율조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+          </ul>
+
+        </div>
+        <div class="dropdown" @mouseenter="exchangeMenu=true" @mouseleave="exchangeMenu=false">
+          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">환전</a>
+          <ul class="dropdown-menu" v-show="exchangeMenu">
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">예약환전</li>
           </ul>
         </div>
-        <a href="#">환전</a>
-        <a href="#">친구송금</a>
-        <a href="#">해외송금</a>
-        <a href="#">계좌조회</a>
+
+      
+        <div class="dropdown" @mouseenter="friendMenu=true" @mouseleave="friendMenu=false">
+          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
+          <ul class="dropdown-menu" v-show="friendMenu">
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
+          </ul>
+        </div>
+
+        <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
+          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <ul class="dropdown-menu" v-show="foreignMenu">
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">해외송금</li>
+          </ul>
+        </div>
+
+        <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
+          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
+          <ul class="dropdown-menu" v-show="accountMenu">
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
+          </ul>
+        </div>
         
+
+
       </nav>
+
       <div class="header-icons">
         <span class="icon chat" title="챗봇">💬</span>
         <span class="icon search" title="검색">🔍</span>
@@ -53,7 +92,11 @@ export default {
   data() {
     return {
       showChatbotBubble: true,
-      rateMenu: false
+      rateMenu: false,
+      exchangeMenu: false,
+      friendMenu: false,
+      foreignMenu: false,
+      accountMenu: false
     };
   },
   methods: {
@@ -125,9 +168,47 @@ export default {
   color: #009490;
 }
 /* 드롭다운 스타일 */
-.dropdown { position: relative; }
-.dropdown-menu { position: absolute; top: 100%; left: 0; background: #000000; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 4px 0; min-width: 120px; z-index: 50; }
-.dropdown-menu li { padding: 8px 12px; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+
+.dropdown {
+  position: relative;
+  /* display: inline-block; */
+  /* padding-top: 20px; */
+  /* padding-bottom: 20px; */
+  display: flex;
+  align-items: center;
+  height: 100%; /* 추가: 메뉴 높이 채우기 */
+  cursor: pointer;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  height: 100%; /* 추가: 내부 <a> 높이 채우기 */
+  padding: 20px 0; /* 필요 시 제거 가능 */
+}
+
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  /* min-width 조정 및 부모에 딱 붙도록 */
+  margin: 0;
+  padding: 6px 0;
+  background: #fff;
+  border: 1px solid #009490;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 50;
+}
+
+.section-title {
+  font-weight: 500;
+  color: #000000;
+  padding: 8px 14px;
+}
+.dropdown-menu { list-style: none; }
+.dropdown-menu li { padding: 8px 12px; font-size: 0.95rem; cursor: pointer; white-space: nowrap; list-style: none; }
 .dropdown-menu li:hover { background: #f8f8f8; }
 
 .header-icons {
