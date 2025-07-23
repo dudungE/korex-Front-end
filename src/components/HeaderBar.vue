@@ -8,7 +8,7 @@
         <a href="#">채용안내</a>
       </nav>
       <div class="header-actions">
-        <a href="#">로그인</a>
+        <a @click="goToLogin()" style="cursor: pointer">로그인</a>
         <a href="#">인증센터</a>
         <span class="lang">Language ▼</span>
       </div>
@@ -50,6 +50,9 @@ export default {
   methods: {
     goToAccount() {
       router.push('/Account')
+    },
+    goToLogin() {
+      router.push('/login')
     }
   }
 };

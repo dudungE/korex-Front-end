@@ -1,16 +1,23 @@
-<script setup>
-// 라우터 기반이므로 별도 import 불필요
-import FooterBar from './components/FooterBar.vue'
-import HeaderBar from './components/HeaderBar.vue'
-</script>
-
 <template>
   <div id = "app">
-  <HeaderBar />
-  <router-view />
-  <FooterBar />
+    <HeaderBar v-if="!hideLayoutRoutes.includes(route.path)" />
+
+    <router-view />
+
+    <FooterBar v-if="!hideLayoutRoutes.includes(route.path)" />
   </div>
 </template>
+
+<script setup>
+// 라우터 기반이므로 별도 import 불필요
+import { useRoute } from 'vue-router'
+import FooterBar from './components/FooterBar.vue'
+import HeaderBar from './components/HeaderBar.vue'
+
+const route = useRoute()
+
+const hideLayoutRoutes = ['/sign-up', '/login', '/find-id', '/reset-password']
+</script>
 
 <style scoped>
 .logo {

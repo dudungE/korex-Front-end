@@ -20,6 +20,28 @@ const router = createRouter({
             name: 'Account',
             component: () => import('@/views/Account.vue'),
             meta: {requiresAuth: true}
+        },
+        {
+            path: '/login',
+            name: 'LoginPages',
+            component: () => import('@/views/LoginPages.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/sign-up',
+            name: 'SignUpForm',
+            component: () => import('@/views/SignUpForm.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/find-id',
+            name: 'FindId',
+            component: () => import('@/views/FindId.vue')
+        },
+        {
+            path: '/reset-password',
+            name: 'ResetPassword',
+            component: () => import('@/views/ResetPassword.vue')
         }
     ],
 })
