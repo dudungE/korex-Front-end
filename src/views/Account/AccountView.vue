@@ -364,7 +364,7 @@ export default {
 .main-content {
     flex: 1;
     /* padding : 0 3rem; */
-    margin: 3rem;
+    margin: 5rem;
 }
 
 .page-title {

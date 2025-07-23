@@ -246,6 +246,39 @@ export default {
             amount: 500.00,
             method: 'SWIFT',
             transactionId: 'USD202407170002'
+          },
+          {
+            id: 4,
+            type: 'expense',
+            category: 'transfer',
+            description: '해외송금',
+            date: '2024-07-17',
+            time: '16:45:00',
+            amount: 500.00,
+            method: 'SWIFT',
+            transactionId: 'USD202407170002'
+          },
+          {
+            id: 4,
+            type: 'expense',
+            category: 'transfer',
+            description: '해외송금',
+            date: '2024-07-17',
+            time: '16:45:00',
+            amount: 500.00,
+            method: 'SWIFT',
+            transactionId: 'USD202407170002'
+          },
+          {
+            id: 4,
+            type: 'expense',
+            category: 'transfer',
+            description: '해외송금',
+            date: '2024-07-17',
+            time: '16:45:00',
+            amount: 500.00,
+            method: 'SWIFT',
+            transactionId: 'USD202407170002'
           }
         ]
       },
@@ -516,7 +549,8 @@ export default {
 
 .main-content {
   flex: 1;
-  margin: 3rem;
+  margin-left: 15rem;
+  margin-right : 15rem;
 }
 
 /* 지갑 헤더 섹션 */
