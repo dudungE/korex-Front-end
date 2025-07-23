@@ -20,6 +20,18 @@ const router = createRouter({
             name: 'Account',
             component: () => import('@/views/Account.vue'),
             meta: {requiresAuth: true}
+        },
+        {
+            path: '/international',
+            name: 'International',
+            component: () => import('@/views/Remit/views/International.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/AddRecipient',
+            name: 'addRecipient',
+            component: () => import('@/views/Remit/views/AddRecipient.vue'),
+            meta: {requiresAuth: true}
         }
     ],
 })
