@@ -31,9 +31,9 @@
 
         </div>
         <div class="dropdown" @mouseenter="exchangeMenu=true" @mouseleave="exchangeMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">환전</a>
+          <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
           <ul class="dropdown-menu" v-show="exchangeMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전</li>
+            <li class="section-title" @click="goToExchange()">환전</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">예약환전</li>
           </ul>
@@ -41,9 +41,9 @@
 
       
         <div class="dropdown" @mouseenter="friendMenu=true" @mouseleave="friendMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
+          <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
           <ul class="dropdown-menu" v-show="friendMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
+            <li class="section-title" @click="goToRemittance()">친구송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
           </ul>
@@ -101,7 +101,13 @@ export default {
   },
   methods: {
     goToAccount() {
-      router.push('/Account')
+      router.push('/forex')
+    },
+    goToExchange() {
+      router.push('/exchange')
+    },
+    goToRemittance() {
+      router.push('/remittance')
     }
   }
 };

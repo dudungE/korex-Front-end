@@ -16,8 +16,8 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/forex/exchange',
-            name: 'ForexExchange',
+            path: '/exchange',
+            name: 'Exchange',
             component: () => import('@/views/CurrentExchange/CurrentExchange.vue'),
             meta: {requiresAuth: true}
         },

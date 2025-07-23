@@ -1,24 +1,5 @@
 <template>
   <div class="forex-system">
-    <HeaderBar />
-    <div class="content-wrap">
-      <aside class="sidebar">
-        <h2>외환</h2>
-        <ul class="menu">
-          <li @click="$router.push('/forex')">환율/외화예금 금리</li>
-          <li class="active">환전지갑</li>
-          <li>외화송금</li>
-          <li>외화계좌이체</li>
-          <li>외환매매 예약서비스</li>
-          <li>외화예금</li>
-          <li>송금클럽</li>
-        </ul>
-        <div class="customer-center">
-          <h3>고객센터</h3>
-          <p>1588-1111<br/>1599-1111</p>
-        </div>
-      </aside>
-      
       <main class="main-content">
         <h1>환전하기</h1>
         
@@ -100,7 +81,6 @@
         </footer>
       </main>
     </div>
-  </div>
 </template>
 
 <script>
