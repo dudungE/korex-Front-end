@@ -16,9 +16,21 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/Account',
+            path: '/exchange',
+            name: 'Exchange',
+            component: () => import('@/views/CurrentExchange/CurrentExchange.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/remittance',
+            name: 'Remittance',
+            component: () => import('@/views/Remittance/Remittance.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/account',
             name: 'Account',
-            component: () => import('@/views/Account.vue'),
+            component: () => import('@/views/Account/AccountView.vue'),
             meta: {requiresAuth: true}
         }
     ],
