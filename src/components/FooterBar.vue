@@ -22,31 +22,19 @@
           <span class="label">고객센터</span>
           <span class="number">1588-1111 / 1599-1111</span>
         </div>
-        <div>
+        <!-- <div>
           <span class="label">고객센터(해외)</span>
           <span class="number">+82-42-520-2500</span>
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="footer-middle">
-      <div class="footer-cert">
-        <!-- 인증마크 등은 이미지로 대체 가능 -->
-        <span>WA</span>
-        <span>BSI</span>
-        <span>ISMSP</span>
-      </div>
+
       <div class="footer-copy">© Hana Bank. All rights reserved.</div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-menu">
-        <button>브랜드사이트</button>
-        <button>하나네트워크</button>
-        <button>글로벌네트워크</button>
-        <button>하나은행 SNS</button>
-      </div>
-      <div class="footer-consumer">
-        <button class="consumer-btn">하나소비자세상 &gt;</button>
-      </div>
+
+
     </div>
   </footer>
 </template>
@@ -105,12 +93,7 @@ export default {
   justify-content: space-between;
   padding: 16px 48px 0 48px;
 }
-.footer-cert {
-  display: flex;
-  gap: 18px;
-  font-size: 1.2rem;
-  color: #888;
-}
+
 .footer-copy {
   color: #888;
   font-size: 1rem;
@@ -121,25 +104,7 @@ export default {
   justify-content: space-between;
   padding: 24px 48px 0 48px;
 }
-.footer-menu {
-  display: flex;
-  gap: 18px;
-}
-.footer-menu button {
-  background: #f7f7f7;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.footer-menu button:hover {
-  background: #e0f7f4;
-}
-.footer-consumer {
-  margin-left: 24px;
-}
+
 .consumer-btn {
   background: #f7f7f7;
   border: none;
