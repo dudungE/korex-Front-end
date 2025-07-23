@@ -32,7 +32,6 @@
 
 <script>
 import RemittanceForm from '@/views/Remit/components/RemittanceForm.vue';
-import RecipientInfoForm from '@/views/Remit/components/RecipientInfoForm.vue';
 
 export default {
   name: 'International',
