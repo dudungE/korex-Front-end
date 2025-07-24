@@ -24,8 +24,18 @@ const router = createRouter({
         {
             path: '/international',
             name: 'International',
-            component: () => import('@/views/Remit/views/International.vue'),
+            component: () => import('@/views/Remit/views/InternationalStep1.vue'),
             meta: {requiresAuth: true}
+        },
+        {
+            path: '/international/step2',
+            name: 'InternationalStep2',
+            component: () => import('@/views/Remit/views/InternationalStep2.vue')
+        },
+        {
+            path: '/international/step3',
+            name: 'InternationalStep3',
+            component: () => import('@/views/Remit/views/InternationalStep3.vue')
         }
     ],
 })
