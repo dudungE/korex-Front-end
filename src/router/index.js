@@ -38,6 +38,12 @@ const router = createRouter({
             name: 'AccountDetail',
             component: () => import('@/views/Account/AccountDetail.vue'),
             meta: {requiresAuth: true}
+        },
+        {
+            path: '/exchange/reservation', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
+            name: 'ReservationExchange',
+            component: () => import('@/views/CurrentExchange/ReservationExchange.vue'),
+            meta: {requiresAuth: true}
         }
     ],
 })

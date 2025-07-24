@@ -35,7 +35,7 @@
           <ul class="dropdown-menu" v-show="exchangeMenu">
             <li class="section-title" @click="goToExchange()">환전</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">예약환전</li>
+            <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
 
@@ -111,6 +111,9 @@ export default {
     },
     goToAccount() {
       router.push('/account')
+    },
+    goToReservationExchange(){
+      router.push('/exchange/reservation')
     }
   }
 };
