@@ -4,35 +4,72 @@
         <h2 class="page-title">계좌 조회</h2>
 
         <div class="dashboard-grid">
-            <!-- 총 보유 금액 -->
+            <!-- 총 보유 금액 - 도넛 차트로 변경 -->
             <div class="total-balance-card">
                 <div class="balance-header">
                     <span class="balance-title">총 보유 금액</span>
                     <select class="period-selector" v-model="selectedPeriod">
+                        <option value="currency">통화별</option>
                         <option value="monthly">월별</option>
                         <option value="weekly">주별</option>
-                        <option value="daily">일별</option>
                     </select>
                 </div>
                 <div class="total-amount">{{ formatAmount(totalBalance) }}</div>
                 
-                <!-- 세로 바 차트 (3개월) -->
-                <div class="balance-vertical-bars">
-                    <div class="vertical-chart-container">
-                        <div v-for="month in monthlyData" :key="month.month" class="vertical-bar-item">
-                            <div class="vertical-bar-wrapper">
-                                <div class="vertical-bar" 
-                                     :style="{ height: (month.amount / maxAmount * 100) + '%', backgroundColor: month.color }">
+                <!-- 도넛 차트 -->
+                <div class="currency-chart-container">
+                    <div class="donut-chart">
+                        <svg width="200" height="200" viewBox="0 0 200 200">
+                            <!-- 배경 원 -->
+                            <circle cx="100" cy="100" r="80" fill="none" 
+                                   stroke="#f1f3f4" stroke-width="25"/>
+                            
+                            <!-- 각 통화별 도넛 조각 -->
+                            <circle v-for="(segment, index) in chartSegments" 
+                                   :key="segment.currency"
+                                   cx="100" cy="100" r="80" 
+                                   fill="none" 
+                                   :stroke="segment.color" 
+                                   stroke-width="25"
+                                   :stroke-dasharray="`${segment.dashArray} ${502 - segment.dashArray}`"
+                                   :stroke-dashoffset="segment.offset"
+                                   transform="rotate(-90 100 100)"
+                                   class="chart-segment"
+                                   @mouseover="highlightSegment(index)"
+                                   @mouseout="unhighlightSegment"/>
+                        </svg>
+                        
+                        <!-- 중앙 텍스트 -->
+                        <div class="chart-center">
+                            <div class="chart-total">총 보유</div>
+                            <div class="chart-currencies">{{ currencyWallets.length }}개 통화</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 범례 -->
+                    <div class="chart-legend">
+                        <div v-for="(segment, index) in chartSegments" 
+                             :key="segment.currency" 
+                             class="legend-item"
+                             :class="{ highlighted: highlightedIndex === index }">
+                            <div class="legend-color" :style="{ backgroundColor: segment.color }"></div>
+                            <div class="legend-info">
+                                <div class="legend-currency">
+                                    {{ segment.flag }} {{ segment.name }}
+                                </div>
+                                <div class="legend-amount">
+                                    {{ formatAmount(segment.krwAmount) }}
+                                </div>
+                                <div class="legend-percentage">
+                                    {{ segment.percentage.toFixed(1) }}%
                                 </div>
                             </div>
-                            <div class="month-label">{{ month.month }}</div>
-                            <div class="amount-label">{{ formatShortAmount(month.amount) }}</div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- 자주 쓰는 계좌 즐겨찾기 카드 (새로 교체) -->
+            <!-- 자주 쓰는 계좌 즐겨찾기 카드 -->
             <div class="favorite-accounts-card">
                 <div class="favorite-header">
                     <h3>⭐ 즐겨찾기</h3>
@@ -129,31 +166,89 @@ export default {
     setup() {
         const router = useRouter()
         
-        const selectedPeriod = ref('monthly')
+        const selectedPeriod = ref('currency')
         const sortBy = ref('date')
+        const highlightedIndex = ref(-1)
 
-        // 총 보유 금액
-        const totalBalance = ref(25847500)
-
-        // 월별 데이터 (최근 3개월만)
-        const monthlyData = ref([
-            { month: '8월', amount: 26200000, color: '#20c997' },
-            { month: '9월', amount: 24900000, color: '#20c997' },
-            { month: '10월', amount: 25847500, color: '#17a2b8' }
+        // 통화별 지갑
+        const currencyWallets = ref([
+            {
+                currency: 'KRW',
+                name: '원화',
+                flag: '🇰🇷',
+                balance: 12547000,
+                rate: 1,
+                color: '#20c997'
+            },
+            {
+                currency: 'USD',
+                name: '달러',
+                flag: '🇺🇸',
+                balance: 8420.50,
+                rate: 1293.33,
+                color: '#fd7e14'
+            },
+            {
+                currency: 'JPY',
+                name: '엔화',
+                flag: '🇯🇵',
+                balance: 850000,
+                rate: 8.95,
+                color: '#6f42c1'
+            },
+            {
+                currency: 'EUR',
+                name: '유로',
+                flag: '🇪🇺',
+                balance: 3250.80,
+                rate: 1410.25,
+                color: '#e83e8c'
+            }
         ])
 
-        const maxAmount = computed(() => {
-            return Math.max(...monthlyData.value.map(item => item.amount))
+        // 총 보유 금액 계산
+        const totalBalance = computed(() => {
+            return currencyWallets.value.reduce((total, wallet) => {
+                return total + convertToKRW(wallet.balance, wallet.rate)
+            }, 0)
         })
 
-        // 금액을 짧게 표시하는 함수 (예: 2,620만원)
-        const formatShortAmount = (amount) => {
-            if (amount >= 10000000) {
-                return Math.round(amount / 10000) + '만원'
-            } else if (amount >= 10000) {
-                return Math.round(amount / 10000) + '만원'
-            }
-            return new Intl.NumberFormat('ko-KR').format(amount) + '원'
+        // 차트 세그먼트 계산
+        const chartSegments = computed(() => {
+            const total = totalBalance.value
+            const circumference = 2 * Math.PI * 80 // 반지름 80인 원의 둘레
+            let currentOffset = 0
+            
+            return currencyWallets.value
+                .map(wallet => {
+                    const krwAmount = convertToKRW(wallet.balance, wallet.rate)
+                    const percentage = (krwAmount / total) * 100
+                    const dashArray = (percentage / 100) * circumference
+                    
+                    const segment = {
+                        currency: wallet.currency,
+                        name: wallet.name,
+                        flag: wallet.flag,
+                        krwAmount,
+                        percentage,
+                        color: wallet.color,
+                        dashArray,
+                        offset: -currentOffset
+                    }
+                    
+                    currentOffset += dashArray
+                    return segment
+                })
+                .sort((a, b) => b.percentage - a.percentage)
+        })
+
+        // 세그먼트 하이라이트
+        const highlightSegment = (index) => {
+            highlightedIndex.value = index
+        }
+
+        const unhighlightSegment = () => {
+            highlightedIndex.value = -1
         }
 
         // 자주 쓰는 계좌 즐겨찾기 데이터
@@ -187,44 +282,12 @@ export default {
             }
         ])
 
-        // 통화별 지갑
-        const currencyWallets = ref([
-            {
-                currency: 'KRW',
-                name: '원화',
-                flag: '🇰🇷',
-                balance: 12547000,
-                rate: 1
-            },
-            {
-                currency: 'JPY',
-                name: '엔화',
-                flag: '🇯🇵',
-                balance: 850000,
-                rate: 8.95
-            },
-            {
-                currency: 'USD',
-                name: '달러',
-                flag: '🇺🇸',
-                balance: 8420.50,
-                rate: 1293.33
-            },
-            {
-                currency: 'EUR',
-                name: '유로',
-                flag: '🇪🇺',
-                balance: 3250.80,
-                rate: 1410.25
-            }
-        ])
-
         // 거래 내역
         const transactions = ref([
             {
                 id: 1,
                 type: 'expense',
-                category: 'salary',
+                category: 'exchange',
                 description: 'KRW → JPY 환전',
                 date: '07월 22일 2024',
                 amount: 89000
@@ -232,7 +295,7 @@ export default {
             {
                 id: 2,
                 type: 'income',
-                category: 'salary',
+                category: 'deposit',
                 description: '원화 충전',
                 date: '07월 20일 2024',
                 amount: 3200000
@@ -240,7 +303,7 @@ export default {
             {
                 id: 3,
                 type: 'expense',
-                category: 'salary',
+                category: 'exchange',
                 description: 'USD → KRW',
                 date: '07월 19일 2024',
                 amount: 50000
@@ -248,7 +311,7 @@ export default {
             {
                 id: 4,
                 type: 'expense',
-                category: 'salary',
+                category: 'transfer',
                 description: 'KRW → KRW 송금',
                 date: '07월 19일 2024',
                 amount: 100000
@@ -267,18 +330,15 @@ export default {
 
         // 즐겨찾기 관련 함수들
         const manageFavorites = () => {
-            console.log('즐겨찾기 관리 페이지로 이동')
-            // router.push('/account/favorites/manage')
+            alert('즐겨찾기 관리 페이지로 이동')
         }
 
         const quickTransfer = (account) => {
             alert(`${account.name}에게 송금`, account)
-            // router.push(`/transfer/quick/${account.id}`)
         }
 
         const addFavorite = () => {
             alert('새 즐겨찾기 계좌 추가')
-            // router.push('/account/favorites/add')
         }
 
         // 지갑 상세페이지로 이동
@@ -301,10 +361,10 @@ export default {
 
         const getTransactionIcon = (category) => {
             const icons = {
-                shopping: '🛍️',
-                salary: '💰',
-                food: '🍽️',
-                transport: '🚇',
+                exchange: '💱',
+                deposit: '💰',
+                transfer: '💸',
+                withdraw: '🏧',
                 investment: '📈'
             }
             return icons[category] || '💳'
@@ -314,12 +374,13 @@ export default {
             selectedPeriod,
             sortBy,
             totalBalance,
-            monthlyData,
-            maxAmount,
-            formatShortAmount,
+            currencyWallets,
+            chartSegments,
+            highlightedIndex,
+            highlightSegment,
+            unhighlightSegment,
             favoriteAccounts,
             transactions,
-            currencyWallets,
             sortedTransactions,
             manageFavorites,
             quickTransfer,
@@ -350,7 +411,7 @@ export default {
 
 .main-content {
     flex: 1;
-    margin: 5rem;
+    margin: 3rem;
 }
 
 .page-title {
@@ -372,6 +433,7 @@ export default {
     padding: 2rem;
     border-radius: 16px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .balance-header {
@@ -384,73 +446,137 @@ export default {
 .balance-title {
     font-weight: 600;
     color: #6c757d;
+    font-size: 1rem;
 }
 
 .period-selector {
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
+    background: white;
+    color: #333;
+    cursor: pointer;
 }
 
 .total-amount {
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-size: 2.2rem;
+    font-weight: 700;
     color: #20c997;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-/* 세로 바 차트 스타일 */.balance-vertical-bars {
-    width: 100%;
-    margin-top: 10rem;
-}
-
-.vertical-chart-container {
+/* 도넛 차트 컨테이너 */
+.currency-chart-container {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-around;
-    height: 100px; /* 차트 높이 증가 */
-    margin-bottom: 1rem;
-    padding: 0 2rem; /* 좌우 패딩 증가 */
+    align-items: flex-start;
+    gap: 2rem;
 }
 
-.vertical-bar-item {
+/* 도넛 차트 */
+.donut-chart {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+}
+
+.chart-segment {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.chart-segment:hover {
+    stroke-width: 30;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.chart-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: white;
+    border-radius: 50%;
+    width: 90px;
+    height: 90px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1;
-    max-width: 80px; /* 최대 너비 증가 */
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.vertical-bar-wrapper {
-    height: 80px; /* 바 영역 높이 증가 */
-    width: 36px; /* 바 너비 크게 증가 */
-    background-color: #f8f9fa;
-    border-radius: 18px; /* 둥근 모서리도 비례해서 증가 */
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 0.75rem; /* 하단 마진 증가 */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 약간의 그림자 추가 */
-}
-
-.vertical-bar {
-    width: 100%;
-    border-radius: 18px; /* 실제 바의 모서리도 증가 */
-    transition: height 0.6s ease;
-    min-height: 6px; /* 최소 높이도 증가 */
-}
-
-.month-label {
-    font-size: 0.95rem; /* 폰트 크기 증가 */
+.chart-total {
+    font-size: 0.8rem;
     color: #6c757d;
-    font-weight: 600; /* 폰트 굵기 증가 */
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
 }
 
-.amount-label {
-    font-size: 0.85rem; /* 폰트 크기 증가 */
+.chart-currencies {
+    font-size: 0.9rem;
+    font-weight: 700;
     color: #333;
-    font-weight: 700; /* 폰트 굵기 증가 */
+}
+
+/* 범례 */
+.chart-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.legend-item:hover,
+.legend-item.highlighted {
+    background: #e9ecef;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.legend-info {
+    flex: 1;
+}
+
+.legend-currency {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.legend-amount {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.125rem;
+}
+
+.legend-percentage {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #20c997;
 }
 
 /* 자주 쓰는 계좌 즐겨찾기 카드 */
@@ -459,6 +585,7 @@ export default {
     padding: 2rem;
     border-radius: 16px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .favorite-header {
@@ -477,12 +604,13 @@ export default {
 .manage-btn {
     background: none;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
     font-size: 0.9rem;
     color: #20c997;
     cursor: pointer;
     transition: all 0.2s;
+    font-weight: 500;
 }
 
 .manage-btn:hover {
@@ -498,7 +626,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 12px;
     background: #f8f9fa;
     margin-bottom: 0.75rem;
@@ -508,7 +636,8 @@ export default {
 
 .favorite-account-item:hover {
     background: #e9ecef;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .account-avatar {
@@ -520,7 +649,7 @@ export default {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .account-details {
@@ -531,6 +660,7 @@ export default {
     font-weight: 600;
     color: #333;
     margin-bottom: 0.25rem;
+    font-size: 1rem;
 }
 
 .account-info {
@@ -552,6 +682,7 @@ export default {
 .last-transfer {
     font-size: 0.8rem;
     color: #20c997;
+    font-weight: 500;
 }
 
 .quick-actions {
@@ -565,15 +696,17 @@ export default {
     background: #20c997;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    font-weight: 500;
 }
 
 .quick-transfer-btn:hover {
     background: #17a2b8;
+    transform: scale(1.05);
 }
 
 .transfer-amount {
@@ -585,12 +718,13 @@ export default {
     width: 100%;
     background: none;
     border: 2px dashed #e9ecef;
-    border-radius: 8px;
-    padding: 1rem;
+    border-radius: 12px;
+    padding: 1.25rem;
     color: #6c757d;
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .add-favorite-btn:hover {
@@ -605,6 +739,7 @@ export default {
     padding: 2rem;
     border-radius: 16px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .section-header {
@@ -624,11 +759,17 @@ export default {
 .sort-selector {
     background: none;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
     color: #20c997;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.more-btn:hover,
+.sort-selector:hover {
+    background: #f8f9fa;
 }
 
 .wallet-grid {
@@ -641,15 +782,17 @@ export default {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 12px;
     background: #f8f9fa;
-    transition: transform 0.2s;
+    transition: all 0.2s;
     cursor: pointer;
 }
 
 .wallet-card:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #e9ecef;
 }
 
 .wallet-header {
@@ -673,7 +816,7 @@ export default {
 .wallet-balance {
     flex: 1;
     font-size: 1.1rem;
-    font-weight: bold;
+    font-weight: 700;
     color: #20c997;
 }
 
@@ -686,6 +829,11 @@ export default {
 .wallet-arrow {
     color: #6c757d;
     font-size: 1.2rem;
+    transition: transform 0.2s;
+}
+
+.wallet-card:hover .wallet-arrow {
+    transform: translateX(4px);
 }
 
 /* 거래 내역 */
@@ -694,6 +842,7 @@ export default {
     padding: 2rem;
     border-radius: 16px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .transaction-list {
@@ -706,9 +855,16 @@ export default {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 12px;
     background: #f8f9fa;
+    transition: all 0.2s;
+}
+
+.transaction-item:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .transaction-icon {
@@ -716,6 +872,7 @@ export default {
     padding: 0.75rem;
     border-radius: 12px;
     background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .transaction-info {
@@ -725,6 +882,7 @@ export default {
 .transaction-desc {
     font-weight: 600;
     margin-bottom: 0.25rem;
+    color: #333;
 }
 
 .transaction-date {
@@ -733,7 +891,8 @@ export default {
 }
 
 .transaction-amount {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1rem;
 }
 
 .transaction-amount.expense {
@@ -753,24 +912,55 @@ export default {
     .wallet-grid {
         grid-template-columns: 1fr;
     }
+
+    .currency-chart-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: center;
+    }
 }
 
 @media (max-width: 768px) {
     .main-content {
-        margin: 2rem;
+        margin: 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 
     .wallet-grid {
         grid-template-columns: 1fr;
     }
 
-    .dashboard-grid {
-        grid-template-columns: 1fr;
+    .currency-chart-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .donut-chart {
+        width: 180px;
+        height: 180px;
+    }
+
+    .chart-center {
+        width: 80px;
+        height: 80px;
     }
 
     .quick-actions {
         flex-direction: row;
         align-items: center;
+        gap: 0.5rem;
+    }
+
+    .total-balance-card,
+    .favorite-accounts-card,
+    .currency-wallets-section,
+    .transaction-history {
+        padding: 1.5rem;
     }
 }
 </style>
