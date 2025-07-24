@@ -22,11 +22,11 @@
 
 
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
-          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">환율조회</a>
+          <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
           <ul class="dropdown-menu" v-show="rateMenu">
-            <li class="section-title" @click="goToAccount()">일별환율조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+            <li class="section-title" @click="goToRateLookup()">환율조회</li>
+            <li class="section-title" @click="goToRateCalculator()">환율계산기</li>
+            <li class="section-title" @click="goToRateAlert()">환율알림</li>
           </ul>
 
         </div>
@@ -100,8 +100,14 @@ export default {
     };
   },
   methods: {
-    goToAccount() {
-      router.push('/forex')
+    goToRateLookup() {
+      router.push('/rate-lookup')
+    },
+    goToRateCalculator() {
+      router.push('/rate-calculator')
+    },
+    goToRateAlert() {
+      router.push('/rate-alert')
     },
     goToExchange() {
       router.push('/exchange')

@@ -10,9 +10,21 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/forex',
-            name: 'Forex',
-            component: () => import('@/views/ForexInfo/ForexInfo.vue'),
+            path: '/rate-lookup',
+            name: 'RateLookup',
+            component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-calculator',
+            name: 'RateCalculator',
+            component: () => import('@/views/ExchangeInfo/Calculator.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-alert',
+            name: 'RateAlert',
+            component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
             meta: {requiresAuth: true}
         },
         {
