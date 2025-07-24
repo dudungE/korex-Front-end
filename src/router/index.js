@@ -28,6 +28,12 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
+            path: '/rate-chart',
+            name: 'RateChart',
+            component: () => import('@/views/ExchangeInfo/RateChart.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
             path: '/exchange',
             name: 'Exchange',
             component: () => import('@/views/CurrentExchange/CurrentExchange.vue'),
