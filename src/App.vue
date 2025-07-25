@@ -89,6 +89,8 @@ axios.interceptors.response.use(
 <style scoped>
 #app {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .app-layout {
@@ -97,7 +99,7 @@ axios.interceptors.response.use(
 
 .main-content {
   flex: 1;
-  padding: 24px 48px;
+  padding: none;
   background: #f5f5f5;
 }
 
