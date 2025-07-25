@@ -8,23 +8,15 @@
           <div class="carousel-title">알람이 울리는 순간<br>돈기운이 터진다!</div>
           <div class="carousel-desc">놀이터랑 친구하고<br>도나와라 머니클락 굿즈 받기</div>
           <button class="carousel-btn">자세히보기</button>
-        </div>
-        <!-- 추가 슬라이드 필요시 여기에 -->
-        
+        </div>        
       </div>
-
-
       <div class="mainpage-icon-menu">
-    
         <button class="icon-menu-btn" @click="onFeatureClick('rate-lookup')"><img src="@/assets/환율버튼.png" alt="환율조회" class="icon-img" /><span>환율조회</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('openbank')"><img src="@/assets/환전버튼.png" alt="환전" class="icon-img" /><span>환전</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/친구송금버튼.png" alt="친구송금" class="icon-img" /><span>친구송금</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/해외송금버튼.png" alt="해외송금" class="icon-img" /><span>해외송금</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('quick')"><img src="@/assets/계좌조회버튼.png" alt="계좌 조회" class="icon-img" /><span>계좌조회</span></button>
-  
       </div>
-
-      <!-- 환율 정보 리스트 -->
       <div class="forex-rate-list">
         <div
           v-for="item in forexRates"
@@ -42,8 +34,6 @@
           </span>
         </div>
       </div>
-
-
      </div>
   </div>
 </template>
@@ -84,19 +74,23 @@ export default {
   font-family: 'Noto Sans KR', Arial, sans-serif;
   background: #f4f8fb;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   min-width: 0;
 }
+
 .mainpage-wrap {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px 40px 24px;
 }
+
 .mainpage-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  padding-top: 20px;
 }
+
 .carousel-area {
   flex: 1;
   background: #fff;
@@ -109,6 +103,7 @@ export default {
   flex-direction: column;
   justify-content: center;
 }
+
 .carousel-label {
   display: inline-block;
   background: #f4f8fb;
@@ -118,6 +113,7 @@ export default {
   padding: 4px 16px;
   margin-bottom: 18px;
 }
+
 .carousel-title {
   font-size: 2.1rem;
   font-weight: bold;
@@ -125,11 +121,13 @@ export default {
   margin-bottom: 18px;
   line-height: 1.3;
 }
+
 .carousel-desc {
   color: #888;
   font-size: 1.1rem;
   margin-bottom: 24px;
 }
+
 .carousel-btn {
   background: #222;
   color: #fff;
@@ -141,6 +139,7 @@ export default {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .carousel-btn:hover {
   background: #009490;
 }
@@ -158,10 +157,12 @@ export default {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
+
 .service-btn.active, .service-btn:hover {
   background: #009490;
   color: #fff;
 }
+
 .mainpage-icon-menu {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -170,6 +171,7 @@ export default {
   max-width: 700px;
   justify-items: center;
 }
+
 .icon-menu-btn {
   display: flex;
   flex-direction: column;
@@ -187,21 +189,23 @@ export default {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
+
 .icon-menu-btn .icon-img {
   width: 40px;
   height: 40px;
   margin-bottom: 10px;
 }
+
 .icon-menu-btn .icon {
   font-size: 2.1rem;
   margin-bottom: 10px;
 }
+
 .icon-menu-btn:hover {
   background: #009490;
   color: #fff;
 }
 
-/* 환율 리스트 */
 .forex-rate-list {
   margin-top: 32px;
   background: #fff;
@@ -209,6 +213,7 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
+
 .rate-row {
   display: grid;
   grid-template-columns: 80px 1fr 120px 140px;
@@ -217,33 +222,39 @@ export default {
   font-size: 1.05rem;
   font-weight: 600;
 }
+
 .rate-row + .rate-row {
   border-top: 1px solid #f0f0f0;
 }
+
 .rate-row.up .change {
   color: #d60000;
 }
+
 .rate-row.down .change {
   color: #0066d6;
 }
+
 .flag {
   font-size: 1.7rem;
   margin-right: 8px;
   color: #111;
 }
+
 .pair {
   font-weight: 700;
   color: #111;
 }
+
 .rate {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
 .change {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-
 
 .bottom-menu-item {
   flex: 1;
@@ -251,25 +262,27 @@ export default {
   border-right: 1px solid #e0e0e0;
   padding: 0 12px;
 }
+
 .bottom-menu-item:last-child {
   border-right: none;
 }
+
 .bottom-menu-item .title {
   font-size: 1.15rem;
   font-weight: bold;
   margin-bottom: 8px;
 }
+
 .bottom-menu-item .desc {
   color: #888;
   font-size: 1rem;
 }
+
 @media (max-width: 900px) {
   .mainpage-top {
     flex-direction: column;
     gap: 18px;
   }
-
-
   .bottom-menu-item {
     border-right: none;
     border-bottom: 1px solid #e0e0e0;

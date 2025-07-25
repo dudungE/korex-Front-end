@@ -8,23 +8,17 @@
         <span>상담센터</span>
         <span class="bold">개인정보처리방침</span>
         <span>영업점 찾기</span>
-
         <div class="footer-copy">
         © Korex. All rights reserved.
       </div>
       </div>
-
-
-
       <div class="footer-customer">
         <div>
           <span class="label">고객센터</span>
           <span class="number">5173-1111 / 8080-1111</span>
         </div>
       </div>
-   
     </div>
-
   </footer>
 </template>
 
@@ -42,11 +36,13 @@ export default {
   font-family: 'Noto Sans KR', Arial, sans-serif;
   color: #222;
   font-size: 1rem;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .footer-top {
   display: flex;
-  /* flex-direction: column; 기존의 column 설정 제거. customer 위치 유지를 위해 이 부분이 중요합니다. */
   justify-content: space-between;
   align-items: flex-start;
   padding: 3px 0px 3px 4px;
@@ -62,19 +58,22 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 15px 25px;
-  max-width: 60vw;
   min-width: 250px;
+  max-width: 100%;
   line-height: 2;
   color: #444;
 }
+
 .footer-links-texts span {
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.2s;
 }
+
 .footer-links-texts span:hover {
   color: #009490;
 }
+
 .footer-links-texts .bold {
   font-weight: 700;
   color: #009490;
@@ -83,44 +82,42 @@ export default {
 .footer-customer {
   text-align: right;
   min-width: 220px;
-  /* 기존 margin-top 제거 또는 조정 */
   margin-top: 0;
 }
+
 .footer-customer .label {
   display: block;
   color: #009490;
   font-size: 0.98rem;
   margin-bottom: 2px;
 }
+
 .footer-customer .number {
   font-size: 1.5rem;
   font-weight: bold;
   color: #222;
 }
 
-
 .footer-copy {
   color: #888;
   font-size: 0.9rem;
   min-width: 180px;
   white-space: nowrap;
-  /* footer-links-texts 아래에 오도록 margin-top 추가 및 정렬 조정 */
   margin: 0;
   line-height: 1.8;
   user-select: none;
-  text-align: left; /* 왼쪽 정렬 유지 */
-  /* flex 아이템으로 작동할 때 공간을 차지하지 않도록 추가 설정 */
-  flex-basis: 100%; /* 부모 너비 전체 차지 */
-  order: 2; /* 두 번째 순서로 배치 */
+  text-align: left;
+  flex-basis: 100%;
+  order: 2;
 }
 
-/* 기존 CSS는 그대로 유지하거나 위에서 수정된 내용에 따라 조정됩니다. */
 .footer-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px 48px 0 48px;
 }
+
 .consumer-btn {
   background: #f7f7f7;
   border: none;
@@ -136,10 +133,9 @@ export default {
   background: #e0f7f4;
 }
 
-/* 반응형 미디어 쿼리는 그대로 유지됩니다. */
 @media (max-width: 900px) {
   .footer-top {
-    flex-direction: column; /* 작은 화면에서는 여전히 세로로 정렬 */
+    flex-direction: column;
     align-items: flex-start;
     padding: 0 16px;
   }
@@ -151,8 +147,8 @@ export default {
     padding-top: 16px;
   }
   .footer-copy {
-    flex-basis: auto; /* 작은 화면에서는 flex-basis 재설정 */
-    order: unset; /* 작은 화면에서는 order 재설정 */
+    flex-basis: auto;
+    order: unset;
   }
 }
 </style>
