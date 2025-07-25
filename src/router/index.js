@@ -1,6 +1,6 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import SignupPage from '@/views/SignUpForm.vue'
-import LoginPages from '@/views/LoginPages.vue'
+import SignupPage from '@/views/auth/SignUpForm.vue'
+import LoginPages from '@/views/auth/LoginPages.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -36,12 +36,12 @@ const router = createRouter({
         {
             path: '/find-id',
             name: 'FindId',
-            component: () => import('@/views/FindId.vue')
+            component: () => import('@/views/auth/FindId.vue')
         },
         {
             path: '/reset-password',
             name: 'ResetPassword',
-            component: () => import('@/views/ResetPassword.vue')
+            component: () => import('@/view/auth/ResetPassword.vue')
         },
         {
             path: '/mypage',
