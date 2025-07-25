@@ -54,6 +54,12 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
+            path: '/OverseasRemittance',
+            name: 'OverseasRemittance',
+            component: () => import('@/views/Remit/views/RemittanceStep1.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
             path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
             name: 'AccountDetail',
             component: () => import('@/views/Account/AccountDetail.vue'),
@@ -85,12 +91,12 @@ const router = createRouter({
             name: 'ResetPassword',
             component: () => import('@/views/auth/ResetPassword.vue')
         },
-        {
-            path: '/mypage',
-            name: 'MyPage',
-            component: () => import('@/views/MyPage.vue'),
-            meta: {requiresAuth: true}
-        },
+        // {
+        //     path: '/mypage',
+        //     name: 'MyPage',
+        //     component: () => import('@/views/MyPage.vue'),
+        //     meta: {requiresAuth: true}
+        // },
     ],
 })
 

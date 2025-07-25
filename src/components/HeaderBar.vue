@@ -25,6 +25,8 @@
       </router-link>
       
       <nav class="main-menu">
+
+
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
           <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
           <ul class="dropdown-menu" v-show="rateMenu">
@@ -54,9 +56,9 @@
         </div>
 
         <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <a @click="goToOverseasRemittance()" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
           <ul class="dropdown-menu" v-show="foreignMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="goToOverseasRemittance">해외송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">해외송금</li>
           </ul>
@@ -70,6 +72,9 @@
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
         </div>
+        
+
+
       </nav>
 
       <div class="header-icons">
@@ -113,13 +118,14 @@ const goToAccount = () => router.push('/account')
 const goToReservationExchange = () => router.push('/exchange/reservation')
 const goToLogin = () => router.push('/login')
 const goToMyPage = () => router.push('/mypage')
+const goToOverseasRemittance = () => router.push('/OverseasRemittance')
+
 
 const handleLogout = async () => {
   await authStore.logout()
   router.push('/')
 }
 </script>
-
 
 <style scoped>
 .header-bar {
