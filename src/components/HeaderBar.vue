@@ -156,24 +156,27 @@ export default {
 }
 .header-main {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  align-items: stretch;  /* ← 핵심! */
   padding: 10px 48px 10px 48px;
   position: relative;
 }
 .logo {
-  height: 50px;
-  margin-right: 48px;
+  height: 60px;
+  margin-right: 100px;
 }
 .main-menu {
   display: flex;
   gap: 48px;
   flex: 1;
+  height: 100%;        /* ← 추가! */
+  align-items: stretch; /* ← 아이템들(드롭다운 버튼)도 세로로 채움 */
 }
 .main-menu a {
   color: #444;
   font-size: 1.3rem;
   text-decoration: none;
-  font-weight: 400;
+  font-weight: 700; /* 400 → 700 으로 변경 */
   letter-spacing: 0.01em;
 }
 .main-menu a:hover {
