@@ -59,7 +59,7 @@
           </a-form>
 
           <p class="login-warning">이용자 비밀번호 5회 연속 오류 시</p>
-          <p class="login-info">이용자 아이디/비밀번호 로그인 이용이 제한됩니다.</p>
+          <p class="login-info">해당 서비스의 이용이 제한됩니다.</p>
 
           <div class="login-links">
             <router-link to="/find-id" class="login-link">아이디 찾기</router-link>
