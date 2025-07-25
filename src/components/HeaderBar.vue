@@ -8,7 +8,13 @@
         <a href="#">채용안내</a>
       </nav>
       <div class="header-actions">
-        <a href="#">로그인</a>
+        <template v-if="isAuthenticated">
+          <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
+          <a @click="logout" style="cursor: pointer">로그아웃</a>
+        </template>
+        <template v-else>
+          <a @click="goToLogin()" style="cursor: pointer">로그인</a>
+        </template>
         <a href="#">인증센터</a>
         <span class="lang">Language ▼</span>
       </div>
@@ -22,35 +28,35 @@
 
 
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
-          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">환율조회</a>
+          <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
           <ul class="dropdown-menu" v-show="rateMenu">
-            <li class="section-title" @click="goToAccount()">일별환율조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+            <li class="section-title" @click="goToRateLookup()">환율조회</li>
+            <li class="section-title" @click="goToRateCalculator()">환율계산기</li>
+            <li class="section-title" @click="goToRateAlert()">환율알림</li>
           </ul>
 
         </div>
         <div class="dropdown" @mouseenter="exchangeMenu=true" @mouseleave="exchangeMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">환전</a>
+          <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
           <ul class="dropdown-menu" v-show="exchangeMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전</li>
+            <li class="section-title" @click="goToExchange()">환전</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">예약환전</li>
+            <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
 
       
         <div class="dropdown" @mouseenter="friendMenu=true" @mouseleave="friendMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
+          <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
           <ul class="dropdown-menu" v-show="friendMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
+            <li class="section-title" @click="goToRemittance()">친구송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
           </ul>
         </div>
 
         <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
-          <a @click="goToOverseasRemittance" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <a @click="goToOverseasRemittance()" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
           <ul class="dropdown-menu" v-show="foreignMenu">
             <li class="section-title" @click="goToOverseasRemittance">해외송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
@@ -59,9 +65,9 @@
         </div>
 
         <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
+          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
           <ul class="dropdown-menu" v-show="accountMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
+            <li class="section-title" @click="goToAccount()">계좌조회</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
@@ -84,31 +90,41 @@
   </header>
 </template>
 
-<script>
-import router from '../router/index';
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-export default {
-  name: 'HeaderBar',
-  data() {
-    return {
-      showChatbotBubble: true,
-      rateMenu: false,
-      exchangeMenu: false,
-      friendMenu: false,
-      foreignMenu: false,
-      accountMenu: false
-    };
-  },
-  methods: {
-    goToAccount() {
-      router.push('/Account')
-    },
-    goToOverseasRemittance() {
-      router.push('/OverseasRemittance')
-    },
+const router = useRouter()
+const authStore = useAuthStore()
+const showChatbotBubble = ref(true)
 
-  }
-};
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+
+// 메뉴 상태
+const rateMenu = ref(false)
+const exchangeMenu = ref(false)
+const friendMenu = ref(false)
+const foreignMenu = ref(false)
+const accountMenu = ref(false)
+
+// 네비게이션 메서드
+const goToRateLookup = () => router.push('/rate-lookup')
+const goToRateCalculator = () => router.push('/rate-calculator')
+const goToRateAlert = () => router.push('/rate-alert')
+const goToExchange = () => router.push('/exchange')
+const goToRemittance = () => router.push('/remittance')
+const goToAccount = () => router.push('/account')
+const goToReservationExchange = () => router.push('/exchange/reservation')
+const goToLogin = () => router.push('/login')
+const goToMyPage = () => router.push('/mypage')
+const goToOverseasRemittance = () => router.push('/OverseasRemittance')
+
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/')
+}
 </script>
 
 <style scoped>
@@ -148,24 +164,27 @@ export default {
 }
 .header-main {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  align-items: stretch;  /* ← 핵심! */
   padding: 10px 48px 10px 48px;
   position: relative;
 }
 .logo {
-  height: 50px;
-  margin-right: 48px;
+  height: 60px;
+  margin-right: 100px;
 }
 .main-menu {
   display: flex;
   gap: 48px;
   flex: 1;
+  height: 100%;        /* ← 추가! */
+  align-items: stretch; /* ← 아이템들(드롭다운 버튼)도 세로로 채움 */
 }
 .main-menu a {
   color: #444;
   font-size: 1.3rem;
   text-decoration: none;
-  font-weight: 400;
+  font-weight: 700; /* 400 → 700 으로 변경 */
   letter-spacing: 0.01em;
 }
 .main-menu a:hover {
@@ -240,14 +259,14 @@ export default {
   align-items: center;
   gap: 8px;
 }
- .close-btn {
-   background: none;
-   border: none;
-   color: #009490;
-   font-size: 1.2rem;
-   margin-left: 8px;
-   cursor: pointer;
-   padding: 0 4px;
-   line-height: 1;
- }
+.close-btn {
+  background: none;
+  border: none;
+  color: #009490;
+  font-size: 1.2rem;
+  margin-left: 8px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
 </style> 
