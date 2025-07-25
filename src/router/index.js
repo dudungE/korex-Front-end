@@ -10,9 +10,27 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/forex',
-            name: 'Forex',
-            component: () => import('@/views/ForexInfo/ForexInfo.vue'),
+            path: '/rate-lookup',
+            name: 'RateLookup',
+            component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-calculator',
+            name: 'RateCalculator',
+            component: () => import('@/views/ExchangeInfo/Calculator.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-alert',
+            name: 'RateAlert',
+            component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-chart',
+            name: 'RateChart',
+            component: () => import('@/views/ExchangeInfo/RateChart.vue'),
             meta: {requiresAuth: true}
         },
         {
@@ -40,7 +58,7 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/exchange/reservation', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
+            path: '/exchange/reservation',
             name: 'ReservationExchange',
             component: () => import('@/views/CurrentExchange/ReservationExchange.vue'),
             meta: {requiresAuth: true}

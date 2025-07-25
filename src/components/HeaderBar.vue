@@ -22,11 +22,11 @@
 
 
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
-          <a @click="goToForex()" class="dropdown-toggle" style="cursor: pointer">환율조회</a>
+          <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
           <ul class="dropdown-menu" v-show="rateMenu">
-            <li class="section-title" @click="goToForex()">일별환율조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환율그래프</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">환율알림</li>
+            <li class="section-title" @click="goToRateLookup()">환율조회</li>
+            <li class="section-title" @click="goToRateCalculator()">환율계산기</li>
+            <li class="section-title" @click="goToRateAlert()">환율알림</li>
           </ul>
 
         </div>
@@ -100,8 +100,14 @@ export default {
     };
   },
   methods: {
-    goToForex() {
-      router.push('/forex')
+    goToRateLookup() {
+      router.push('/rate-lookup')
+    },
+    goToRateCalculator() {
+      router.push('/rate-calculator')
+    },
+    goToRateAlert() {
+      router.push('/rate-alert')
     },
     goToExchange() {
       router.push('/exchange')
@@ -156,24 +162,27 @@ export default {
 }
 .header-main {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  align-items: stretch;  /* ← 핵심! */
   padding: 10px 48px 10px 48px;
   position: relative;
 }
 .logo {
-  height: 50px;
-  margin-right: 48px;
+  height: 60px;
+  margin-right: 100px;
 }
 .main-menu {
   display: flex;
   gap: 48px;
   flex: 1;
+  height: 100%;        /* ← 추가! */
+  align-items: stretch; /* ← 아이템들(드롭다운 버튼)도 세로로 채움 */
 }
 .main-menu a {
   color: #444;
   font-size: 1.3rem;
   text-decoration: none;
-  font-weight: 400;
+  font-weight: 700; /* 400 → 700 으로 변경 */
   letter-spacing: 0.01em;
 }
 .main-menu a:hover {

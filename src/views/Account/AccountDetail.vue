@@ -551,6 +551,8 @@ export default {
   flex: 1;
   margin-left: 15rem;
   margin-right : 15rem;
+  margin-top : 3rem;
+  margin-bottom : 3rem;
 }
 
 /* 지갑 헤더 섹션 */

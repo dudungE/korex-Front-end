@@ -16,7 +16,7 @@
 
       <div class="mainpage-icon-menu">
     
-        <button class="icon-menu-btn" @click="onFeatureClick('forex')"><img src="@/assets/환율버튼.png" alt="환율조회" class="icon-img" /><span>환율조회</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('rate-lookup')"><img src="@/assets/환율버튼.png" alt="환율조회" class="icon-img" /><span>환율조회</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('openbank')"><img src="@/assets/환전버튼.png" alt="환전" class="icon-img" /><span>환전</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/친구송금버튼.png" alt="친구송금" class="icon-img" /><span>친구송금</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/해외송금버튼.png" alt="해외송금" class="icon-img" /><span>해외송금</span></button>
@@ -63,11 +63,11 @@ export default {
   },
   methods: {
     goForex() {
-      window.location.href = '/forex';
+      window.location.href = '/rate-lookup';
     },
     onFeatureClick(feature) {
-      if (feature === 'forex') {
-        this.$router.push('/forex');
+      if (feature === 'rate-lookup') {
+        this.$router.push('/rate-lookup');
       } else {
         alert('준비중인 기능입니다: ' + feature);
       }

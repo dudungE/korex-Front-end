@@ -8,11 +8,6 @@
             <div class="total-balance-card">
                 <div class="balance-header">
                     <span class="balance-title">총 보유 금액</span>
-                    <select class="period-selector" v-model="selectedPeriod">
-                        <option value="currency">통화별</option>
-                        <option value="monthly">월별</option>
-                        <option value="weekly">주별</option>
-                    </select>
                 </div>
                 <div class="total-amount">{{ formatAmount(totalBalance) }}</div>
                 
@@ -72,7 +67,7 @@
             <!-- 자주 쓰는 계좌 즐겨찾기 카드 -->
             <div class="favorite-accounts-card">
                 <div class="favorite-header">
-                    <h3>⭐ 즐겨찾기</h3>
+                    <h3>⭐ 친구 즐겨찾기</h3>
                     <button class="manage-btn" @click="manageFavorites">관리</button>
                 </div>
                 
@@ -108,7 +103,7 @@
             <!-- 통화별 지갑 -->
             <div class="currency-wallets-section">
                 <div class="section-header">
-                    <h3>통화별 지갑</h3>
+                    <h3>통화별 계좌</h3>
                     <button class="more-btn">더보기</button>
                 </div>
                 <div class="wallet-grid">
@@ -262,15 +257,15 @@ export default {
                 lastTransfer: '3일 전 송금',
                 usualAmount: '보통 200만원'
             },
-            {
-                id: 2,
-                name: '하버드대학교',
-                bank: 'Chase Bank',
-                accountNumber: '***-***-9876',
-                icon: '🏫',
-                lastTransfer: '1주 전 송금',
-                usualAmount: '보통 $8,000'
-            },
+            // {
+            //     id: 2,
+            //     name: '하버드대학교',
+            //     bank: 'Chase Bank',
+            //     accountNumber: '***-***-9876',
+            //     icon: '🏫',
+            //     lastTransfer: '1주 전 송금',
+            //     usualAmount: '보통 $8,000'
+            // },
             {
                 id: 3,
                 name: '김민수 (아들)',
@@ -447,16 +442,6 @@ export default {
     font-weight: 600;
     color: #6c757d;
     font-size: 1rem;
-}
-
-.period-selector {
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    background: white;
-    color: #333;
-    cursor: pointer;
 }
 
 .total-amount {
