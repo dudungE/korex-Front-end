@@ -1,12 +1,12 @@
 <template>
   <header class="header-bar">
     <div class="header-top">
-      <nav class="header-links">
+      <!-- <nav class="header-links">
         <a href="#">기업뱅킹</a>
         <a href="#">하나카드</a>
         <a href="#">은행소개</a>
         <a href="#">채용안내</a>
-      </nav>
+      </nav> -->
       <div class="header-actions">
         <template v-if="isAuthenticated">
           <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
@@ -138,11 +138,12 @@ const handleLogout = async () => {
 }
 .header-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;  /* 오른쪽 정렬 */
   align-items: center;
   padding: 8px 48px 0 48px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #444;
+  gap: 18px; /* 항목들 사이 간격 필요 시 추가 */
 }
 .header-links a {
   margin-right: 18px;
@@ -162,11 +163,12 @@ const handleLogout = async () => {
   color: #444;
   cursor: pointer;
 }
+/* 메인메뉴를 중앙에 넓게 펼치기 */
 .header-main {
   display: flex;
-  /* align-items: center; */
-  align-items: stretch;  /* ← 핵심! */
-  padding: 10px 48px 10px 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 48px 8px 48px;
   position: relative;
 }
 .logo {
@@ -237,8 +239,10 @@ const handleLogout = async () => {
 .header-icons {
   display: flex;
   gap: 18px;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin-left: 24px;
+  justify-content: flex-end;    /* 컨테이너 하단으로 전체 아이콘 정렬 */
+  height: 100%;                 /* 컨테이너가 부모 기준 세로로 늘어나야 함 */
 }
 .header-icons .icon {
   cursor: pointer;
