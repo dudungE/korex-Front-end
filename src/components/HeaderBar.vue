@@ -23,13 +23,55 @@
       <router-link to="/">
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
+      
       <nav class="main-menu">
-        <a @click="goToAccount" style="cursor: pointer">계좌 조회</a>
-        <a href="#">환전</a>
-        <a href="#">송금</a>
-        <a href="#">환율 조회</a>
-        <a href="#">금융상품</a>
+        <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
+          <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
+          <ul class="dropdown-menu" v-show="rateMenu">
+            <li class="section-title" @click="goToRateLookup()">환율조회</li>
+            <li class="section-title" @click="goToRateCalculator()">환율계산기</li>
+            <li class="section-title" @click="goToRateAlert()">환율알림</li>
+          </ul>
+
+        </div>
+        <div class="dropdown" @mouseenter="exchangeMenu=true" @mouseleave="exchangeMenu=false">
+          <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
+          <ul class="dropdown-menu" v-show="exchangeMenu">
+            <li class="section-title" @click="goToExchange()">환전</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
+            <li class="section-title" @click="goToReservationExchange()">예약환전</li>
+          </ul>
+        </div>
+
+      
+        <div class="dropdown" @mouseenter="friendMenu=true" @mouseleave="friendMenu=false">
+          <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
+          <ul class="dropdown-menu" v-show="friendMenu">
+            <li class="section-title" @click="goToRemittance()">친구송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
+          </ul>
+        </div>
+
+        <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
+          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <ul class="dropdown-menu" v-show="foreignMenu">
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">해외송금</li>
+          </ul>
+        </div>
+
+        <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
+          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
+          <ul class="dropdown-menu" v-show="accountMenu">
+            <li class="section-title" @click="goToAccount()">계좌조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
+            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
+          </ul>
+        </div>
       </nav>
+
       <div class="header-icons">
         <span class="icon chat" title="챗봇">💬</span>
         <span class="icon search" title="검색">🔍</span>
@@ -54,22 +96,52 @@ const showChatbotBubble = ref(true)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
-const goToLogin = () => {
-  router.push('/login')
-}
-
-const handleLogout = async () => {
-  await authStore.logout()
-  router.push('/')
-}
-
-const goToMyPage = () => {
-  router.push('/mypage')
-}
-
-const goToAccount = () => {
-  router.push('/Account')
-}
+export default {
+  name: 'HeaderBar',
+  data() {
+    return {
+      showChatbotBubble: true,
+      rateMenu: false,
+      exchangeMenu: false,
+      friendMenu: false,
+      foreignMenu: false,
+      accountMenu: false
+    };
+  },
+  methods: {
+    goToRateLookup() {
+      router.push('/rate-lookup')
+    },
+    goToRateCalculator() {
+      router.push('/rate-calculator')
+    },
+    goToRateAlert() {
+      router.push('/rate-alert')
+    },
+    goToExchange() {
+      router.push('/exchange')
+    },
+    goToRemittance() {
+      router.push('/remittance')
+    },
+    goToAccount() {
+      router.push('/account')
+    },
+    goToReservationExchange(){
+      router.push('/exchange/reservation')
+    },
+    goToLogin() {
+      router.push('/login')
+    },
+    async handleLogout() {
+      await authStore.logout()
+      router.push('/')
+    },
+    goToMyPage() {
+      router.push('/mypage')
+    }
+  }
+};
 </script>
 
 <style scoped>
@@ -86,7 +158,7 @@ const goToAccount = () => {
   justify-content: space-between;
   align-items: center;
   padding: 8px 48px 0 48px;
-  font-size: 0.98rem;
+  font-size: 0.8rem;
   color: #444;
 }
 .header-links a {
@@ -109,26 +181,76 @@ const goToAccount = () => {
 }
 .header-main {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  align-items: stretch;  /* ← 핵심! */
   padding: 10px 48px 10px 48px;
   position: relative;
 }
 .logo {
-  height: 50px;
-  margin-right: 48px;
+  height: 60px;
+  margin-right: 100px;
 }
 .main-menu {
   display: flex;
   gap: 48px;
   flex: 1;
+  height: 100%;        /* ← 추가! */
+  align-items: stretch; /* ← 아이템들(드롭다운 버튼)도 세로로 채움 */
 }
 .main-menu a {
-  color: #111;
-  font-size: 1.25rem;
+  color: #444;
+  font-size: 1.3rem;
   text-decoration: none;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 700; /* 400 → 700 으로 변경 */
+  letter-spacing: 0.01em;
 }
+.main-menu a:hover {
+  color: #009490;
+}
+/* 드롭다운 스타일 */
+
+.dropdown {
+  position: relative;
+  /* display: inline-block; */
+  /* padding-top: 20px; */
+  /* padding-bottom: 20px; */
+  display: flex;
+  align-items: center;
+  height: 100%; /* 추가: 메뉴 높이 채우기 */
+  cursor: pointer;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  height: 100%; /* 추가: 내부 <a> 높이 채우기 */
+  padding: 20px 0; /* 필요 시 제거 가능 */
+}
+
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  /* min-width 조정 및 부모에 딱 붙도록 */
+  margin: 0;
+  padding: 6px 0;
+  background: #fff;
+  border: 1px solid #009490;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 50;
+}
+
+.section-title {
+  font-weight: 500;
+  color: #000000;
+  padding: 8px 14px;
+}
+.dropdown-menu { list-style: none; }
+.dropdown-menu li { padding: 8px 12px; font-size: 0.95rem; cursor: pointer; white-space: nowrap; list-style: none; }
+.dropdown-menu li:hover { background: #f8f8f8; }
+
 .header-icons {
   display: flex;
   gap: 18px;

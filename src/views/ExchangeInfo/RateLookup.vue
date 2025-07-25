@@ -2,34 +2,20 @@
     <div class="forex-system">
       <HeaderBar />
       <div class="content-wrap">
-        <aside class="sidebar">
-          <h2>외환</h2>
-          <ul class="menu">
-            <li class="active">환율/외화예금 금리</li>
-            <li>환전지갑</li>
-            <li>외화송금</li>
-            <li>외화계좌이체</li>
-            <li>외환매매 예약서비스</li>
-            <li>외화예금</li>
-            <li>송금클럽</li>
-          </ul>
-          <div class="customer-center">
-            <h3>고객센터</h3>
-            <p>1588-1111<br/>1599-1111</p>
-          </div>
-        </aside>
         <main class="main-content">
-          <h1>환율/외화예금 금리</h1>
-          <nav class="tabs">
+
+          <h1>환율 조회</h1>
+
+          <TabNav current="rate" />
+
+          <!-- <nav class="tabs">
             <button class="active">현재환율</button>
             <button>평균환율</button>
             <button>환율변동</button>
-            <button>환율차트</button>
+            <button @click="goTab('rateChart')">환율차트</button>  
             <button>비교시환율</button>
-            <button>환율변동성</button>
-            <button>통화간상관계수</button>
-            <button>Domestic Rate</button>
-          </nav>
+     
+          </nav> -->
           <section class="search-box">
             <form @submit.prevent="onSearch">
               <label>
@@ -65,8 +51,11 @@
   </template>
   
   <script>
+  import TabNav from '@/components/common/TabNav.vue';
+
   export default {
     name: 'ForexTradingSystem',
+    components: { TabNav },
     data() {
       return {
         currency: '',
@@ -92,6 +81,11 @@
         this.showResult = !!this.currency;
         this.currentTime = this.getCurrentTime();
       },
+      goTab(name) {
+        if (name === 'rateChart') {
+          this.$router.push('/rate-chart'); // 라우터 경로에 맞게 이동
+        }
+      },
     },
   };
   </script>
@@ -105,56 +99,10 @@
     min-width: 0;
   }
   .content-wrap {
-    display: flex;
     width: 100%;
   }
-  .sidebar {
-    width: 240px;
-    background: #fff;
-    border-right: 1px solid #e0e0e0;
-    padding: 32px 16px 16px 32px;
-  }
-  .sidebar h2 {
-    color: #009490;
-    font-size: 1.5rem;
-    margin-bottom: 24px;
-  }
-  .menu {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 32px 0;
-  }
-  .menu li {
-    padding: 10px 0 10px 8px;
-    cursor: pointer;
-    color: #333;
-    border-left: 3px solid transparent;
-    transition: 0.2s;
-  }
-  .menu li.active, .menu li:hover {
-    color: #009490;
-    border-left: 3px solid #009490;
-    background: #f2f8f7;
-  }
-  .customer-center {
-    margin-top: 40px;
-    background: #f2f8f7;
-    padding: 16px;
-    border-radius: 8px;
-    text-align: center;
-  }
-  .customer-center h3 {
-    margin: 0 0 8px 0;
-    color: #009490;
-    font-size: 1.1rem;
-  }
-  .customer-center p {
-    margin: 0;
-    font-size: 1.2rem;
-    color: #222;
-  }
   .main-content {
-    flex: 1;
+    width: 100%;
     padding: 40px 48px;
   }
   .main-content h1 {

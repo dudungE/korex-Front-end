@@ -12,15 +12,57 @@ const router = createRouter({
             component: () => import('@/components/MainPage.vue')
         },
         {
-            path: '/forex',
-            name: 'Forex',
-            component: () => import('@/views/ForexInfo/ForexInfo.vue'),
+            path: '/rate-lookup',
+            name: 'RateLookup',
+            component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
             meta: {requiresAuth: true}
         },
         {
-            path: '/Account',
+            path: '/rate-calculator',
+            name: 'RateCalculator',
+            component: () => import('@/views/ExchangeInfo/Calculator.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-alert',
+            name: 'RateAlert',
+            component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/rate-chart',
+            name: 'RateChart',
+            component: () => import('@/views/ExchangeInfo/RateChart.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/exchange',
+            name: 'Exchange',
+            component: () => import('@/views/CurrentExchange/CurrentExchange.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/remittance',
+            name: 'Remittance',
+            component: () => import('@/views/Remittance/Remittance.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/account',
             name: 'Account',
-            component: () => import('@/views/Account.vue'),
+            component: () => import('@/views/Account/AccountView.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
+            name: 'AccountDetail',
+            component: () => import('@/views/Account/AccountDetail.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/exchange/reservation',
+            name: 'ReservationExchange',
+            component: () => import('@/views/CurrentExchange/ReservationExchange.vue'),
             meta: {requiresAuth: true}
         },
         {

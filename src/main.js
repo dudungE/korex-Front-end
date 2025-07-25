@@ -82,3 +82,4 @@ app.mount('#app')
 import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 authStore.loadToken() // 저장된 토큰이 있으면 axios 헤더에 자동 설정
+
