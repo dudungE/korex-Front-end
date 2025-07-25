@@ -96,53 +96,30 @@ const showChatbotBubble = ref(true)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
-export default {
-  name: 'HeaderBar',
-  data() {
-    return {
-      showChatbotBubble: true,
-      rateMenu: false,
-      exchangeMenu: false,
-      friendMenu: false,
-      foreignMenu: false,
-      accountMenu: false
-    };
-  },
-  methods: {
-    goToRateLookup() {
-      router.push('/rate-lookup')
-    },
-    goToRateCalculator() {
-      router.push('/rate-calculator')
-    },
-    goToRateAlert() {
-      router.push('/rate-alert')
-    },
-    goToExchange() {
-      router.push('/exchange')
-    },
-    goToRemittance() {
-      router.push('/remittance')
-    },
-    goToAccount() {
-      router.push('/account')
-    },
-    goToReservationExchange(){
-      router.push('/exchange/reservation')
-    },
-    goToLogin() {
-      router.push('/login')
-    },
-    async handleLogout() {
-      await authStore.logout()
-      router.push('/')
-    },
-    goToMyPage() {
-      router.push('/mypage')
-    }
-  }
-};
+// 메뉴 상태
+const rateMenu = ref(false)
+const exchangeMenu = ref(false)
+const friendMenu = ref(false)
+const foreignMenu = ref(false)
+const accountMenu = ref(false)
+
+// 네비게이션 메서드
+const goToRateLookup = () => router.push('/rate-lookup')
+const goToRateCalculator = () => router.push('/rate-calculator')
+const goToRateAlert = () => router.push('/rate-alert')
+const goToExchange = () => router.push('/exchange')
+const goToRemittance = () => router.push('/remittance')
+const goToAccount = () => router.push('/account')
+const goToReservationExchange = () => router.push('/exchange/reservation')
+const goToLogin = () => router.push('/login')
+const goToMyPage = () => router.push('/mypage')
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/')
+}
 </script>
+
 
 <style scoped>
 .header-bar {
