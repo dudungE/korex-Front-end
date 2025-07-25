@@ -20,7 +20,12 @@
             </div>
 
             <div v-if="foundId" class="result-message">
-              고객님의 아이디는 <strong>{{ foundId }}</strong> 입니다.
+              <template v-if="foundId !== '일치하는 정보가 없습니다.'">
+                고객님의 아이디는 <strong>{{ foundId }}</strong> 입니다.
+              </template>
+              <template v-else>
+                {{ foundId }}
+              </template>
             </div>
 
             <button type="submit" class="btn-login">
@@ -36,25 +41,28 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { useAuthStore } from '@/stores/auth'
 
 const email = ref('')
 const name = ref('')
 const foundId = ref('')
 const router = useRouter()
+const authStore = useAuthStore()
 
-function handleSubmit() {
-  if (foundId.value) {
+async function handleSubmit() {
+  if (foundId.value && foundId.value !== '일치하는 정보가 없습니다.') {
     router.push('/login')
     return
   }
 
-  // 임시 테스트용 데이터
-  const mockUser = { email: 'test@example.com', name: '홍길동', id: 'hong123' }
-
-  if (email.value === mockUser.email && name.value === mockUser.name) {
-    foundId.value = mockUser.id
-  } else {
+  try {
+    const id = await authStore.findId(email.value, name.value)
+    foundId.value = id
+    message.success('아이디를 성공적으로 찾았습니다.')
+  } catch (err) {
     foundId.value = '일치하는 정보가 없습니다.'
+    message.error(err.message || '아이디를 찾을 수 없습니다.')
   }
 }
 </script>

@@ -3,33 +3,100 @@
     <main class="login-only-section">
       <section class="login-section">
         <router-link to="/" style="display: inline-block">
-            <img src="@/assets/korex1.png" alt="로고" class="app-logo" />
+          <img src="@/assets/korex1.png" alt="로고" class="app-logo" />
         </router-link>
         <div class="login-box large-box">
           <h2 class="login-title">회원가입</h2>
-          <form @submit.prevent="register">
-            <div class="input-wrapper">
-                <input type="text" class="combined-input top" placeholder="아이디" v-model="id" required /><hr class="custom-divider" />
-                <input type="password" class="combined-input" placeholder="비밀번호" v-model="password" required />
-                <input type="password" class="combined-input" placeholder="비밀번호 확인" v-model="confirmPassword" required /><hr class="custom-divider" />
-                <div class="input-with-button">
-                    <input type="email" class="input-field" placeholder="이메일주소" v-model="email" required />
-                    <button type="button" class="input-btn" @click="sendEmailVerification">인증요청</button>
-                </div>
-                <div class="input-with-button">
-                    <input type="text" class="input-field" placeholder="이메일 인증 코드" v-model="emailCode" required />
-                    <button type="button" class="input-btn" @click="verifyEmailCode">인증 확인</button>
-                </div><hr class="custom-divider" />
-                <input type="text" class="combined-input" placeholder="이름" v-model="name" required /><hr class="custom-divider" />
-                <input type="text" class="combined-input bottom" placeholder="생년월일 8자리" v-model="birthdate" required />
-            </div>
+
+          <a-form
+            ref="formRef"
+            :model="signupForm"
+            @finish="handleSignup"
+            layout="vertical"
+            :validate-trigger="['blur', 'submit']"
+          >
+            <a-form-item
+              name="id"
+              :rules="[
+                { required: true, message: '아이디를 입력해주세요' },
+                { min: 4, max: 20, message: '아이디는 4~20자여야 합니다' },
+                { pattern: /^[a-zA-Z0-9]+$/, message: '영문과 숫자만 사용가능합니다' }
+              ]"
+            >
+              <input v-model="signupForm.id" class="combined-input top" placeholder="아이디" />
+            </a-form-item>
+
+            <a-form-item
+              name="password"
+              :rules="[
+                { required: true, message: '비밀번호를 입력해주세요' },
+                { min: 6, max: 20, message: '비밀번호는 6~20자여야 합니다' }
+              ]"
+            >
+              <input v-model="signupForm.password" type="password" class="combined-input" placeholder="비밀번호" />
+            </a-form-item>
+
+            <a-form-item
+              name="confirmPassword"
+              :rules="[
+                { required: true, message: '비밀번호 확인을 입력해주세요' },
+                { validator: validatePasswordMatch }
+              ]"
+            >
+              <input v-model="signupForm.confirmPassword" type="password" class="combined-input" placeholder="비밀번호 확인" />
+            </a-form-item>
+
+            <a-form-item
+              name="email"
+              :rules="[
+                { required: true, message: '이메일을 입력해주세요' },
+                { type: 'email', message: '올바른 이메일 형식입니다' }
+              ]"
+            >
+              <div class="input-with-button">
+                <input v-model="signupForm.email" type="email" class="input-field" placeholder="이메일 주소" />
+                <button type="button" class="input-btn" @click="sendEmailVerification">인증요청</button>
+              </div>
+            </a-form-item>
+
+            <a-form-item
+              name="emailCode"
+              :rules="[ { required: true, message: '이메일 인증코드를 입력해주세요' } ]"
+            >
+              <div class="input-with-button">
+                <input v-model="signupForm.emailCode" class="input-field" placeholder="이메일 인증 코드" />
+                <button type="button" class="input-btn" @click="verifyEmailCode">인증 확인</button>
+              </div>
+            </a-form-item>
+
+            <a-form-item
+              name="name"
+              :rules="[
+                { required: true, message: '이름을 입력해주세요' },
+                { min: 2, max: 10, message: '이름은 2~10자여야 합니다' }
+              ]"
+            >
+              <input v-model="signupForm.name" class="combined-input" placeholder="이름" />
+            </a-form-item>
+
+            <a-form-item
+              name="birthdate"
+              :rules="[ { required: true, message: '생년월일을 입력해주세요' } ]"
+            >
+              <input v-model="signupForm.birthdate" class="combined-input bottom" placeholder="생년월일 8자리" />
+            </a-form-item>
+
             <div class="terms-agree">
               <label>
-                <input type="checkbox" v-model="termsAgreed" /> [필수] 인증 약관 전체동의
+                <input type="checkbox" v-model="termsAgreed" />
+                [필수] 인증 약관 전체동의
               </label>
             </div>
-            <button type="submit" class="btn-login">가입하기</button>
-          </form>
+
+            <a-form-item>
+              <button type="submit" class="btn-login">가입하기</button>
+            </a-form-item>
+          </a-form>
         </div>
       </section>
     </main>
@@ -39,37 +106,79 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { useAuthStore } from '@/stores/auth'
 
-const id = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const email = ref('')
-const emailCode = ref('')
-const name = ref('')
-const birthdate = ref('')
-const termsAgreed = ref(false)
-const emailVerified = ref(false)
 const router = useRouter()
+const authStore = useAuthStore()
+
+const signupForm = ref({
+  id: '',
+  password: '',
+  confirmPassword: '',
+  email: '',
+  emailCode: '',
+  name: '',
+  birthdate: ''
+})
+
+const termsAgreed = ref(false)
+const formRef = ref()
+const emailVerified = ref(false)
 
 function sendEmailVerification() {
-  alert(`인증 이메일 전송: ${email.value}`)
+  if (!signupForm.value.email) {
+    message.warning('이메일을 먼저 입력해주세요.')
+    return
+  }
+  // 실제 서버 연동 시 API 호출
+  message.success(`인증 이메일이 전송되었습니다: ${signupForm.value.email}`)
   emailVerified.value = true
 }
 
-function register() {
-  if (!emailVerified.value) {
-    alert('이메일 인증을 완료해주세요.')
-    return
+function verifyEmailCode() {
+  if (signupForm.value.emailCode === '123456') {
+    message.success('이메일 인증 완료')
+    emailVerified.value = true
+  } else {
+    message.error('잘못된 인증 코드입니다.')
   }
+}
+
+const validatePasswordMatch = async (_rule, value) => {
+  if (value !== signupForm.value.password) {
+    return Promise.reject('비밀번호가 일치하지 않습니다.')
+  }
+  return Promise.resolve()
+}
+
+const handleSignup = async () => {
   if (!termsAgreed.value) {
-    alert('약관에 동의해주세요.')
+    message.warning('약관에 동의해주세요.')
     return
   }
-  if (password.value !== confirmPassword.value) {
-    alert('비밀번호가 일치하지 않습니다.')
+  if (!emailVerified.value) {
+    message.warning('이메일 인증을 완료해주세요.')
     return
   }
-  alert(`회원가입 완료: \nID: ${id.value}\nEMAIL: ${email.value}`)
+
+  const payload = {
+    loginId: signupForm.value.id,
+    password: signupForm.value.password,
+    nickname: signupForm.value.name,
+    name: signupForm.value.name,
+    email: signupForm.value.email
+  }
+
+  try {
+    const success = await authStore.join(payload)
+    if (success) {
+      message.success('가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.')
+      router.push('/login')
+    }
+  } catch (err) {
+    message.error('회원가입 중 오류가 발생했습니다.')
+  }
 }
 </script>
 

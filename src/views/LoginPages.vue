@@ -1,10 +1,11 @@
 <template>
   <div id="app" class="app-container">
     <div class="top-logo-wrapper"> 
-        <router-link to="/" style="display: inline-block">
-            <img src="@/assets/korex1.png" alt="로고" class="top-app-logo" />
-        </router-link>
+      <router-link to="/">
+        <img src="@/assets/korex1.png" alt="로고" class="top-app-logo" />
+      </router-link>
     </div>
+
     <main class="login-only-section">
       <div class="login-box with-divider">
         <div class="left-section">
@@ -15,22 +16,58 @@
         </div>
         <div class="divider"></div>
         <div class="right-section">
-          <form @submit.prevent="login">
-            <div class="input-wrapper">
-              <input v-model="id" type="text" class="combined-input top" placeholder="아이디 입력" required />
-              <input v-model="password" type="password" class="combined-input bottom" placeholder="비밀번호 입력" required />
-            </div>
-            <button type="submit" class="btn-login">로그인</button>
-            <p class="login-warning">이용자 비밀번호 5회 연속 오류 시</p>
-            <p class="login-info">이용자 아이디/비밀번호 로그인 이용이 제한됩니다.</p>
-            <div class="login-links">
-              <router-link to="/find-id" class="login-link">아이디 찾기</router-link>
-              <span>〉</span>
-              <router-link to="/reset-password" class="login-link">비밀번호 변경</router-link>
-              <span>〉</span>
-              <router-link to="/sign-up" class="login-link">회원가입</router-link>
-            </div>
-          </form>
+          <a-form
+            :model="loginForm"
+            @finish="handleLogin"
+            layout="vertical"
+            class="login-form"
+          >
+            <a-form-item
+              name="username"
+              :rules="[{ required: true, message: '아이디를 입력해주세요!' }]"
+            >
+              <a-input
+                v-model:value="loginForm.username"
+                placeholder="아이디 입력"
+                size="large"
+              />
+            </a-form-item>
+
+            <a-form-item
+              name="password"
+              :rules="[{ required: true, message: '비밀번호를 입력해주세요!' }]"
+            >
+              <a-input-password
+                v-model:value="loginForm.password"
+                placeholder="비밀번호 입력"
+                size="large"
+              />
+            </a-form-item>
+
+            <a-form-item>
+              <a-button
+                type="default"
+                html-type="submit"
+                class="btn-login"
+                :loading="loading"
+                size="large"
+                block
+              >
+                로그인
+              </a-button>
+            </a-form-item>
+          </a-form>
+
+          <p class="login-warning">이용자 비밀번호 5회 연속 오류 시</p>
+          <p class="login-info">이용자 아이디/비밀번호 로그인 이용이 제한됩니다.</p>
+
+          <div class="login-links">
+            <router-link to="/find-id" class="login-link">아이디 찾기</router-link>
+            <span>〉</span>
+            <router-link to="/reset-password" class="login-link">비밀번호 변경</router-link>
+            <span>〉</span>
+            <router-link to="/sign-up" class="login-link">회원가입</router-link>
+          </div>
         </div>
       </div>
     </main>
@@ -39,12 +76,35 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 
-const id = ref('')
-const password = ref('')
+const router = useRouter()
+const authStore = useAuthStore()
+const loading = ref(false)
+const loginForm = ref({
+  username: '',
+  password: ''
+})
 
-function login() {
-  alert(`ID: ${id.value}\nPASSWORD: ${password.value}`)
+const handleLogin = async (values) => {
+  loading.value = true
+  try {
+    const success = await authStore.login({
+      loginId: values.username,
+      password: values.password,
+    })
+
+    if (success) {
+      message.success('로그인 성공!')
+      router.push('/')
+    }
+  } catch (err) {
+    message.error('로그인에 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -59,8 +119,8 @@ function login() {
 }
 
 .top-logo-wrapper {
-  margin-top: 1.5rem;
-  margin-bottom: 10rem;
+  margin-top: 3rem;
+  margin-bottom: 6rem;
   display: flex;
   justify-content: center;
 }
@@ -70,6 +130,7 @@ function login() {
   height: auto;
   max-width: 100%;
   object-fit: contain;
+  transform: translateY(10px);
 }
 
 .login-only-section {
@@ -104,16 +165,16 @@ function login() {
 }
 
 .login-text {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 800;
    color: #137c7c;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .left-desc {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #6b7280;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .divider {
@@ -136,7 +197,7 @@ function login() {
 }
 
 .combined-input {
-  padding: 1rem;
+  padding: 1.05rem;
   border: none;
   outline: none;
   font-size: 1rem;
@@ -146,14 +207,27 @@ function login() {
   border-top: 1px solid #d1d5db;
 }
 
-.btn-login {
+btn-login {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  font-weight: bold;
-  background-color: #137c7c;
-  color: white;
+  padding: 1rem 1.25rem;
+  font-size: 1.1rem;
+  border-radius: 0.5rem;
+  background-color: #137c7c !important;
+  color: white !important;
+  border: none !important; 
+  margin-top: 0.75rem;
   margin-bottom: 1.25rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+  background-color: #0f5e5e !important;
+  color: white !important;
+  transform: translateY(-1px);
 }
 
 .login-warning {

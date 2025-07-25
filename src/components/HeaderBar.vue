@@ -8,7 +8,13 @@
         <a href="#">채용안내</a>
       </nav>
       <div class="header-actions">
-        <a @click="goToLogin()" style="cursor: pointer">로그인</a>
+        <template v-if="isAuthenticated">
+          <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
+          <a @click="logout" style="cursor: pointer">로그아웃</a>
+        </template>
+        <template v-else>
+          <a @click="goToLogin()" style="cursor: pointer">로그인</a>
+        </template>
         <a href="#">인증센터</a>
         <span class="lang">Language ▼</span>
       </div>
@@ -18,7 +24,7 @@
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
       <nav class="main-menu">
-        <a @click="goToAccount()" style="cursor: pointer">계좌 조회</a>
+        <a @click="goToAccount" style="cursor: pointer">계좌 조회</a>
         <a href="#">환전</a>
         <a href="#">송금</a>
         <a href="#">환율 조회</a>
@@ -37,26 +43,33 @@
   </header>
 </template>
 
-<script>
-import router from '../router/index';
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-export default {
-  name: 'HeaderBar',
-  data() {
-    return {
-      showChatbotBubble: true
-    }
-  },
-  methods: {
-    goToAccount() {
-      router.push('/Account')
-    },
-    goToLogin() {
-      router.push('/login')
-    }
-  }
-};
+const router = useRouter()
+const authStore = useAuthStore()
+const showChatbotBubble = ref(true)
 
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+
+const goToLogin = () => {
+  router.push('/login')
+}
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/')
+}
+
+const goToMyPage = () => {
+  router.push('/mypage')
+}
+
+const goToAccount = () => {
+  router.push('/Account')
+}
 </script>
 
 <style scoped>
@@ -141,14 +154,14 @@ export default {
   align-items: center;
   gap: 8px;
 }
- .close-btn {
-   background: none;
-   border: none;
-   color: #009490;
-   font-size: 1.2rem;
-   margin-left: 8px;
-   cursor: pointer;
-   padding: 0 4px;
-   line-height: 1;
- }
+.close-btn {
+  background: none;
+  border: none;
+  color: #009490;
+  font-size: 1.2rem;
+  margin-left: 8px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
 </style> 

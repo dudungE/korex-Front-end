@@ -1,40 +1,56 @@
 <template>
   <div class="app-container">
-    <div class="logo-container">
-      <router-link to="/" style="display: inline-block">
-            <img src="@/assets/korex1.png" alt="로고" class="app-logo" />
+    <div class="logo-top">
+        <router-link to="/" style="display: inline-block">
+            <img src="@/assets/korex1.png" alt="로고" class="top-app-logo" />
         </router-link>
     </div>
     <main class="login-only-section">
       <div class="login-box with-divider">
         <div class="left-section">
           <h2 class="left-title">비밀번호 변경</h2>
-          <p class="left-desc">이메일 인증 후<br>새 비밀번호를 입력하세요.</p>
+          <p class="left-desc">이메일 인증 후<br />새 비밀번호를 입력하세요.</p>
         </div>
 
         <div class="divider"></div>
 
         <div class="right-section">
-          <form @submit.prevent="handleSubmit">
+          <a-form @finish="handleSubmit" :model="form" ref="formRef">
             <div v-if="!emailVerified">
               <div class="input-with-button">
-                <input type="email" v-model="email" class="input-field" placeholder="이메일 주소" required />
+                <input type="email" v-model="form.email" class="input-field" placeholder="이메일 주소" required />
                 <button type="button" class="input-btn" @click="sendVerificationCode">인증코드 전송</button>
               </div>
               <div class="input-with-button">
-                <input type="text" v-model="verificationCode" class="input-field" placeholder="인증 코드 입력" required />
+                <input type="text" v-model="form.verificationCode" class="input-field" placeholder="인증 코드 입력" required />
                 <button type="button" class="input-btn" @click="verifyCode">인증 확인</button>
               </div>
             </div>
 
             <div v-else>
-              <div class="input-wrapper">
-                <input type="password" v-model="newPassword" class="combined-input" placeholder="새 비밀번호" required />
-                <input type="password" v-model="confirmPassword" class="combined-input" placeholder="비밀번호 확인" required />
-              </div>
+              <a-form-item
+                name="password"
+                :rules="[
+                  { required: true, message: '비밀번호를 입력해주세요' },
+                  { min: 6, max: 20, message: '비밀번호는 6~20자여야 합니다' }
+                ]"
+              >
+                <a-input-password v-model:value="form.password" placeholder="새 비밀번호" />
+              </a-form-item>
+
+              <a-form-item
+                name="confirm"
+                :rules="[
+                  { required: true, message: '비밀번호 확인을 입력해주세요' },
+                  { validator: validateConfirmPassword }
+                ]"
+              >
+                <a-input-password v-model:value="form.confirm" placeholder="비밀번호 확인" />
+              </a-form-item>
+
               <button type="submit" class="btn-login">비밀번호 변경</button>
             </div>
-          </form>
+          </a-form>
         </div>
       </div>
     </main>
@@ -45,23 +61,28 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-
-const email = ref('')
-const verificationCode = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
-const codeSent = ref(false)
-const emailVerified = ref(false)
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+const formRef = ref(null)
+const emailVerified = ref(false)
+
+const form = ref({
+  email: '',
+  verificationCode: '',
+  password: '',
+  confirm: ''
+})
 
 function sendVerificationCode() {
   message.info(`입력한 이메일로 인증코드가 전송되었습니다.`)
-  codeSent.value = true
 }
 
+// 테스트 용
 function verifyCode() {
-  if (verificationCode.value === '123456') {
+  if (form.value.verificationCode === '123456') {
     message.success('이메일 인증이 완료되었습니다.')
     emailVerified.value = true
   } else {
@@ -69,17 +90,27 @@ function verifyCode() {
   }
 }
 
-function handleSubmit() {
-  if (newPassword.value !== confirmPassword.value) {
-    message.warning('비밀번호가 일치하지 않습니다.')
-    return
+// 비밀번호 확인 유효성 검사
+function validateConfirmPassword(_, value) {
+  if (!value || value === form.value.password) {
+    return Promise.resolve()
   }
-  message.success('비밀번호가 변경되었습니다.')
-  setTimeout(() => {
-    router.push('/login')
-  }, 1000)
+  return Promise.reject('비밀번호가 일치하지 않습니다.')
+}
+
+async function handleSubmit() {
+  const success = await authStore.resetPassword(form.value.email, form.value.password)
+  if (success) {
+    message.success('비밀번호가 성공적으로 변경되었습니다.')
+    setTimeout(() => {
+      router.push('/login')
+    }, 1000)
+  } else {
+    message.error('비밀번호 변경에 실패했습니다.')
+  }
 }
 </script>
+
 
 <style scoped>
 .app-container {
@@ -92,15 +123,16 @@ function handleSubmit() {
   padding-top: 2rem;
 }
 
-.logo-container {
+.logo-top {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 7rem;
 }
 
-.app-logo {
-  width: 320px;
-  height: auto;
+.top-app-logo {
+  height: 80px;
+  object-fit: contain;
 }
 
 .login-only-section {
