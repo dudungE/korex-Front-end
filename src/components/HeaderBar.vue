@@ -35,7 +35,7 @@
           <ul class="dropdown-menu" v-show="exchangeMenu">
             <li class="section-title" @click="goToExchange()">환전</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">예약환전</li>
+            <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
 
@@ -59,9 +59,9 @@
         </div>
 
         <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
+          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
           <ul class="dropdown-menu" v-show="accountMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
+            <li class="section-title" @click="goToAccount()">계좌조회</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
@@ -114,6 +114,12 @@ export default {
     },
     goToRemittance() {
       router.push('/remittance')
+    },
+    goToAccount() {
+      router.push('/account')
+    },
+    goToReservationExchange(){
+      router.push('/exchange/reservation')
     }
   }
 };

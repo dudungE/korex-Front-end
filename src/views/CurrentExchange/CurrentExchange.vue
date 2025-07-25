@@ -1,196 +1,249 @@
 <template>
   <div class="forex-system">
-      <main class="main-content">
-        <h1>환전하기</h1>
-        
-        <div class="exchange-main">
-          <div class="exchange-form">
-            <p class="form-subtitle">환전할 통화 선택 및 금액을 입력하세요</p>
-            
-            <div class="tab-buttons">
-              <button class="tab-btn active">원화</button>
-              <button class="tab-btn">외화</button>
-            </div>
-            
-            <div class="form-content">
-              <div class="currency-select">
-                <select v-model="selectedCurrency" class="currency-dropdown">
-                  <option value="USD">🇺🇸 미국 USD</option>
-                  <option value="EUR">🇪🇺 유럽연합 EUR</option>
-                  <option value="JPY">🇯🇵 일본 JPY</option>
-                  <option value="CNY">🇨🇳 중국 CNY</option>
-                </select>
-              </div>
-              
-              <div class="amount-input-section">
-                <input 
-                  type="number" 
-                  v-model="inputAmount" 
-                  class="amount-input" 
-                  placeholder="1000"
-                />
-                <button @click="calculate" class="calculate-btn">계산</button>
-              </div>
-              
-              <div class="rate-info">
-                <span class="rate-label">우대율 90%</span>
-                <a href="#" class="exchange-complete">환전완료</a>
+    <main class="main-content">
+      <h1>환전하기</h1>
+
+      <div class="exchange-main">
+        <div class="exchange-form">
+          <p class="form-subtitle">환전할 통화 선택 및 금액을 입력하세요</p>
+
+          <!-- From Section -->
+          <div class="currency-section">
+            <div class="section-header">
+              <span class="section-label">From</span>
+              <div class="balance-info">
+                Balance: {{ getBalanceAmount(fromCurrency) }}
+                <button class="max-btn" @click="setMaxAmount">Max</button>
               </div>
             </div>
-            
-            <div class="result-section" v-if="showResult">
-              <div class="result-row">
-                <span class="result-label">결제금액(원)</span>
-                <span class="result-value highlight">{{ formatNumber(calculatedAmount) }} 원</span>
+
+            <div class="currency-input-row">
+              <select v-model="fromCurrency" class="currency-dropdown" @change="calculateExchange">
+                <option value="KRW">🇰🇷 한국 KRW</option>
+                <option value="USD">🇺🇸 미국 USD</option>
+                <option value="JPY">🇯🇵 일본 JPY</option>
+                <option value="EUR">🇪🇺 유럽연합 EUR</option>
+              </select>
+
+              <input type="number" v-model="inputAmount" class="amount-input" placeholder="0"
+                @input="calculateExchange" />
+            </div>
+          </div>
+
+          <!-- Exchange Icon -->
+          <div class="exchange-icon-container">
+            <div class="exchange-icon" @click="swapCurrencies">
+              ↕
+            </div>
+          </div>
+
+          <!-- To Section -->
+          <div class="currency-section">
+            <div class="section-header">
+              <span class="section-label">To</span>
+            </div>
+
+            <div class="currency-input-row">
+              <select v-model="toCurrency" class="currency-dropdown" @change="calculateExchange">
+                <option value="KRW">🇰🇷 한국 KRW</option>
+                <option value="USD">🇺🇸 미국 USD</option>
+                <option value="JPY">🇯🇵 일본 JPY</option>
+                <option value="EUR">🇪🇺 유럽연합 EUR</option>
+              </select>
+
+              <input type="number" :value="convertedAmount" class="amount-input" placeholder="0" readonly />
+            </div>
+          </div>
+
+          <!-- 환전 정보 Section -->
+          <div class="exchange-info-section" v-if="inputAmount && inputAmount > 0">
+            <div class="exchange-info-header">
+              <span class="info-label">환전 정보</span>
+            </div>
+
+            <div class="fee-details">
+              <div class="fee-row">
+                <span class="fee-label">환율</span>
+                <span class="fee-value">{{ currentExchangeRate.toFixed(4) }}</span>
               </div>
-              
-              <div class="result-details">
-                <div class="detail-item">
-                  <span class="detail-label">적용환율</span>
-                  <span class="detail-value">{{ formatNumber(exchangeRate) }}원</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">우대율</span>
-                  <span class="detail-value">90%</span>
-                </div>
+              <div class="fee-row">
+                <span class="fee-label">수수료 (0.5%)</span>
+                <span class="fee-value">{{ formatNumber(calculateFee()) }} {{ fromCurrency }}</span>
+              </div>
+              <div class="fee-row">
+                <span class="fee-label">우대율</span>
+                <span class="fee-value highlight">90%</span>
+              </div>
+              <div class="fee-row total-row">
+                <span class="fee-label">실제 받을 금액</span>
+                <span class="fee-value total-amount">{{ formatNumber(finalAmount) }} {{ toCurrency }}</span>
               </div>
             </div>
           </div>
-          
-          <div class="chart-section">
-            <div class="chart-header">
-              <h3>환율 차트</h3>
-              <span class="chart-period">{{ formatNumber(exchangeRate) }}원</span>
+
+          <!-- 환전하기 버튼 부분 -->
+          <button class="exchange-btn" :disabled="!inputAmount || inputAmount <= 0 || isAmountExceedsBalance">
+            {{ isAmountExceedsBalance ? '잔액 부족' : '환전하기' }}
+          </button>
+        </div>
+
+        <div class="chart-section">
+          <div class="chart-header">
+            <h3>환율 차트</h3>
+            <span class="chart-period">{{ formatNumber(currentExchangeRate) }}</span>
+          </div>
+          <div class="mini-chart">
+            <div class="chart-placeholder">
+              <div class="chart-line"></div>
             </div>
-            <div class="mini-chart">
-              <div class="chart-placeholder">
-                <div class="chart-line"></div>
-              </div>
-              <div class="chart-dates">
-                <span>2025.05.01</span>
-                <span>2025.06.01</span>
-                <span>2025.07.01</span>
-              </div>
+            <div class="chart-dates">
+              <span>2025.05.01</span>
+              <span>2025.06.01</span>
+              <span>2025.07.01</span>
             </div>
           </div>
         </div>
-        
-        <footer class="footer-info">
-          <span>기준일: {{ getToday() }}</span>
-          <span>조회시각: {{ getCurrentTime() }}</span>
-        </footer>
-      </main>
-    </div>
+      </div>
+
+      <footer class="footer-info">
+        <span>기준일: {{ getToday() }}</span>
+        <span>조회시각: {{ getCurrentTime() }}</span>
+      </footer>
+    </main>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'CurrentExchange',
+  name: 'CurrencyExchange',
   data() {
     return {
-      selectedCurrency: 'USD',
+      fromCurrency: 'KRW',
+      toCurrency: 'USD',
       inputAmount: '',
-      exchangeRate: 1393.33,
-      calculatedAmount: 0,
-      showResult: false,
+      convertedAmount: 0,
+      currentExchangeRate: 0,
+      finalAmount: 0,
+
+      // 환율 정보 (KRW 기준)
       rates: {
+        KRW: 1,
         USD: 1393.33,
-        EUR: 1617.94,
-        JPY: 937.77,
-        CNY: 193.76
+        JPY: 9.38, // 100엔당 원화
+        EUR: 1617.94
+      },
+
+      // 잔액 정보 (예시)
+      balances: {
+        KRW: 1000000,
+        USD: 500,
+        JPY: 50000,
+        EUR: 300
       }
     }
   },
-  methods: {
-    calculate() {
-      if (this.inputAmount) {
-        const rate = this.rates[this.selectedCurrency] || this.exchangeRate;
-        this.calculatedAmount = this.inputAmount * rate * 0.9; // 우대율 90% 적용
-        this.exchangeRate = rate;
-        this.showResult = true;
+
+  computed: {
+    isAmountExceedsBalance() {
+      if (!this.inputAmount || this.inputAmount <= 0) {
+        return false;
       }
+      return parseFloat(this.inputAmount) > this.balances[this.fromCurrency];
+    }
+  },
+
+  mounted() {
+    this.calculateExchange();
+  },
+
+  methods: {
+    calculateExchange() {
+      if (!this.inputAmount || this.inputAmount <= 0) {
+        this.convertedAmount = 0;
+        this.finalAmount = 0;
+        this.currentExchangeRate = 0;
+        return;
+      }
+
+      let rate = 0;
+      let convertedValue = 0;
+
+      if (this.fromCurrency === this.toCurrency) {
+        rate = 1;
+        convertedValue = parseFloat(this.inputAmount);
+      } else {
+        // KRW를 기준으로 환율 계산
+        if (this.fromCurrency === 'KRW') {
+          rate = 1 / this.rates[this.toCurrency];
+          convertedValue = parseFloat(this.inputAmount) / this.rates[this.toCurrency];
+        } else if (this.toCurrency === 'KRW') {
+          rate = this.rates[this.fromCurrency];
+          convertedValue = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
+        } else {
+          // 둘 다 KRW가 아닌 경우
+          const fromToKrw = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
+          rate = this.rates[this.fromCurrency] / this.rates[this.toCurrency];
+          convertedValue = fromToKrw / this.rates[this.toCurrency];
+        }
+      }
+
+      this.currentExchangeRate = rate;
+      this.convertedAmount = convertedValue;
+
+      // 수수료와 우대율 적용
+      const fee = this.calculateFee();
+      const afterFee = convertedValue - (fee * rate);
+      this.finalAmount = afterFee * 0.9; // 90% 우대율 적용
     },
+
+    calculateFee() {
+      return parseFloat(this.inputAmount) * 0.005; // 0.5% 수수료
+    },
+
+    swapCurrencies() {
+      const temp = this.fromCurrency;
+      this.fromCurrency = this.toCurrency;
+      this.toCurrency = temp;
+      this.calculateExchange();
+    },
+
+    getBalanceAmount(currency) {
+      return this.formatNumber(this.balances[currency]);
+    },
+
+    setMaxAmount() {
+      this.inputAmount = this.balances[this.fromCurrency];
+      this.calculateExchange();
+    },
+
     formatNumber(num) {
-      return new Intl.NumberFormat('ko-KR').format(num);
+      if (!num) return '0';
+      return new Intl.NumberFormat('ko-KR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(num);
     },
+
     getToday() {
       const d = new Date();
       return d.toISOString().slice(0, 10);
     },
+
     getCurrentTime() {
       const d = new Date();
-      return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + d.getHours() + '시' + d.getMinutes() + '분' + d.getSeconds() + '초';
+      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`;
     }
   }
 }
 </script>
 
 <style scoped>
-/* 기존 레이아웃 스타일 유지 */
 .forex-system {
   font-family: 'Noto Sans KR', Arial, sans-serif;
   background: #fafbfc;
   min-height: 100vh;
   width: 100vw;
   min-width: 0;
-}
-
-.content-wrap {
-  display: flex;
-  width: 100%;
-}
-
-.sidebar {
-  width: 240px;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
-  padding: 32px 16px 16px 32px;
-}
-
-.sidebar h2 {
-  color: #009490;
-  font-size: 1.5rem;
-  margin-bottom: 24px;
-}
-
-.menu {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px 0;
-}
-
-.menu li {
-  padding: 10px 0 10px 8px;
-  cursor: pointer;
-  color: #333;
-  border-left: 3px solid transparent;
-  transition: 0.2s;
-}
-
-.menu li.active, .menu li:hover {
-  color: #009490;
-  border-left: 3px solid #009490;
-  background: #f2f8f7;
-}
-
-.customer-center {
-  margin-top: 40px;
-  background: #f2f8f7;
-  padding: 16px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.customer-center h3 {
-  margin: 0 0 8px 0;
-  color: #009490;
-  font-size: 1.1rem;
-}
-
-.customer-center p {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #222;
 }
 
 .main-content {
@@ -204,25 +257,16 @@ export default {
   color: #222;
 }
 
-/* 환전하기 폼 스타일 */
 .exchange-main {
   display: flex;
   gap: 40px;
 }
 
 .exchange-form {
-  flex: 5;
+  flex: 6;
   background: #fff;
   border-radius: 12px;
   padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-.chart-section {
-  flex: 5; /* 전체의 40% 차지 */
-  width: auto; 
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
@@ -232,149 +276,207 @@ export default {
   font-size: 1rem;
 }
 
-.tab-buttons {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+/* Currency Section Styles */
+.currency-section {
+  margin-bottom: 16px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
 }
 
-.tab-btn {
-  background: #f2f8f7;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  color: #009490;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-label {
+  color: #666;
+  font-size: 0.9rem;
   font-weight: 500;
+}
+
+.balance-info {
+  color: #999;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.max-btn {
+  background: #009490;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.tab-btn.active, .tab-btn:hover {
-  background: #009490;
-  color: #fff;
+.max-btn:hover {
+  background: #007c7a;
 }
 
-.form-content {
-  margin-bottom: 32px;
-}
-
-.currency-select {
-  margin-bottom: 20px;
+.currency-input-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }
 
 .currency-dropdown {
-  width: 100%;
+  flex: 2;
   padding: 12px 16px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
   background: #fff;
   color: #333;
-}
-
-.amount-input-section {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 20px;
+  cursor: pointer;
 }
 
 .amount-input {
-  flex: 1;
+  flex: 3;
   padding: 12px 16px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1.4rem;
+  font-weight: 600;
   text-align: right;
+  background: #fff;
 }
 
-.calculate-btn {
-  background: #009490;
-  color: #fff;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+.amount-input:read-only {
+  background: #f8f9fa;
+  color: #666;
+}
+
+/* 숫자 input의 화살표(스피너) 제거 */
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox용 */
+.amount-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Exchange Icon */
+.exchange-icon-container {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.exchange-icon {
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.calculate-btn:hover {
-  background: #007c7a;
-}
-
-.rate-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.rate-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.exchange-complete {
+.exchange-icon:hover {
+  border-color: #009490;
   color: #009490;
-  text-decoration: none;
-  font-weight: 500;
 }
 
-.exchange-complete:hover {
-  text-decoration: underline;
+/* 환전 정보 Section */
+.exchange-info-section {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f0f8f7;
+  border-radius: 12px;
+  border: 1px solid #009490;
 }
 
-.result-section {
-  border-top: 2px solid #009490;
-  padding-top: 24px;
-}
-
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.exchange-info-header {
   margin-bottom: 16px;
 }
 
-.result-label {
+.info-label {
+  font-weight: 600;
   color: #333;
-  font-weight: 500;
+  font-size: 1.1rem;
 }
 
-.result-value.highlight {
-  color: #009490;
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.result-details {
-  display: flex;
-  gap: 32px;
-}
-
-.detail-item {
+.fee-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.detail-label {
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fee-row.total-row {
+  border-top: 1px solid #009490;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.fee-label {
   color: #666;
   font-size: 0.9rem;
 }
 
-.detail-value {
+.fee-value {
   color: #333;
   font-weight: 500;
 }
 
+.fee-value.highlight {
+  color: #009490;
+  font-weight: 600;
+}
+
+.fee-value.total-amount {
+  color: #009490;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Exchange Button */
+.exchange-btn {
+  width: 100%;
+  background: #009490;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 20px;
+}
+
+.exchange-btn:hover:not(:disabled) {
+  background: #007c7a;
+}
+
+.exchange-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Chart Section */
 .chart-section {
-  width: 300px;
+  flex: 4;
   background: #fff;
   border-radius: 12px;
   padding: 24px;
@@ -421,17 +523,6 @@ export default {
   height: 2px;
   background: #009490;
   border-radius: 1px;
-}
-
-.chart-line::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: -20px;
-  width: 40px;
-  height: 40px;
-  background: radial-gradient(circle, rgba(0, 148, 144, 0.3) 0%, transparent 70%);
-  border-radius: 50%;
 }
 
 .chart-dates {
