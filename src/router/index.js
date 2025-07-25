@@ -22,21 +22,12 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/international',
-            name: 'International',
-            component: () => import('@/views/Remit/views/InternationalStep1.vue'),
+            path: '/OverseasRemittance',
+            name: 'OverseasRemittance',
+            component: () => import('@/views/Remit/views/RemittanceStep1.vue'),
             meta: {requiresAuth: true}
         },
-        {
-            path: '/international/step2',
-            name: 'InternationalStep2',
-            component: () => import('@/views/Remit/views/InternationalStep2.vue')
-        },
-        {
-            path: '/international/step3',
-            name: 'InternationalStep3',
-            component: () => import('@/views/Remit/views/InternationalStep3.vue')
-        }
+
     ],
 })
 

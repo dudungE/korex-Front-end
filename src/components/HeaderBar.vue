@@ -50,9 +50,9 @@
         </div>
 
         <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
-          <a @click="alert('준비중인 기능입니다: 환율그래프')" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <a @click="goToOverseasRemittance" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
           <ul class="dropdown-menu" v-show="foreignMenu">
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
+            <li class="section-title" @click="goToOverseasRemittance">해외송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">해외송금</li>
           </ul>
@@ -102,7 +102,11 @@ export default {
   methods: {
     goToAccount() {
       router.push('/Account')
-    }
+    },
+    goToOverseasRemittance() {
+      router.push('/OverseasRemittance')
+    },
+
   }
 };
 </script>
