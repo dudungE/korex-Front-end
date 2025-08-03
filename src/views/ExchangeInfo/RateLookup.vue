@@ -4,7 +4,7 @@
     <div class="content-wrap">
       <main class="main-content">
         <h1>환율 조회</h1>
-        <TabNav current="rate" />
+        <TabNav current="rateLookup" />
 
         <!-- 환율 조회 탭 버튼들 -->
         <nav class="tabs">
@@ -32,10 +32,7 @@
         <!-- 실시간 환율 조회 -->
         <section v-if="activeTab === 'realtime'" class="search-box">
           <h3>실시간 환율 조회</h3>
-          <p class="description">네이버 환율 크롤링을 통한 실시간 환율 정보입니다.</p>
-          <button @click="getRealTimeRates" :disabled="loading" class="primary-btn">
-            {{ loading ? '조회 중...' : '실시간 환율 조회' }}
-          </button>
+          <p class="description">실시간 환율 정보입니다.(기준 시간 기준: )</p>
           
           <div v-if="realTimeRates.length > 0" class="result-box">
             <h4>실시간 환율 결과</h4>
@@ -169,13 +166,13 @@
 </template>
 
 <script>
-import TabNav from '@/components/common/TabNav.vue';
-
+import TabNav from '@/components/exchange_info/TabNav.vue';
 
 export default {
   name: 'RateLookup',
   components: { TabNav },
   data() {
+    
     return {
       activeTab: 'realtime',
       loading: false,
@@ -193,6 +190,11 @@ export default {
       ratesByCurrency: [],
     };
   },
+  // 페이지 로드 시 실시간 환율 조회
+  mounted() {
+    this.getRealTimeRates();
+  },
+  // 메서드
   methods: {
     getToday() {
       const d = new Date();
@@ -209,8 +211,6 @@ export default {
              String(date.getMonth() + 1).padStart(2, '0') + '-' + 
              String(date.getDate()).padStart(2, '0');
     },
-
-    
     // 실시간 환율 조회 API
     async getRealTimeRates() {
       this.loading = true;
@@ -236,7 +236,6 @@ export default {
         this.currentTime = this.getCurrentTime();
       }
     },
-    
     // 날짜별 환율 조회 API
     async getRatesByDate() {
       this.loading = true;
@@ -428,8 +427,6 @@ export default {
   color: #009490;
   font-size: 1.1rem;
 }
-
-
 
 .rates-table {
   overflow-x: auto;
