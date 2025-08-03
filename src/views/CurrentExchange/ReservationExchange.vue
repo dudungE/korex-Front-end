@@ -67,13 +67,19 @@
               </div>
             </div>
 
-            <!-- 예약 기간 설정 -->
+            <!-- 예약 기간 설정 - 개선된 버전 -->
             <div class="condition-row">
               <label class="condition-title">예약 기간</label>
-              <div class="date-input-group">
-                <input type="date" v-model="reservationStartDate" class="date-input" />
-                <span class="date-separator">~</span>
-                <input type="date" v-model="reservationEndDate" class="date-input" />
+              <div class="period-selection">
+                <button 
+                  v-for="period in periodOptions" 
+                  :key="period.value"
+                  class="period-btn"
+                  :class="{ active: selectedPeriod === period.value }"
+                  @click="selectPeriod(period.value)"
+                >
+                  {{ period.label }}
+                </button>
               </div>
             </div>
           </div>
@@ -99,7 +105,7 @@
               </div>
               <div class="fee-row">
                 <span class="fee-label">예약 기간</span>
-                <span class="fee-value">{{ formatDateRange() }}</span>
+                <span class="fee-value">{{ getSelectedPeriodText() }}</span>
               </div>
               <div class="fee-row total-row">
                 <span class="fee-label">목표 달성 시 받을 금액</span>
@@ -145,7 +151,7 @@
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">예약 기간</span>
-                  <span class="detail-value">{{ reservation.startDate }} ~ {{ reservation.endDate }}</span>
+                  <span class="detail-value">{{ reservation.periodText }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">예상 수령액</span>
@@ -177,272 +183,269 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ReservationExchange',
-  data() {
-    return {
-      fromCurrency: 'KRW', // 고정
-      toCurrency: 'USD',
-      inputAmount: '',
-      convertedAmount: 0,
-      currentExchangeRate: 0,
-      targetRate: '',
-      reservationStartDate: '',
-      reservationEndDate: '',
-      conditionType: 'reach',
-      expectedAmount: 0,
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
 
-      // 환율 정보 (KRW 기준)
-      rates: {
-        USD: 1393.33,
-        JPY: 9.38,
-        EUR: 1617.94
-      },
+// Reactive state
+const fromCurrency = ref('KRW') // 고정
+const toCurrency = ref('USD')
+const inputAmount = ref('')
+const convertedAmount = ref(0)
+const currentExchangeRate = ref(0)
+const targetRate = ref('')
+const selectedPeriod = ref('1month')
+const conditionType = ref('reach')
+const expectedAmount = ref(0)
 
-      // 잔액 정보
-      balances: {
-        KRW: 1000000,
-        USD: 500,
-        JPY: 50000,
-        EUR: 300
-      },
+// 예약 기간 옵션
+const periodOptions = ref([
+  { value: '1week', label: '1주', days: 7 },
+  { value: '1month', label: '1달', days: 30 },
+  { value: '3months', label: '3달', days: 90 },
+  { value: '6months', label: '6달', days: 180 }
+])
 
-      // 예약된 금액 (KRW 기준)
-      reservedAmount: 200000, // 이미 예약된 금액
+// 환율 정보 (KRW 기준)
+const rates = ref({
+  USD: 1393.33,
+  JPY: 9.38,
+  EUR: 1617.94
+})
 
-      // 예약 환전 내역
-      reservations: [
-        {
-          id: 1,
-          fromCurrency: 'KRW',
-          toCurrency: 'USD',
-          amount: 100000,
-          targetRate: 1400.00,
-          expectedAmount: 71.43,
-          status: 'waiting',
-          createdAt: '2025-07-20',
-          startDate: '2025-07-20',
-          endDate: '2025-08-20',
-          conditionType: 'reach'
-        },
-        {
-          id: 2,
-          fromCurrency: 'KRW',
-          toCurrency: 'USD',
-          amount: 100000,
-          targetRate: 1350.00,
-          expectedAmount: 74.07,
-          status: 'waiting',
-          createdAt: '2025-07-18',
-          startDate: '2025-07-18',
-          endDate: '2025-08-18',
-          conditionType: 'better'
-        }
-      ]
-    }
+// 잔액 정보
+const balances = ref({
+  KRW: 1000000,
+  USD: 500,
+  JPY: 50000,
+  EUR: 300
+})
+
+// 예약된 금액 (KRW 기준)
+const reservedAmount = ref(200000) // 이미 예약된 금액
+
+// 예약 환전 내역
+const reservations = ref([
+  {
+    id: 1,
+    fromCurrency: 'KRW',
+    toCurrency: 'USD',
+    amount: 100000,
+    targetRate: 1400.00,
+    expectedAmount: 71.43,
+    status: 'waiting',
+    createdAt: '2025-07-20',
+    periodText: '1달 예약',
+    conditionType: 'reach'
   },
+  {
+    id: 2,
+    fromCurrency: 'KRW',
+    toCurrency: 'USD',
+    amount: 100000,
+    targetRate: 1350.00,
+    expectedAmount: 74.07,
+    status: 'waiting',
+    createdAt: '2025-07-18',
+    periodText: '3달 예약',
+    conditionType: 'better'
+  }
+])
 
-  computed: {
-    isAmountExceedsBalance() {
-      if (!this.inputAmount || this.inputAmount <= 0) {
-        return false;
-      }
-      const availableBalance = this.balances.KRW - this.reservedAmount;
-      return parseFloat(this.inputAmount) > availableBalance;
-    },
+// Computed properties
+const isAmountExceedsBalance = computed(() => {
+  if (!inputAmount.value || inputAmount.value <= 0) {
+    return false;
+  }
+  const availableBalance = balances.value.KRW - reservedAmount.value;
+  return parseFloat(inputAmount.value) > availableBalance;
+})
 
-    isReservationValid() {
-      return this.inputAmount && 
-             this.inputAmount > 0 && 
-             this.targetRate && 
-             this.reservationStartDate && 
-             this.reservationEndDate &&
-             !this.isAmountExceedsBalance &&
-             new Date(this.reservationEndDate) >= new Date(this.reservationStartDate);
-    }
-  },
+const isReservationValid = computed(() => {
+  return inputAmount.value && 
+         inputAmount.value > 0 && 
+         targetRate.value && 
+         selectedPeriod.value &&
+         !isAmountExceedsBalance.value;
+})
 
-  mounted() {
-    this.calculateExchange();
-    this.setDefaultDates();
-    this.updateReservedAmount();
-  },
+// Methods
+const calculateExchange = () => {
+  if (!inputAmount.value || inputAmount.value <= 0) {
+    convertedAmount.value = 0;
+    currentExchangeRate.value = 0;
+    expectedAmount.value = 0;
+    return;
+  }
 
-  methods: {
-    calculateExchange() {
-      if (!this.inputAmount || this.inputAmount <= 0) {
-        this.convertedAmount = 0;
-        this.currentExchangeRate = 0;
-        this.expectedAmount = 0;
-        return;
-      }
+  // KRW에서 다른 통화로 환전 (고정)
+  const rate = rates.value[toCurrency.value];
+  const convertedValue = parseFloat(inputAmount.value) / rates.value[toCurrency.value];
 
-      // KRW에서 다른 통화로 환전 (고정)
-      const rate = this.rates[this.toCurrency];
-      const convertedValue = parseFloat(this.inputAmount) / this.rates[this.toCurrency];
+  currentExchangeRate.value = rate;
+  convertedAmount.value = convertedValue;
 
-      this.currentExchangeRate = rate;
-      this.convertedAmount = convertedValue;
-
-      // 목표 환율로 예상 금액 계산
-      if (this.targetRate) {
-        this.calculateExpectedAmount();
-      }
-    },
-
-    calculateExpectedAmount() {
-      if (!this.targetRate || !this.inputAmount) {
-        this.expectedAmount = 0;
-        return;
-      }
-
-      const targetValue = parseFloat(this.inputAmount) / parseFloat(this.targetRate);
-      const fee = this.calculateReservationFee();
-      const feeInTargetCurrency = fee / parseFloat(this.targetRate);
-      this.expectedAmount = targetValue - feeInTargetCurrency;
-    },
-
-    calculateReservationFee() {
-      return parseFloat(this.inputAmount) * 0.003; // 0.3% 수수료
-    },
-
-    getBalanceAmount(currency) {
-      if (currency === 'KRW') {
-        const availableBalance = this.balances.KRW - this.reservedAmount;
-        return this.formatNumber(availableBalance);
-      }
-      return this.formatNumber(this.balances[currency]);
-    },
-
-    setMaxAmount() {
-      const availableBalance = this.balances.KRW - this.reservedAmount;
-      this.inputAmount = availableBalance;
-      this.calculateExchange();
-    },
-
-    setDefaultDates() {
-      const today = new Date();
-      const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
-      this.reservationStartDate = today.toISOString().slice(0, 10);
-      this.reservationEndDate = nextMonth.toISOString().slice(0, 10);
-    },
-
-    formatDateRange() {
-      if (!this.reservationStartDate || !this.reservationEndDate) return '';
-      return `${this.reservationStartDate} ~ ${this.reservationEndDate}`;
-    },
-
-    createReservation() {
-      const reservationAmount = parseFloat(this.inputAmount);
-      const expectedAmount = parseFloat(this.inputAmount) / parseFloat(this.targetRate) - (this.calculateReservationFee() / parseFloat(this.targetRate));
-
-      const newReservation = {
-        id: Date.now(),
-        fromCurrency: 'KRW',
-        toCurrency: this.toCurrency,
-        amount: reservationAmount,
-        targetRate: parseFloat(this.targetRate),
-        expectedAmount: expectedAmount,
-        status: 'waiting',
-        createdAt: new Date().toISOString().slice(0, 10),
-        startDate: this.reservationStartDate,
-        endDate: this.reservationEndDate,
-        conditionType: this.conditionType
-      };
-
-      this.reservations.unshift(newReservation);
-      
-      // 예약된 금액을 잔액에서 차감
-      this.reservedAmount += reservationAmount;
-      
-      alert('예약 환전이 신청되었습니다.');
-      
-      // 폼 초기화
-      this.inputAmount = '';
-      this.targetRate = '';
-      this.calculateExchange();
-    },
-
-    cancelReservation(reservationId) {
-      const reservationIndex = this.reservations.findIndex(r => r.id === reservationId);
-      if (reservationIndex === -1) return;
-
-      const reservation = this.reservations[reservationIndex];
-      
-      if (confirm(`${this.formatNumber(reservation.amount)} KRW 예약 환전을 취소하시겠습니까?`)) {
-        // 예약된 금액을 잔액에 다시 추가
-        this.reservedAmount -= reservation.amount;
-        
-        // 예약 내역에서 제거
-        this.reservations.splice(reservationIndex, 1);
-        
-        alert('예약 환전이 취소되었습니다.');
-      }
-    },
-
-    getTotalReservedAmount() {
-      return this.reservations
-        .filter(r => r.status === 'waiting')
-        .reduce((total, r) => total + r.amount, 0);
-    },
-
-    updateReservedAmount() {
-      this.reservedAmount = this.getTotalReservedAmount();
-    },
-
-    getButtonText() {
-      if (!this.inputAmount) return '금액을 입력하세요';
-      if (this.isAmountExceedsBalance) return '사용 가능한 잔액 부족';
-      if (!this.targetRate) return '목표 환율을 입력하세요';
-      if (!this.reservationStartDate || !this.reservationEndDate) return '예약 기간을 설정하세요';
-      if (new Date(this.reservationEndDate) < new Date(this.reservationStartDate)) return '올바른 기간을 설정하세요';
-      return '예약 환전 신청';
-    },
-
-    getStatusText(status) {
-      const statusMap = {
-        waiting: '대기중',
-        completed: '완료',
-        cancelled: '취소',
-        expired: '만료'
-      };
-      return statusMap[status] || status;
-    },
-
-    formatNumber(num) {
-      if (!num) return '0';
-      return new Intl.NumberFormat('ko-KR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }).format(num);
-    },
-
-    getToday() {
-      const d = new Date();
-      return d.toISOString().slice(0, 10);
-    },
-
-    getCurrentTime() {
-      const d = new Date();
-      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`;
-    }
-  },
-
-  watch: {
-    targetRate() {
-      this.calculateExpectedAmount();
-    },
-    
-    reservations: {
-      handler() {
-        this.updateReservedAmount();
-      },
-      deep: true
-    }
+  // 목표 환율로 예상 금액 계산
+  if (targetRate.value) {
+    calculateExpectedAmount();
   }
 }
+
+const calculateExpectedAmount = () => {
+  if (!targetRate.value || !inputAmount.value) {
+    expectedAmount.value = 0;
+    return;
+  }
+
+  const targetValue = parseFloat(inputAmount.value) / parseFloat(targetRate.value);
+  const fee = calculateReservationFee();
+  const feeInTargetCurrency = fee / parseFloat(targetRate.value);
+  expectedAmount.value = targetValue - feeInTargetCurrency;
+}
+
+const calculateReservationFee = () => {
+  return parseFloat(inputAmount.value) * 0.003; // 0.3% 수수료
+}
+
+const getBalanceAmount = (currency) => {
+  if (currency === 'KRW') {
+    const availableBalance = balances.value.KRW - reservedAmount.value;
+    return formatNumber(availableBalance);
+  }
+  return formatNumber(balances.value[currency]);
+}
+
+const setMaxAmount = () => {
+  const availableBalance = balances.value.KRW - reservedAmount.value;
+  inputAmount.value = availableBalance;
+  calculateExchange();
+}
+
+const selectPeriod = (period) => {
+  selectedPeriod.value = period;
+}
+
+const getSelectedPeriodText = () => {
+  const selected = periodOptions.value.find(p => p.value === selectedPeriod.value);
+  return selected ? `${selected.label} 예약` : '';
+}
+
+const getPeriodEndDate = (startDate, periodValue) => {
+  const selected = periodOptions.value.find(p => p.value === periodValue);
+  if (!selected) return startDate;
+  
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + selected.days);
+  return endDate.toISOString().slice(0, 10);
+}
+
+const createReservation = () => {
+  const reservationAmount = parseFloat(inputAmount.value);
+  const expectedAmountValue = parseFloat(inputAmount.value) / parseFloat(targetRate.value) - (calculateReservationFee() / parseFloat(targetRate.value));
+  const today = new Date().toISOString().slice(0, 10);
+
+  const newReservation = {
+    id: Date.now(),
+    fromCurrency: 'KRW',
+    toCurrency: toCurrency.value,
+    amount: reservationAmount,
+    targetRate: parseFloat(targetRate.value),
+    expectedAmount: expectedAmountValue,
+    status: 'waiting',
+    createdAt: today,
+    periodText: getSelectedPeriodText(),
+    conditionType: conditionType.value
+  };
+
+  reservations.value.unshift(newReservation);
+  
+  // 예약된 금액을 잔액에서 차감
+  reservedAmount.value += reservationAmount;
+  
+  alert('예약 환전이 신청되었습니다.');
+  
+  // 폼 초기화
+  inputAmount.value = '';
+  targetRate.value = '';
+  calculateExchange();
+}
+
+const cancelReservation = (reservationId) => {
+  const reservationIndex = reservations.value.findIndex(r => r.id === reservationId);
+  if (reservationIndex === -1) return;
+
+  const reservation = reservations.value[reservationIndex];
+  
+  if (confirm(`${formatNumber(reservation.amount)} KRW 예약 환전을 취소하시겠습니까?`)) {
+    // 예약된 금액을 잔액에 다시 추가
+    reservedAmount.value -= reservation.amount;
+    
+    // 예약 내역에서 제거
+    reservations.value.splice(reservationIndex, 1);
+    
+    alert('예약 환전이 취소되었습니다.');
+  }
+}
+
+const getTotalReservedAmount = () => {
+  return reservations.value
+    .filter(r => r.status === 'waiting')
+    .reduce((total, r) => total + r.amount, 0);
+}
+
+const updateReservedAmount = () => {
+  reservedAmount.value = getTotalReservedAmount();
+}
+
+const getButtonText = () => {
+  if (!inputAmount.value) return '금액을 입력하세요';
+  if (isAmountExceedsBalance.value) return '사용 가능한 잔액 부족';
+  if (!targetRate.value) return '목표 환율을 입력하세요';
+  if (!selectedPeriod.value) return '예약 기간을 선택하세요';
+  return '예약 환전 신청';
+}
+
+const getStatusText = (status) => {
+  const statusMap = {
+    waiting: '대기중',
+    completed: '완료',
+    cancelled: '취소',
+    expired: '만료'
+  };
+  return statusMap[status] || status;
+}
+
+const formatNumber = (num) => {
+  if (!num) return '0';
+  return new Intl.NumberFormat('ko-KR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(num);
+}
+
+const getToday = () => {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+const getCurrentTime = () => {
+  const d = new Date();
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`;
+}
+
+// Watchers
+watch(targetRate, () => {
+  calculateExpectedAmount();
+})
+
+watch(reservations, () => {
+  updateReservedAmount();
+}, { deep: true })
+
+// Lifecycle
+onMounted(() => {
+  calculateExchange();
+  updateReservedAmount();
+})
 </script>
 
 <style scoped>
@@ -651,21 +654,34 @@ export default {
   font-size: 0.9rem;
 }
 
-.date-input-group {
+/* 개선된 기간 선택 스타일 */
+.period-selection {
   display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.date-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+.period-btn {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: #fff;
+  color: #666;
+  border-radius: 8px;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 
-.date-separator {
-  color: #666;
+.period-btn:hover {
+  border-color: #009490;
+  color: #009490;
+}
+
+.period-btn.active {
+  background: #009490;
+  border-color: #009490;
+  color: #fff;
+  font-weight: 600;
 }
 
 /* 환전 정보 Section */

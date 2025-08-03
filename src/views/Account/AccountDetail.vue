@@ -236,50 +236,50 @@ export default {
             method: 'SWIFT',
             transactionId: 'USD202407170002'
           },
-          {
-            id: 4,
-            type: 'expense',
-            category: 'transfer',
-            description: '해외송금',
-            date: '2024-03-15',
-            time: '16:45:00',
-            amount: 500.00,
-            method: 'SWIFT',
-            transactionId: 'USD202407170002'
-          },
-          {
-            id: 4,
-            type: 'expense',
-            category: 'transfer',
-            description: '해외송금',
-            date: '2025-02-15',
-            time: '16:45:00',
-            amount: 500.00,
-            method: 'SWIFT',
-            transactionId: 'USD202407170002'
-          },
-          {
-            id: 4,
-            type: 'expense',
-            category: 'transfer',
-            description: '해외송금',
-            date: '2024-06-16',
-            time: '16:45:00',
-            amount: 500.00,
-            method: 'SWIFT',
-            transactionId: 'USD202407170002'
-          },
-          {
-            id: 4,
-            type: 'expense',
-            category: 'transfer',
-            description: '해외송금',
-            date: '2024-07-17',
-            time: '16:45:00',
-            amount: 500.00,
-            method: 'SWIFT',
-            transactionId: 'USD202407170002'
-          }
+          // {
+          //   id: 4,
+          //   type: 'expense',
+          //   category: 'transfer',
+          //   description: '해외송금',
+          //   date: '2024-03-15',
+          //   time: '16:45:00',
+          //   amount: 500.00,
+          //   method: 'SWIFT',
+          //   transactionId: 'USD202407170002'
+          // },
+          // {
+          //   id: 4,
+          //   type: 'expense',
+          //   category: 'transfer',
+          //   description: '해외송금',
+          //   date: '2025-02-15',
+          //   time: '16:45:00',
+          //   amount: 500.00,
+          //   method: 'SWIFT',
+          //   transactionId: 'USD202407170002'
+          // },
+          // {
+          //   id: 4,
+          //   type: 'expense',
+          //   category: 'transfer',
+          //   description: '해외송금',
+          //   date: '2024-06-16',
+          //   time: '16:45:00',
+          //   amount: 500.00,
+          //   method: 'SWIFT',
+          //   transactionId: 'USD202407170002'
+          // },
+          // {
+          //   id: 4,
+          //   type: 'expense',
+          //   category: 'transfer',
+          //   description: '해외송금',
+          //   date: '2024-07-17',
+          //   time: '16:45:00',
+          //   amount: 500.00,
+          //   method: 'SWIFT',
+          //   transactionId: 'USD202407170002'
+          // }
         ]
       },
       'EUR': {

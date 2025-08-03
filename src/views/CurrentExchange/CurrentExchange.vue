@@ -25,8 +25,13 @@
                 <option value="EUR">🇪🇺 유럽연합 EUR</option>
               </select>
 
-              <input type="number" v-model="inputAmount" class="amount-input" placeholder="0"
-                @input="calculateExchange" />
+              <input 
+                type="number" 
+                v-model="inputAmount" 
+                class="amount-input" 
+                placeholder="0"
+                @input="calculateExchange" 
+              />
             </div>
           </div>
 
@@ -51,7 +56,13 @@
                 <option value="EUR">🇪🇺 유럽연합 EUR</option>
               </select>
 
-              <input type="number" :value="convertedAmount" class="amount-input" placeholder="0" readonly />
+              <input 
+                type="number" 
+                :value="convertedAmount" 
+                class="amount-input" 
+                placeholder="0" 
+                readonly 
+              />
             </div>
           </div>
 
@@ -67,12 +78,16 @@
                 <span class="fee-value">{{ currentExchangeRate.toFixed(4) }}</span>
               </div>
               <div class="fee-row">
-                <span class="fee-label">수수료 (0.5%)</span>
-                <span class="fee-value">{{ formatNumber(calculateFee()) }} {{ fromCurrency }}</span>
+                <span class="fee-label">원 수수료 (0.5%)</span>
+                <span class="fee-value">{{ formatNumber(originalFee) }} {{ fromCurrency }}</span>
               </div>
               <div class="fee-row">
-                <span class="fee-label">우대율</span>
+                <span class="fee-label">우대율 (수수료 90% 할인)</span>
                 <span class="fee-value highlight">90%</span>
+              </div>
+              <div class="fee-row">
+                <span class="fee-label">실제 수수료 (0.05%)</span>
+                <span class="fee-value">{{ formatNumber(actualFee) }} {{ fromCurrency }}</span>
               </div>
               <div class="fee-row total-row">
                 <span class="fee-label">실제 받을 금액</span>
@@ -82,7 +97,10 @@
           </div>
 
           <!-- 환전하기 버튼 부분 -->
-          <button class="exchange-btn" :disabled="!inputAmount || inputAmount <= 0 || isAmountExceedsBalance">
+          <button 
+            class="exchange-btn" 
+            :disabled="!inputAmount || inputAmount <= 0 || isAmountExceedsBalance"
+          >
             {{ isAmountExceedsBalance ? '잔액 부족' : '환전하기' }}
           </button>
         </div>
@@ -113,131 +131,139 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'CurrencyExchange',
-  data() {
-    return {
-      fromCurrency: 'KRW',
-      toCurrency: 'USD',
-      inputAmount: '',
-      convertedAmount: 0,
-      currentExchangeRate: 0,
-      finalAmount: 0,
+<script setup>
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 
-      // 환율 정보 (KRW 기준)
-      rates: {
-        KRW: 1,
-        USD: 1393.33,
-        JPY: 9.38, // 100엔당 원화
-        EUR: 1617.94
-      },
+// Reactive data
+const fromCurrency = ref('KRW')
+const toCurrency = ref('USD')
+const inputAmount = ref('')
+const convertedAmount = ref(0)
+const currentExchangeRate = ref(0)
+const finalAmount = ref(0)
+const originalFee = ref(0)
+const actualFee = ref(0)
 
-      // 잔액 정보 (예시)
-      balances: {
-        KRW: 1000000,
-        USD: 500,
-        JPY: 50000,
-        EUR: 300
-      }
-    }
-  },
+// 환율 정보 (KRW 기준)
+const rates = reactive({
+  KRW: 1,
+  USD: 1393.33,
+  JPY: 9.38, // 100엔당 원화
+  EUR: 1617.94
+})
 
-  computed: {
-    isAmountExceedsBalance() {
-      if (!this.inputAmount || this.inputAmount <= 0) {
-        return false;
-      }
-      return parseFloat(this.inputAmount) > this.balances[this.fromCurrency];
-    }
-  },
+// 잔액 정보 (예시)
+const balances = reactive({
+  KRW: 1000000,
+  USD: 500,
+  JPY: 50000,
+  EUR: 300
+})
 
-  mounted() {
-    this.calculateExchange();
-  },
+// 우대율 설정
+const discountRate = 0.9 // 90% 우대율
+const feeRate = 0.005 // 0.5% 수수료
 
-  methods: {
-    calculateExchange() {
-      if (!this.inputAmount || this.inputAmount <= 0) {
-        this.convertedAmount = 0;
-        this.finalAmount = 0;
-        this.currentExchangeRate = 0;
-        return;
-      }
+// Computed
+const isAmountExceedsBalance = computed(() => {
+  if (!inputAmount.value || inputAmount.value <= 0) {
+    return false
+  }
+  return parseFloat(inputAmount.value) > balances[fromCurrency.value]
+})
 
-      let rate = 0;
-      let convertedValue = 0;
+// Methods
+const calculateExchange = () => {
+  if (!inputAmount.value || inputAmount.value <= 0) {
+    convertedAmount.value = 0
+    finalAmount.value = 0
+    currentExchangeRate.value = 0
+    originalFee.value = 0
+    actualFee.value = 0
+    return
+  }
 
-      if (this.fromCurrency === this.toCurrency) {
-        rate = 1;
-        convertedValue = parseFloat(this.inputAmount);
-      } else {
-        // KRW를 기준으로 환율 계산
-        if (this.fromCurrency === 'KRW') {
-          rate = 1 / this.rates[this.toCurrency];
-          convertedValue = parseFloat(this.inputAmount) / this.rates[this.toCurrency];
-        } else if (this.toCurrency === 'KRW') {
-          rate = this.rates[this.fromCurrency];
-          convertedValue = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
-        } else {
-          // 둘 다 KRW가 아닌 경우
-          const fromToKrw = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
-          rate = this.rates[this.fromCurrency] / this.rates[this.toCurrency];
-          convertedValue = fromToKrw / this.rates[this.toCurrency];
-        }
-      }
+  let rate = 0
+  let convertedValue = 0
 
-      this.currentExchangeRate = rate;
-      this.convertedAmount = convertedValue;
-
-      // 수수료와 우대율 적용
-      const fee = this.calculateFee();
-      const afterFee = convertedValue - (fee * rate);
-      this.finalAmount = afterFee * 0.9; // 90% 우대율 적용
-    },
-
-    calculateFee() {
-      return parseFloat(this.inputAmount) * 0.005; // 0.5% 수수료
-    },
-
-    swapCurrencies() {
-      const temp = this.fromCurrency;
-      this.fromCurrency = this.toCurrency;
-      this.toCurrency = temp;
-      this.calculateExchange();
-    },
-
-    getBalanceAmount(currency) {
-      return this.formatNumber(this.balances[currency]);
-    },
-
-    setMaxAmount() {
-      this.inputAmount = this.balances[this.fromCurrency];
-      this.calculateExchange();
-    },
-
-    formatNumber(num) {
-      if (!num) return '0';
-      return new Intl.NumberFormat('ko-KR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }).format(num);
-    },
-
-    getToday() {
-      const d = new Date();
-      return d.toISOString().slice(0, 10);
-    },
-
-    getCurrentTime() {
-      const d = new Date();
-      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`;
+  if (fromCurrency.value === toCurrency.value) {
+    rate = 1
+    convertedValue = parseFloat(inputAmount.value)
+  } else {
+    // KRW를 기준으로 환율 계산
+    if (fromCurrency.value === 'KRW') {
+      rate = 1 / rates[toCurrency.value]
+      convertedValue = parseFloat(inputAmount.value) / rates[toCurrency.value]
+    } else if (toCurrency.value === 'KRW') {
+      rate = rates[fromCurrency.value]
+      convertedValue = parseFloat(inputAmount.value) * rates[fromCurrency.value]
+    } else {
+      // 둘 다 KRW가 아닌 경우
+      const fromToKrw = parseFloat(inputAmount.value) * rates[fromCurrency.value]
+      rate = rates[fromCurrency.value] / rates[toCurrency.value]
+      convertedValue = fromToKrw / rates[toCurrency.value]
     }
   }
+
+  currentExchangeRate.value = rate
+  convertedAmount.value = convertedValue
+
+  // 올바른 우대율 적용 계산
+  originalFee.value = parseFloat(inputAmount.value) * feeRate // 원래 수수료 0.5%
+  actualFee.value = originalFee.value * (1 - discountRate) // 실제 수수료 0.05%
+  
+  // 수수료를 환전 후 금액에서 차감
+  const feeInTargetCurrency = actualFee.value * rate
+  finalAmount.value = convertedValue - feeInTargetCurrency
 }
+
+const swapCurrencies = () => {
+  const temp = fromCurrency.value
+  fromCurrency.value = toCurrency.value
+  toCurrency.value = temp
+  calculateExchange()
+}
+
+const getBalanceAmount = (currency) => {
+  return formatNumber(balances[currency])
+}
+
+const setMaxAmount = () => {
+  inputAmount.value = balances[fromCurrency.value]
+  calculateExchange()
+}
+
+const formatNumber = (num) => {
+  if (!num) return '0'
+  return new Intl.NumberFormat('ko-KR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(num)
+}
+
+const getToday = () => {
+  const d = new Date()
+  return d.toISOString().slice(0, 10)
+}
+
+const getCurrentTime = () => {
+  const d = new Date()
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`
+}
+
+// Watchers
+watch([fromCurrency, toCurrency], () => {
+  calculateExchange()
+})
+
+// Lifecycle
+onMounted(() => {
+  calculateExchange()
+})
 </script>
 
 <style scoped>
+/* 동일한 CSS 스타일 유지 */
 .forex-system {
   font-family: 'Noto Sans KR', Arial, sans-serif;
   background: #fafbfc;

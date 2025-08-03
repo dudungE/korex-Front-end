@@ -81,7 +81,7 @@
                         <div class="account-details">
                             <div class="account-name">{{ account.name }}</div>
                             <div class="account-info">
-                                <span class="bank-name">{{ account.bank }}</span>
+                                <!-- <span class="bank-name">{{ account.bank }}</span> -->
                                 <span class="account-number">{{ account.accountNumber }}</span>
                             </div>
                             <div class="last-transfer">{{ account.lastTransfer }}</div>
@@ -252,7 +252,7 @@ export default {
                 id: 1,
                 name: '김지연 (딸)',
                 bank: '국민은행',
-                accountNumber: '***-***-2845',
+                accountNumber: '010-****-2845',
                 icon: '👧',
                 lastTransfer: '3일 전 송금',
                 usualAmount: '보통 200만원'
@@ -270,7 +270,7 @@ export default {
                 id: 3,
                 name: '김민수 (아들)',
                 bank: '신한은행',
-                accountNumber: '***-***-1234',
+                accountNumber: '010-****-1234',
                 icon: '👦',
                 lastTransfer: '5일 전 송금',
                 usualAmount: '보통 150만원'
@@ -284,7 +284,7 @@ export default {
                 type: 'expense',
                 category: 'exchange',
                 description: 'KRW → JPY 환전',
-                date: '07월 22일 2024',
+                date: '07월 22일 2025',
                 amount: 89000
             },
             {
@@ -292,7 +292,7 @@ export default {
                 type: 'income',
                 category: 'deposit',
                 description: '원화 충전',
-                date: '07월 20일 2024',
+                date: '07월 20일 2025',
                 amount: 3200000
             },
             {
@@ -300,7 +300,7 @@ export default {
                 type: 'expense',
                 category: 'exchange',
                 description: 'USD → KRW',
-                date: '07월 19일 2024',
+                date: '07월 19일 2025',
                 amount: 50000
             },
             {
@@ -308,7 +308,7 @@ export default {
                 type: 'expense',
                 category: 'transfer',
                 description: 'KRW → KRW 송금',
-                date: '07월 19일 2024',
+                date: '07월 19일 2025',
                 amount: 100000
             }
         ])
