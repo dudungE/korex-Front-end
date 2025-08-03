@@ -1,6 +1,5 @@
 <template>
   <div class="forex-system">
-    <HeaderBar />
     <div class="content-wrap">
       <main class="main-content">
         <h1>환율 차트</h1>
@@ -62,13 +61,12 @@
 <script>
 import ExchangeRateChart from '@/components/chart/ExchangeRateChart.vue';
 import TabNav from '@/components/exchange_info/TabNav.vue';
-import HeaderBar from '@/components/HeaderBar.vue';
+
 
 export default {
   components: {
     ExchangeRateChart,
     TabNav,
-    HeaderBar,
   },
   data() {
     return {
