@@ -67,7 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
      * 서버에 로그인 요청을 보냅니다.
      * @returns 로그인 성공 여부 (boolean)
      */
-    /*
+    
     async function login(loginData) {
         try {
             console.log('🚀 로그인 요청 시작')
@@ -152,45 +152,18 @@ export const useAuthStore = defineStore('auth', () => {
             return false
         }
     }
-    */
-
-    async function login(loginData) {
-    console.log('🧪 임시 로그인 실행 중...')
-    
-    // ✅ 가짜 조건: 특정 아이디/비밀번호일 때만 로그인 성공
-    if (loginData.loginId === 'testuser' && loginData.password === '1234') {
-        const dummyToken = 'fake-jwt-token'
-        const dummyUser = {
-        loginId: 'testuser',
-        username: '테스트 사용자',
-        email: 'test@example.com'
-        }
-
-        setToken(dummyToken)
-        isAuthenticated.value = true
-        userInfo.value = dummyUser
-        localStorage.setItem('loginId', dummyUser.loginId)
-
-        console.log('✅ 임시 로그인 성공:', dummyUser)
-        return true
-    } else {
-        console.warn('❌ 임시 로그인 실패: 아이디 또는 비밀번호 불일치')
-        return false
-    }
-    }
-
 
     async function join(joinData) {
         try {
             const response = await axios.post('/api/auth/join', joinData)
-            return response.status === 201
+            return true
         } catch (error) {
             console.error('💥 회원가입 실패:', error)
-            let errorMessage = '회원가입 중 오류가 발생했습니다. 아이디나 이메일이 중복될 수 있습니다.'
+            let errorMessage = '회원가입 중 오류가 발생했습니다.'
             if (axios.isAxiosError(error) && error.response) {
                 errorMessage = error.response.data?.message || errorMessage
             }
-            alert(errorMessage)
+            message.error(errorMessage)
             return false
         }
     }

@@ -126,18 +126,25 @@ const termsAgreed = ref(false)
 const formRef = ref()
 const emailVerified = ref(false)
 
-function sendEmailVerification() {
+// ✅ 이메일 인증 요청 (임시 로직)
+async function sendEmailVerification() {
   if (!signupForm.value.email) {
     message.warning('이메일을 먼저 입력해주세요.')
     return
   }
-  // 실제 서버 연동 시 API 호출
-  message.success(`인증 이메일이 전송되었습니다: ${signupForm.value.email}`)
-  emailVerified.value = true
+
+  // 임시 처리: 랜덤 6자리 숫자코드 생성 후 localStorage에 저장
+  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  localStorage.setItem(`sentCode:${signupForm.value.email}`, code)
+
+  message.success(`인증 이메일이 전송되었습니다 (임시코드: ${code})`)
 }
 
-function verifyEmailCode() {
-  if (signupForm.value.emailCode === '123456') {
+// ✅ 이메일 인증 코드 확인 (임시 로직)
+async function verifyEmailCode() {
+  const sentCode = localStorage.getItem(`sentCode:${signupForm.value.email}`)
+
+  if (signupForm.value.emailCode === sentCode) {
     message.success('이메일 인증 완료')
     emailVerified.value = true
   } else {
@@ -145,35 +152,42 @@ function verifyEmailCode() {
   }
 }
 
+// ✅ 비밀번호 확인 유효성
 const validatePasswordMatch = async (_rule, value) => {
+  console.log('password:', signupForm.value.password)
+  console.log('confirmPassword:', value)
   if (value !== signupForm.value.password) {
     return Promise.reject('비밀번호가 일치하지 않습니다.')
   }
   return Promise.resolve()
 }
 
+// ✅ 회원가입 처리
 const handleSignup = async () => {
   if (!termsAgreed.value) {
     message.warning('약관에 동의해주세요.')
     return
   }
+
   if (!emailVerified.value) {
     message.warning('이메일 인증을 완료해주세요.')
     return
   }
 
   const payload = {
-    loginId: signupForm.value.id,
-    password: signupForm.value.password,
-    nickname: signupForm.value.name,
-    name: signupForm.value.name,
-    email: signupForm.value.email
-  }
+  loginId: signupForm.value.id,
+  password: signupForm.value.password,
+  passwordCheck: signupForm.value.confirmPassword,
+  name: signupForm.value.name,
+  email: signupForm.value.email,
+  emailCode: signupForm.value.emailCode,
+  birth: signupForm.value.birthdate,
+}
 
   try {
     const success = await authStore.join(payload)
     if (success) {
-      message.success('가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.')
+      message.success('가입이 완료되었습니다. 로그인해주세요.')
       router.push('/login')
     }
   } catch (err) {

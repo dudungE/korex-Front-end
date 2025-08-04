@@ -16,6 +16,7 @@ import router from './router'
 import axios from 'axios'
 
 // axios 기본 설정
+axios.defaults.baseURL = 'http://localhost:8080'
 axios.defaults.timeout = 10000 // 10초 타임아웃
 axios.defaults.headers.post['Content-Type'] = 'application/json'
 axios.defaults.headers.common['Accept'] = 'application/json'

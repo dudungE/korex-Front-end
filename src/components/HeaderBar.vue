@@ -1,12 +1,6 @@
 <template>
   <header class="header-bar">
     <div class="header-top">
-      <!-- <nav class="header-links">
-        <a href="#">기업뱅킹</a>
-        <a href="#">하나카드</a>
-        <a href="#">은행소개</a>
-        <a href="#">채용안내</a>
-      </nav> -->
       <div class="header-actions">
         <template v-if="isAuthenticated">
           <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
