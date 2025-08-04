@@ -1,70 +1,157 @@
 <template>
-    <div class="chart-card">
-      <h2>환율 변동 차트</h2>
-      <Line :data="chartData" :options="chartOptions" />
-    </div>
-  </template>
-  
-  <script>
-  import { defineComponent, computed } from "vue";
-  import {
-    Chart as ChartJS,
-    Title,
-    Tooltip,
-    Legend,
-    LineElement,
-    PointElement,
-    CategoryScale,
-    LinearScale,
-  } from "chart.js";
-  import { Line } from "vue-chartjs";
-  
-  ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    LineElement,
-    PointElement,
-    CategoryScale,
-    LinearScale
-  );
-  
-  export default defineComponent({
-    name: "ExchangeRateChart",
-    components: { Line },
-    props: { rates: { type: Array, required: true } },
-    setup(props) {
-      const colors = { usd: "#008485", eur: "#005750", jpy: "#00aba0", cny: "#6fd3c4" };
-      const currencies = ["usd", "eur", "jpy", "cny"];
-  
-      const chartData = computed(() => ({
-        labels: props.rates.map((item) => item.date),
-        datasets: currencies.map((cur) => ({
-          label: cur.toUpperCase(),
-          data: props.rates.map((item) => item[cur]),
-          borderColor: colors[cur],
-          backgroundColor: colors[cur],
-          tension: 0.3,
-          fill: false,
-          pointRadius: 3,
-        })),
-      }));
-  
-      const chartOptions = {
-        responsive: true,
-        plugins: {
-          legend: { position: "top" },
-          title: { display: false },
-          tooltip: { mode: "index", intersect: false },
+  <div class="chart-card">
+    <h2>환율 변동 비교 차트</h2>
+    <Line :data="chartData" :options="chartOptions" />
+  </div>
+</template>
+
+<script>
+import { defineComponent, computed } from "vue";
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
+import { Line } from "vue-chartjs";
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale
+);
+
+export default defineComponent({
+  name: "ExchangeRateChart",
+  components: { Line },
+  props: { 
+    rates: { type: Array, required: true },
+    currencies: { type: Array, required: true }
+  },
+  setup(props) {
+    const colors = {
+      USD: "#008485",
+      EUR: "#005750", 
+      JPY: "#00aba0",
+      CNY: "#6fd3c4",
+      CAD: "#ff6b6b",
+      CHF: "#4ecdc4"
+    };
+
+    const chartData = computed(() => ({
+      labels: props.rates.map((item) => item.date),
+      datasets: props.currencies.map((currency) => ({
+        label: `${currency} 환율`,
+        data: props.rates.map((item) => item[currency] || null),
+        borderColor: colors[currency] || "#009490",
+        backgroundColor: colors[currency] || "#009490",
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3,
+        pointBackgroundColor: colors[currency] || "#009490",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1,
+      })),
+    }));
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          position: "top",
+          labels: {
+            font: {
+              size: 14,
+              weight: 'bold'
+            },
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
         },
-        scales: {
-          x: { title: { display: true, text: "날짜" } },
-          y: { title: { display: true, text: "환율 (KRW)" }, beginAtZero: false },
+        title: { 
+          display: false 
         },
-      };
-  
-      return { chartData, chartOptions };
-    },
-  });
-  </script>
+        tooltip: { 
+          mode: "index", 
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              const currency = context.dataset.label.split(' ')[0];
+              return `${currency}: ${context.parsed.y ? context.parsed.y.toLocaleString() : 'N/A'} KRW`;
+            }
+          }
+        },
+      },
+      scales: {
+        x: { 
+          title: { 
+            display: true, 
+            text: "날짜",
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
+        y: { 
+          title: { 
+            display: true, 
+            text: "환율 (KRW)",
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }, 
+          beginAtZero: false,
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      }
+    };
+
+    return { chartData, chartOptions };
+  },
+});
+</script>
+
+<style scoped>
+.chart-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-card h2 {
+  color: #009490;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.chart-card canvas {
+  max-height: 400px;
+}
+</style>
   
