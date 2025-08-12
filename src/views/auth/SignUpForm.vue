@@ -11,9 +11,9 @@
           <a-form
             ref="formRef"
             :model="signupForm"
-            @finish="handleSignup"
             layout="vertical"
-            :validate-trigger="['blur', 'submit']"
+            :validate-trigger="['blur','submit']"
+            @finish="handleSignup"
           >
             <a-form-item
               name="id"
@@ -23,7 +23,11 @@
                 { pattern: /^[a-zA-Z0-9]+$/, message: '영문과 숫자만 사용가능합니다' }
               ]"
             >
-              <input v-model="signupForm.id" class="combined-input top" placeholder="아이디" />
+              <input
+                v-model="signupForm.id"
+                class="combined-input top"
+                placeholder="아이디"
+              />
             </a-form-item>
 
             <a-form-item
@@ -33,7 +37,19 @@
                 { min: 6, max: 20, message: '비밀번호는 6~20자여야 합니다' }
               ]"
             >
-              <input v-model="signupForm.password" type="password" class="combined-input" placeholder="비밀번호" />
+              <a-input-password
+                class="line-input" 
+                v-model:value="signupForm.password"
+                placeholder="비밀번호"
+                :maxlength="20"
+                autocomplete="new-password"
+                :visibilityToggle="true"
+              >
+                <template #iconRender="{ visible }">
+                  <EyeTwoTone v-if="visible" />
+                  <EyeInvisibleOutlined v-else />
+                </template>
+              </a-input-password>
             </a-form-item>
 
             <a-form-item
@@ -43,19 +59,44 @@
                 { validator: validatePasswordMatch }
               ]"
             >
-              <input v-model="signupForm.confirmPassword" type="password" class="combined-input" placeholder="비밀번호 확인" />
+              <a-input-password
+                class="line-input" 
+                v-model:value="signupForm.confirmPassword"
+                placeholder="비밀번호 확인"
+                :maxlength="20"
+                autocomplete="new-password"
+                :visibilityToggle="true"
+              >
+                <template #iconRender="{ visible }">
+                  <EyeTwoTone v-if="visible" />
+                  <EyeInvisibleOutlined v-else />
+                </template>
+              </a-input-password>
             </a-form-item>
 
             <a-form-item
               name="email"
               :rules="[
                 { required: true, message: '이메일을 입력해주세요' },
-                { type: 'email', message: '올바른 이메일 형식입니다' }
+                { type: 'email', message: '올바른 이메일 형식이 아닙니다' }
               ]"
             >
               <div class="input-with-button">
-                <input v-model="signupForm.email" type="email" class="input-field" placeholder="이메일 주소" />
-                <button type="button" class="input-btn" @click="sendEmailVerification">인증요청</button>
+                <input
+                  v-model="signupForm.email"
+                  :disabled="emailVerified"
+                  type="email"
+                  class="input-field"
+                  placeholder="이메일 주소"
+                />
+                <button
+                  type="button"
+                  class="input-btn"
+                  :disabled="sending || resendCooldown > 0 || emailVerified"
+                  @click="sendEmailVerification"
+                >
+                  {{ resendCooldown > 0 ? `재전송(${resendCooldown}s)` : (emailVerified ? '인증완료' : '인증요청') }}
+                </button>
               </div>
             </a-form-item>
 
@@ -64,8 +105,20 @@
               :rules="[ { required: true, message: '이메일 인증코드를 입력해주세요' } ]"
             >
               <div class="input-with-button">
-                <input v-model="signupForm.emailCode" class="input-field" placeholder="이메일 인증 코드" />
-                <button type="button" class="input-btn" @click="verifyEmailCode">인증 확인</button>
+                <input
+                  v-model="signupForm.emailCode"
+                  :disabled="emailVerified"
+                  class="input-field"
+                  placeholder="이메일 인증 코드"
+                />
+                <button
+                  type="button"
+                  class="input-btn"
+                  :disabled="verifying || !signupForm.emailCode || emailVerified"
+                  @click="verifyEmailCodeHandler"
+                >
+                  {{ emailVerified ? '인증완료' : (verifying ? '확인중...' : '인증 확인') }}
+                </button>
               </div>
             </a-form-item>
 
@@ -76,16 +129,29 @@
                 { min: 2, max: 10, message: '이름은 2~10자여야 합니다' }
               ]"
             >
-              <input v-model="signupForm.name" class="combined-input" placeholder="이름" />
+              <input
+                v-model="signupForm.name"
+                class="combined-input"
+                placeholder="이름"
+              />
             </a-form-item>
 
             <a-form-item
               name="birthdate"
-              :rules="[ { required: true, message: '생년월일을 입력해주세요' } ]"
+              :rules="[
+                { required: true, message: '생년월일을 입력해주세요' },
+                { pattern: /^\d{4}-\d{2}-\d{2}$/, message: '생년월일은 YYYY-MM-DD 형식이어야 합니다' }
+              ]"
             >
-              <input v-model="signupForm.birthdate" class="combined-input bottom" placeholder="생년월일 8자리" />
+              <input
+                v-model="signupForm.birthdate"
+                class="combined-input bottom"
+                placeholder="YYYY-MM-DD"
+                inputmode="numeric"
+                maxlength="10"
+                @input="formatBirthdate"
+              />
             </a-form-item>
-
             <div class="terms-agree">
               <label>
                 <input type="checkbox" v-model="termsAgreed" />
@@ -107,6 +173,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -126,63 +193,140 @@ const termsAgreed = ref(false)
 const formRef = ref()
 const emailVerified = ref(false)
 
-// ✅ 이메일 인증 요청 (임시 로직)
+const sending = ref(false)
+const verifying = ref(false)
+const resendCooldown = ref(0)
+let cooldownTimer = null
+const lastRequestedEmail = ref(null)
+
+const startCooldown = (sec = 60) => {
+  clearInterval(cooldownTimer)
+  resendCooldown.value = sec
+  cooldownTimer = setInterval(() => {
+    resendCooldown.value--
+    if (resendCooldown.value <= 0) {
+      clearInterval(cooldownTimer)
+      cooldownTimer = null
+    }
+  }, 1000)
+}
+
+// 이메일 인증 코드 발송
 async function sendEmailVerification() {
-  if (!signupForm.value.email) {
+  const email = (signupForm.value.email || '').trim()
+  if (!email) {
     message.warning('이메일을 먼저 입력해주세요.')
     return
   }
+  if (emailVerified.value) {
+    message.info('이미 이메일 인증이 완료되었습니다.')
+    return
+  }
+  if (sending.value || resendCooldown.value > 0) return
 
-  // 임시 처리: 랜덤 6자리 숫자코드 생성 후 localStorage에 저장
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
-  localStorage.setItem(`sentCode:${signupForm.value.email}`, code)
-
-  message.success(`인증 이메일이 전송되었습니다 (임시코드: ${code})`)
-}
-
-// ✅ 이메일 인증 코드 확인 (임시 로직)
-async function verifyEmailCode() {
-  const sentCode = localStorage.getItem(`sentCode:${signupForm.value.email}`)
-
-  if (signupForm.value.emailCode === sentCode) {
-    message.success('이메일 인증 완료')
-    emailVerified.value = true
-  } else {
-    message.error('잘못된 인증 코드입니다.')
+  try {
+    sending.value = true
+    const ok = await authStore.sendVerificationCode(email)
+    if (ok) {
+      lastRequestedEmail.value = email
+      startCooldown(60)
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || '인증 메일 전송 중 오류가 발생했습니다.'
+    message.error(msg)
+  } finally {
+    sending.value = false
   }
 }
 
-// ✅ 비밀번호 확인 유효성
+// 이메일 인증 코드 확인
+async function verifyEmailCodeHandler() {
+  const email = (signupForm.value.email || '').trim()
+  const code  = (signupForm.value.emailCode || '').trim()
+
+  if (!email) {
+    message.warning('이메일을 먼저 입력해주세요.')
+    return
+  }
+  if (!code) {
+    message.warning('인증 코드를 입력해주세요.')
+    return
+  }
+  if (emailVerified.value) {
+    message.info('이미 이메일 인증이 완료되었습니다.')
+    return
+  }
+  if (verifying.value) return
+
+  if (lastRequestedEmail.value && lastRequestedEmail.value !== email) {
+    message.warning('코드를 요청한 이메일과 현재 이메일이 다릅니다. 다시 전송해주세요.')
+    return
+  }
+
+  try {
+    verifying.value = true
+    const ok = await authStore.verifyEmailCode({ email, code })
+    if (ok) {
+      emailVerified.value = true
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || '인증 코드 확인에 실패했습니다.'
+    message.error(msg)
+    emailVerified.value = false
+  } finally {
+    verifying.value = false
+  }
+}
+
+// 비밀번호 확인 유효성
 const validatePasswordMatch = async (_rule, value) => {
-  console.log('password:', signupForm.value.password)
-  console.log('confirmPassword:', value)
   if (value !== signupForm.value.password) {
     return Promise.reject('비밀번호가 일치하지 않습니다.')
   }
   return Promise.resolve()
 }
 
-// ✅ 회원가입 처리
+function formatBirthdate(e) {
+  const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 8)
+  let out = digits
+  if (digits.length > 4 && digits.length <= 6) {
+    out = digits.slice(0, 4) + '-' + digits.slice(4)
+  } else if (digits.length > 6) {
+    out = digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6)
+  }
+  signupForm.value.birthdate = out
+}
+
+// ... handleSignup 안에서 payload 만들 때
+const payload = {
+  loginId: signupForm.value.id,
+  password: signupForm.value.password,
+  passwordCheck: signupForm.value.confirmPassword,
+  name: signupForm.value.name,
+  email: signupForm.value.email,
+  birth: (signupForm.value.birthdate || '').replace(/\D/g, ''),
+}
+
+
+// 회원가입 처리
 const handleSignup = async () => {
   if (!termsAgreed.value) {
     message.warning('약관에 동의해주세요.')
     return
   }
-
   if (!emailVerified.value) {
     message.warning('이메일 인증을 완료해주세요.')
     return
   }
 
   const payload = {
-  loginId: signupForm.value.id,
-  password: signupForm.value.password,
-  passwordCheck: signupForm.value.confirmPassword,
-  name: signupForm.value.name,
-  email: signupForm.value.email,
-  emailCode: signupForm.value.emailCode,
-  birth: signupForm.value.birthdate,
-}
+    loginId: signupForm.value.id,
+    password: signupForm.value.password,
+    passwordCheck: signupForm.value.confirmPassword,
+    name: signupForm.value.name,
+    email: signupForm.value.email,
+    birth: signupForm.value.birthdate,
+  }
 
   try {
     const success = await authStore.join(payload)
@@ -191,7 +335,8 @@ const handleSignup = async () => {
       router.push('/login')
     }
   } catch (err) {
-    message.error('회원가입 중 오류가 발생했습니다.')
+    const msg = err?.response?.data?.message || '회원가입 중 오류가 발생했습니다.'
+    message.error(msg)
   }
 }
 </script>
@@ -281,8 +426,8 @@ body {
 
 .email-verification {
   display: flex;
-  align-items: stretch; /* 세로 높이 맞춤 */
-  gap: 0.5rem;           /* 버튼과 input 사이 여백 */
+  align-items: stretch;
+  gap: 0.5rem;
 }
 
 .email-verification .combined-input {
@@ -369,4 +514,37 @@ body {
 .btn-login:hover {
   background-color: #106060;
 }
+
+:deep(.line-input.ant-input-affix-wrapper) {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 1rem;
+  height: 48px;
+  border-bottom: 1px solid #d1d5db;
+  box-shadow: none;
+}
+
+:deep(.line-input.ant-input-affix-wrapper:hover),
+:deep(.line-input.ant-input-affix-wrapper-focused) {
+  border-bottom-color: #137c7c;
+}
+
+:deep(.line-input .ant-input) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 8px;
+}
+
+:deep(.line-input .ant-input::placeholder) {
+  color: #6b7280;
+}
+
+:deep(.line-input .ant-input-suffix) {
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
 </style>

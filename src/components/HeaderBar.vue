@@ -4,7 +4,7 @@
       <div class="header-actions">
         <template v-if="isAuthenticated">
           <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
-          <a @click="logout" style="cursor: pointer">로그아웃</a>
+          <a @click="handleLogout" style="cursor: pointer">로그아웃</a>
         </template>
         <template v-else>
           <a @click="goToLogin()" style="cursor: pointer">로그인</a>
@@ -88,6 +88,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { message } from 'ant-design-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -117,6 +118,7 @@ const goToOverseasRemittance = () => router.push('/OverseasRemittance')
 
 const handleLogout = async () => {
   await authStore.logout()
+  message.success('로그아웃되었습니다.')
   router.push('/')
 }
 </script>
