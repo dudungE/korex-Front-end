@@ -173,36 +173,32 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // 이메일 인증코드 발송
-    async function sendVerificationCode(email) {
-         message.loading({
-            content: '이메일 전송 중...',
-            key: SEND_CODE_MSG_KEY,
-            duration: 0,
-        })
-
+    async function sendVerificationCode(email, purpose = 'SIGN_UP') {
+        const SEND_CODE_MSG_KEY = 'send-email'
+        message.loading({ content: '이메일 전송 중...', key: SEND_CODE_MSG_KEY, duration: 0 })
         try {
-            await axios.post('/api/auth/send-code', { email }, {
-            headers: { 'X-Skip-Auth-Refresh': 'true' }
+            await axios.post('/api/auth/send-code', { email, purpose }, {
+            headers: { 'Content-Type': 'application/json', 'X-Skip-Auth-Refresh': 'true' },
+            withCredentials: true,
+            timeout: 15000,
             })
-            message.success({
-            content: '인증 이메일을 전송했습니다.',
-            key: SEND_CODE_MSG_KEY,
-            })
+            message.success({ content: '인증 이메일을 전송했습니다.', key: SEND_CODE_MSG_KEY })
             return true
         } catch (error) {
             const msg = error?.response?.data?.message || '인증 메일 전송 중 오류가 발생했습니다.'
-            message.error({
-            content: msg,
-            key: SEND_CODE_MSG_KEY,
-            })
+            message.error({ content: msg, key: SEND_CODE_MSG_KEY })
             return false
         }
     }
 
     // 이메일 인증코드 검증
-    async function verifyEmailCode({ email, code }) {
+    async function verifyEmailCode({ email, code, purpose = 'SIGN_UP' }) {
         try {
-            await axios.post('/api/auth/verify-code', { email, code })
+            await axios.post('/api/auth/verify-code', { email, code, purpose }, {
+            headers: { 'Content-Type': 'application/json', 'X-Skip-Auth-Refresh': 'true' },
+            withCredentials: true,
+            timeout: 15000,
+            })
             message.success('이메일 인증이 완료되었습니다.')
             return true
         } catch (error) {
@@ -211,7 +207,6 @@ export const useAuthStore = defineStore('auth', () => {
             return false
         }
     }
-
 
     async function findId(email, name) {
         try {
@@ -226,16 +221,45 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    async function resetPassword(email, newPassword) {
+    async function resetPassword(email, code, newPassword) {
         try {
-            const response = await axios.post('/api/auth/reset-password', {
-                email,
-                newPassword
-            })
-            return response.status === 200
+            const res = await axios.post(
+            '/api/auth/reset-password',
+            { email, code, newPassword },
+            {
+                headers: {
+                'Content-Type': 'application/json',
+                'X-Skip-Auth-Refresh': 'true',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                },
+                withCredentials: true,
+                timeout: 15000,
+            }
+            )
+
+            const ok = res.status === 200 || res.status === 201
+            if (ok) message.success('비밀번호가 성공적으로 변경되었습니다.')
+            return ok
         } catch (error) {
+            const serverMsg = error?.response?.data?.message
+            const errCode   = error?.response?.data?.code // ← 변수명 충돌 방지
+            let friendly = serverMsg || '비밀번호 변경에 실패했습니다.'
+
+            if (!error?.response) {
+            friendly = '네트워크 오류입니다. 연결을 확인해주세요.'
+            } else if (errCode === 'EMAIL_NOT_VERIFIED') {
+            friendly = '이메일 인증이 완료되지 않았습니다. 인증 후 다시 시도하세요.'
+            } else if (errCode === 'VERIFICATION_TOKEN_NOT_FOUND') {
+            friendly = '인증 코드가 유효하지 않습니다.'
+            } else if (errCode === 'EXPIRED_TOKEN') {
+            friendly = '인증 코드 유효시간이 지났습니다. 다시 전송받아 주세요.'
+            } else if (errCode === 'PASSWORD_MISMATCH') {
+            friendly = '비밀번호 확인이 일치하지 않습니다.'
+            }
+
             console.error('❌ 비밀번호 변경 실패:', error)
-            message.error('비밀번호 변경에 실패했습니다.')
+            message.error(friendly)
             return false
         }
     }

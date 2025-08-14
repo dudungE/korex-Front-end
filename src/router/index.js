@@ -69,12 +69,17 @@ const router = createRouter({
             path: '/exchange/reservation',
             name: 'ReservationExchange',
             component: () => import('@/views/CurrentExchange/ReservationExchange.vue'),
-            meta: {requiresAuth: true}
+            //meta: {requiresAuth: true}
         },
         {
             path: '/login',
             name: 'LoginPages',
             component: LoginPages
+        },
+        {
+            path: '/signup/terms',
+            name: 'TermsOfService',
+            component: () => import('@/views/auth/TermsOfService.vue')
         },
         {
             path: '/sign-up',

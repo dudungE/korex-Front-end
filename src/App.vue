@@ -40,7 +40,7 @@ const authStore = useAuthStore()
 const globalLoading = ref(false)
 
 // 헤더/푸터 제외할 라우트 목록
-const hideLayoutRoutes = ['/login', '/sign-up', '/find-id', '/reset-password']
+const hideLayoutRoutes = ['/login', '/sign-up', '/find-id', '/reset-password', '/signup/terms']
 
 // 앱 시작 시 토큰 로드
 onMounted(() => {
