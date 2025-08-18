@@ -96,12 +96,12 @@ const router = createRouter({
             name: 'ResetPassword',
             component: () => import('@/views/auth/ResetPassword.vue')
         },
-        // {
-        //     path: '/mypage',
-        //     name: 'MyPage',
-        //     component: () => import('@/views/MyPage.vue'),
-        //     meta: {requiresAuth: true}
-        // },
+        {
+            path: '/mypage',
+            name: 'MyPage',
+            component: () => import('@/views/MyPage.vue'),
+            meta: {requiresAuth: true}
+        },
     ],
 })
 

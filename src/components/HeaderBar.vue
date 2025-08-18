@@ -3,7 +3,7 @@
     <div class="header-top">
       <div class="header-actions">
         <template v-if="isAuthenticated">
-          <a @click="goToMypage()" style="cursor: pointer">마이페이지</a>
+          <a @click="goToMyPage()" style="cursor: pointer">마이페이지</a>
           <a @click="handleLogout" style="cursor: pointer">로그아웃</a>
         </template>
         <template v-else>
@@ -17,10 +17,7 @@
       <router-link to="/">
         <img src="@/assets/korex1.png" alt="KOSA FOREX" class="logo" />
       </router-link>
-      
       <nav class="main-menu">
-
-
         <div class="dropdown" @mouseenter="rateMenu=true" @mouseleave="rateMenu=false">
           <a @click="goToRateLookup()" class="dropdown-toggle" style="cursor: pointer">환율</a>
           <ul class="dropdown-menu" v-show="rateMenu">
@@ -28,8 +25,8 @@
             <li class="section-title" @click="goToRateCalculator()">환율계산기</li>
             <li class="section-title" @click="goToRateAlert()">환율알림</li>
           </ul>
-
         </div>
+
         <div class="dropdown" @mouseenter="exchangeMenu=true" @mouseleave="exchangeMenu=false">
           <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
           <ul class="dropdown-menu" v-show="exchangeMenu">
@@ -38,8 +35,7 @@
             <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
-
-      
+   
         <div class="dropdown" @mouseenter="friendMenu=true" @mouseleave="friendMenu=false">
           <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
           <ul class="dropdown-menu" v-show="friendMenu">
@@ -66,9 +62,6 @@
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
         </div>
-        
-
-
       </nav>
 
       <div class="header-icons">
@@ -93,7 +86,6 @@ import { message } from 'ant-design-vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const showChatbotBubble = ref(true)
-
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 // 메뉴 상태
