@@ -224,20 +224,19 @@ export const useAuthStore = defineStore('auth', () => {
     async function resetPassword(email, code, newPassword) {
         try {
             const res = await axios.post(
-            '/api/auth/reset-password',
-            { email, code, newPassword },
-            {
-                headers: {
-                'Content-Type': 'application/json',
-                'X-Skip-Auth-Refresh': 'true',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                },
-                withCredentials: true,
-                timeout: 15000,
-            }
+                '/api/auth/reset-password',
+                { email, code, newPassword },
+                {
+                    headers: {
+                    'Content-Type': 'application/json',
+                    'X-Skip-Auth-Refresh': 'true',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    },
+                    withCredentials: true,
+                    timeout: 15000,
+                }
             )
-
             const ok = res.status === 200 || res.status === 201
             if (ok) message.success('비밀번호가 성공적으로 변경되었습니다.')
             return ok
@@ -247,17 +246,16 @@ export const useAuthStore = defineStore('auth', () => {
             let friendly = serverMsg || '비밀번호 변경에 실패했습니다.'
 
             if (!error?.response) {
-            friendly = '네트워크 오류입니다. 연결을 확인해주세요.'
+                friendly = '네트워크 오류입니다. 연결을 확인해주세요.'
             } else if (errCode === 'EMAIL_NOT_VERIFIED') {
-            friendly = '이메일 인증이 완료되지 않았습니다. 인증 후 다시 시도하세요.'
+                friendly = '이메일 인증이 완료되지 않았습니다. 인증 후 다시 시도하세요.'
             } else if (errCode === 'VERIFICATION_TOKEN_NOT_FOUND') {
-            friendly = '인증 코드가 유효하지 않습니다.'
+                friendly = '인증 코드가 유효하지 않습니다.'
             } else if (errCode === 'EXPIRED_TOKEN') {
-            friendly = '인증 코드 유효시간이 지났습니다. 다시 전송받아 주세요.'
+                friendly = '인증 코드 유효시간이 지났습니다. 다시 전송받아 주세요.'
             } else if (errCode === 'PASSWORD_MISMATCH') {
-            friendly = '비밀번호 확인이 일치하지 않습니다.'
+                friendly = '비밀번호 확인이 일치하지 않습니다.'
             }
-
             console.error('❌ 비밀번호 변경 실패:', error)
             message.error(friendly)
             return false
@@ -391,15 +389,15 @@ export const useAuthStore = defineStore('auth', () => {
 
             let token = getToken()
             if (!token) {
-            console.log('⚠️ 액세스 토큰 없음 → 리프레시 시도')
-            const maybe = await refreshToken({ quiet: true })
-            if (!maybe) {
-                console.log('❌ 리프레시 실패 → 비로그인으로 유지')
-                isAuthenticated.value = false
-                userInfo.value = null
-                return
-            }
-            token = maybe
+                console.log('⚠️ 액세스 토큰 없음 → 리프레시 시도')
+                const maybe = await refreshToken({ quiet: true })
+                if (!maybe) {
+                    console.log('❌ 리프레시 실패 → 비로그인으로 유지')
+                    isAuthenticated.value = false
+                    userInfo.value = null
+                    return
+                }
+                token = maybe
             }
 
             console.log('🔍 /api/auth/status 요청 중...')

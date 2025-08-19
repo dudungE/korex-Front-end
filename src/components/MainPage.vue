@@ -1,6 +1,5 @@
 <template>
   <div class="home-system">
-    <HeaderBar />
     <div class="mainpage-wrap">
       <div class="mainpage-top">
         <div class="carousel-area">
