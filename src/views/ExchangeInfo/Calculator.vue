@@ -108,10 +108,6 @@
             </div>
           </div>
 
-          <!-- 환전하기 버튼 -->
-          <button class="exchange-btn" @click="calculate" :disabled="!amount || amount <= 0">
-            환전하기
-          </button>
         </div>
 
    

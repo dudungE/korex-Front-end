@@ -50,7 +50,14 @@
                 </thead>
                 <tbody>
                   <tr v-for="rate in realTimeRates" :key="rate.currency_code">
-                    <td>{{ rate.currency_code }}</td>
+                    <td>
+                      <button 
+                        class="currency-link" 
+                        @click="showCurrencyDetail(rate.currency_code)"
+                      >
+                        {{ rate.currency_code }}
+                      </button>
+                    </td>
                     <td>{{ rate.base_rate }}</td>
                     <td>{{ rate.buy_cash_rate }}</td>
                     <td>{{ rate.sell_cash_rate }}</td>
@@ -157,6 +164,57 @@
           </div>
         </section>
 
+        <!-- 통화별 상세 데이터 모달 -->
+        <div v-if="showDetailModal" class="modal-overlay" @click="closeDetailModal">
+          <div class="modal-content" @click.stop>
+            <div class="modal-header">
+              <h3>{{ selectedCurrencyCode }} 상세 환율 데이터</h3>
+              <button class="close-btn" @click="closeDetailModal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+              <div v-if="loadingDetail" class="loading">
+                <p>데이터를 불러오는 중...</p>
+              </div>
+              
+              <div v-else-if="currencyDetailData.length > 0" class="detail-content">
+                <p class="detail-description">
+                  {{ selectedCurrencyCode }}의 최근 수집된 실시간 환율 데이터입니다. (수집 시간: {{ formatDetailTime(currencyDetailData[0]?.crawl_time) }} ~ {{ formatDetailTime(currencyDetailData[currencyDetailData.length-1]?.crawl_time) }})
+                </p>
+                
+                <div class="detail-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>수집 시간</th>
+                        <th>매매기준율</th>
+                        <th>현찰사실때</th>
+                        <th>현찰파실때</th>
+                        <th>송금보내실때</th>
+                        <th>송금받으실때</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(data, index) in currencyDetailData" :key="index">
+                        <td>{{ formatDetailTime(data.crawl_time) }}</td>
+                        <td>{{ data.base_rate }}</td>
+                        <td>{{ data.buy_cash_rate }}</td>
+                        <td>{{ data.sell_cash_rate }}</td>
+                        <td>{{ data.send_rate }}</td>
+                        <td>{{ data.receive_rate }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div v-else class="no-data">
+                <p>해당 통화의 상세 데이터가 없습니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <footer class="footer-info">
           <span>조회시각: {{ currentTime }}</span>
         </footer>
@@ -188,6 +246,12 @@ export default {
       // 통화별 환율 데이터
       selectedCurrency: '',
       ratesByCurrency: [],
+
+      // 통화별 상세 데이터 모달 관련 상태
+      showDetailModal: false,
+      selectedCurrencyCode: '',
+      loadingDetail: false,
+      currencyDetailData: [],
     };
   },
   // 페이지 로드 시 실시간 환율 조회
@@ -210,6 +274,29 @@ export default {
       return date.getFullYear() + '-' + 
              String(date.getMonth() + 1).padStart(2, '0') + '-' + 
              String(date.getDate()).padStart(2, '0');
+    },
+    formatDetailTime(timestamp) {
+      if (!timestamp) return 'N/A';
+      
+      try {
+        // crawl_time 형식: "2025-08-19 10:08:07"
+        const date = new Date(timestamp);
+        
+        // 유효한 날짜인지 확인
+        if (isNaN(date.getTime())) {
+          return timestamp; // 파싱 실패 시 원본 값 반환
+        }
+        
+        return date.getFullYear() + '-' + 
+               String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(date.getDate()).padStart(2, '0') + ' ' + 
+               String(date.getHours()).padStart(2, '0') + ':' + 
+               String(date.getMinutes()).padStart(2, '0') + ':' + 
+               String(date.getSeconds()).padStart(2, '0');
+      } catch (error) {
+        console.error('시간 포맷팅 오류:', error);
+        return timestamp; // 오류 시 원본 값 반환
+      }
     },
     // 실시간 환율 조회 API
     async getRealTimeRates() {
@@ -286,6 +373,41 @@ export default {
         this.loading = false;
         this.currentTime = this.getCurrentTime();
       }
+    },
+
+    // 통화별 상세 데이터 조회 API
+    async getCurrencyDetailData(currencyCode) {
+      this.loadingDetail = true;
+      try {
+        console.log('통화별 상세 데이터 조회 시작...', currencyCode);
+        const response = await fetch(`/api/exchange/realtime/${currencyCode}`);
+        console.log('응답 상태:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('통화별 상세 데이터:', data);
+          this.currencyDetailData = data;
+        } else {
+          const errorText = await response.text();
+          console.error('API 응답 오류:', response.status, errorText);
+          alert(`통화별 상세 데이터 조회에 실패했습니다. (${response.status})`);
+        }
+      } catch (error) {
+        console.error('통화별 상세 데이터 조회 오류:', error);
+        alert('통화별 상세 데이터 조회 중 오류가 발생했습니다.');
+      } finally {
+        this.loadingDetail = false;
+      }
+    },
+    
+    showCurrencyDetail(currencyCode) {
+      this.selectedCurrencyCode = currencyCode;
+      this.getCurrencyDetailData(currencyCode);
+      this.showDetailModal = true;
+    },
+    closeDetailModal() {
+      this.showDetailModal = false;
+      this.currencyDetailData = []; // 모달 닫을 때 데이터 초기화
     },
     
     goTab(name) {
@@ -463,6 +585,132 @@ export default {
   margin-top: 32px;
 }
 
+.currency-link {
+  background: none;
+  border: none;
+  color: #5c5c5c;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  text-align: left;
+}
+
+.currency-link:hover {
+  color: #0056b3;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #222;
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.detail-content {
+  color: #222;
+}
+
+.detail-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.detail-table {
+  overflow-x: auto;
+}
+
+.detail-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.detail-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #009490;
+}
+
+.detail-table tr:hover {
+  background: #f8f9fa;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .main-content {
     padding: 20px 16px;
@@ -479,6 +727,38 @@ export default {
   
   .rates-table {
     font-size: 0.9rem;
+  }
+
+  .modal-content {
+    width: 98%;
+    margin: 5px;
+    max-width: 95vw;
+  }
+
+  .modal-header {
+    padding: 12px 15px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .detail-table {
+    font-size: 0.85rem;
+  }
+
+  .detail-table th,
+  .detail-table td {
+    padding: 8px 4px;
+  }
+
+  .currency-link {
+    font-size: 0.9rem;
+    padding: 2px 0;
   }
 }
 </style>
