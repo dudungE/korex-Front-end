@@ -12,12 +12,11 @@
             <th style="width: 8%;">이름</th>
             <th style="width: 7%;">통화</th>
             <th style="width: 10%;">은행</th>
-            <th style="width: 12%;">계좌번호</th>
-            <th style="width: 13%;">주민등록번호</th>
+            <th style="width: 15%;">계좌번호</th>
             <th style="width: 13%;">핸드폰 번호</th>
             <th style="width: 15%;">이메일 주소</th>
             <th style="width: 18%;">주소</th>
-            <th style="width: 7%;">선택</th>
+            <th style="width: 8%;">선택</th>
           </tr>
           </thead>
           <tbody>
@@ -29,13 +28,11 @@
             <td>{{ recipient.currency }}</td>
             <td>{{ recipient.bank }}</td>
             <td>{{ recipient.account }}</td>
-            <td>{{ maskIdNumber(recipient.idNumber) }}</td>
             <td>{{ recipient.phone }}</td>
             <td>{{ recipient.email }}</td>
             <td class="address-cell">
+              {{ recipient.addressDetail }} <br>
               {{ recipient.addressCountry }}
-              {{ recipient.addressCity }} <br>
-              {{ recipient.addressDetail }}
             </td>
             <td>
               <button @click="selectRecipient(recipient)" type="button" class="select-button-v4">선택</button>
@@ -52,7 +49,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import {defineProps, defineEmits} from 'vue'
 
 const props = defineProps({
   recipientList: {
@@ -63,30 +60,6 @@ const props = defineProps({
 
 const emit = defineEmits(['selectRecipient', 'closeModal'])
 
-// 주민등록번호 마스킹 함수
-function maskIdNumber(idNumber) {
-  if (!idNumber || typeof idNumber !== 'string') {
-    return '';
-  }
-  // 하이픈이 있다면 하이픈 이후를 마스킹
-  const parts = idNumber.split('-');
-  if (parts.length > 1) {
-    const front = parts[0];
-    const back = parts[1];
-    // 뒷자리를 *로 채움
-    return `${front}-${'*'.repeat(back.length)}`;
-  }
-  // 하이픈이 없다면 전체 문자열의 절반 이후를 마스킹 (예시: '1234567890' -> '12345*****')
-  // 또는 더 단순하게 마지막 7자리 마스킹 등 규칙 필요
-  // 여기서는 주민번호 뒷자리가 7자리라고 가정하고 앞 6자리 + 하이픈 + 뒷 7자리를 마스킹
-  if (idNumber.length >= 7) { // 최소 7자리 이상일 때 마스킹 적용
-    const front = idNumber.substring(0, idNumber.length - 7);
-    return `${front}${'*'.repeat(7)}`;
-  }
-  return idNumber; // 마스킹할 수 없는 짧은 번호는 그대로 반환
-}
-
-
 function selectRecipient(recipient) {
   emit('selectRecipient', recipient)
 }
@@ -94,7 +67,7 @@ function selectRecipient(recipient) {
 function closeModal() {
   emit('closeModal')
 }
-</script>
+</script>>
 
 <style scoped>
 /* 모달 백드롭 */
@@ -140,7 +113,7 @@ function closeModal() {
 .modal-title-v4 {
   font-size: 26px;
   font-weight: 700;
-  color: #1a7a4f; /* Deeper Green */
+  color: #008681; /* Deeper Green */
   margin: 0;
 }
 
@@ -202,9 +175,9 @@ function closeModal() {
 
 
 .recipient-table-v4 th {
-  background-color: #e9f5ed; /* 헤더 배경색 (v4 스타일에서 추출) */
+  background-color: #E6F5F4; /* 헤더 배경색 (v4 스타일에서 추출) */
   font-weight: 600;
-  color: #1a7a4f; /* 헤더 텍스트 색상 */
+  color: #008681; /* 헤더 텍스트 색상 */
   position: sticky; /* 헤더 고정 */
   top: 0;
   z-index: 10;
@@ -228,7 +201,7 @@ function closeModal() {
 /* 선택 버튼 */
 .select-button-v4 {
   padding: 8px 16px;
-  background-color: #3d9970; /* Green button */
+  background-color: #009b99; /* Green button */
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -239,7 +212,7 @@ function closeModal() {
 }
 
 .select-button-v4:hover {
-  background-color: #2e8b57;
+  background-color: #008681;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 

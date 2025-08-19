@@ -5,35 +5,41 @@
     <div class="info-table-v4">
       <div class="info-row-v4">
         <span class="info-label-v4">송금 통화</span>
-        <span class="info-value-v4">{{ selectedRecipient?.currency || '선택 안 됨' }}</span>
+        <span class="info-value-v4">{{ selectedRecipient?.currency || '불러오기 오류' }}</span>
       </div>
 
       <div class="info-row-v4">
-        <span class="info-label-v4">주소 (국가)</span>
-        <span class="info-value-v4">{{ selectedRecipient?.addressCountry || '선택 안 됨' }}</span>
+        <span class="info-label-v4">거주 국가</span>
+        <span class="info-value-v4">{{ selectedRecipient?.addressCountry || '불러오기 오류' }}</span>
       </div>
 
       <div class="info-row-v4">
-        <span class="info-label-v4">주소 (도시/지역)</span>
-        <span class="info-value-v4">{{ selectedRecipient?.addressCity || '선택 안 됨' }}</span>
-      </div>
-
-      <div class="info-row-v4">
-        <span class="info-label-v4">주소 (세부주소)</span>
-        <span class="info-value-v4">{{ selectedRecipient?.addressDetail || '선택 안 됨' }}</span>
+        <span class="info-label-v4">영문 주소</span>
+        <span class="info-value-v4">{{ selectedRecipient?.addressDetail || '불러오기 오류' }}</span>
       </div>
 
       <div class="info-row-v4">
         <span class="info-label-v4">계좌번호</span>
         <span class="info-value-v4">
-          {{ selectedRecipient?.bank || '선택 안 됨' }} /
-          {{ selectedRecipient?.account || '선택 안 됨' }}
+          {{ selectedRecipient?.bank || '불러오기 오류' }} /
+          {{ selectedRecipient?.account || '불러오기 오류' }}
         </span>
       </div>
 
       <div class="info-row-v4">
         <span class="info-label-v4">핸드폰 번호</span>
-        <span class="info-value-v4">{{ selectedRecipient?.phone || '선택 안 됨' }}</span>
+        <span class="info-value-v4">{{ selectedRecipient?.phone || '불러오기 오류' }}</span>
+      </div>
+
+      <!-- 수취인 관계 증명 서류 업로드 -->
+      <div class="info-row-v4 file-upload-row-v4">
+        <span class="info-label-v4">관계 증빙 서류</span>
+        <div class="file-upload-wrapper-v4">
+          <small class="file-desc-v4">예) 가족관계증명서, 기본증명서</small>
+          <span class="file-name-v4">{{ fileName || '선택된 파일 없음' }}</span>
+          <label for="relation-proof-file" class="file-label-v4">파일 선택</label>
+          <input type="file" id="relation-proof-file" class="file-input-v4" @change="handleFileUpload" />
+        </div>
       </div>
     </div>
 
@@ -42,9 +48,8 @@
       <div class="custom-select-v4">
         <select id="relationship-v4" v-model="localRelationship" class="select-field-v4">
           <option value="" disabled selected>선택하세요</option>
+          <option value="my">본인</option>
           <option value="family">가족</option>
-          <option value="friend">친구</option>
-          <option value="colleague">동료</option>
           <option value="other">기타</option>
         </select>
         <div class="select-arrow-v4"></div>
@@ -67,9 +72,10 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:relationship']);
+const emit = defineEmits(['update:relationship', 'file-selected']);
 
 const localRelationship = ref(props.relationship);
+const fileName = ref('');
 
 watch(localRelationship, (val) => {
   emit('update:relationship', val);
@@ -83,6 +89,12 @@ watch(
       }
     }
 );
+
+const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  fileName.value = file ? file.name : '';
+  emit('file-selected', file);
+};
 </script>
 
 <style scoped>
@@ -98,7 +110,7 @@ watch(
 .section-title-v4 {
   font-size: 26px;
   font-weight: 700;
-  color: #1a7a4f; /* Deeper Green */
+  color: #008681;
   margin-bottom: 28px;
   text-align: center;
 }
@@ -107,7 +119,7 @@ watch(
   background-color: #f8f8f8;
   border-radius: 10px;
   border: 1px solid #e0e0e0;
-  overflow: hidden; /* Ensures rounded corners apply to inner rows */
+  overflow: hidden;
   margin-bottom: 30px;
 }
 
@@ -127,17 +139,66 @@ watch(
   font-size: 15px;
   color: #666666;
   font-weight: 500;
-  flex-basis: 40%; /* Adjust as needed */
+  flex-basis: 40%;
   flex-shrink: 0;
 }
 
 .info-value-v4 {
   font-size: 16px;
   color: #333333;
-  font-weight: 600; /* Slightly bolder for values */
+  font-weight: 600;
   text-align: right;
   flex-grow: 1;
   word-break: break-all;
+}
+
+/* 파일 업로드 */
+.file-upload-wrapper-v4 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.file-desc-v4 {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.file-name-v4 {
+  font-size: 14px;
+  color: #555;
+  font-style: italic;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.file-label-v4 {
+  padding: 8px 16px;
+  background-color: #009b99;
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.file-label-v4:hover {
+  background-color: #008681;
+}
+
+.file-input-v4 {
+  display: none;
 }
 
 .relationship-select-wrapper-v4 {
@@ -160,30 +221,26 @@ watch(
 .select-field-v4 {
   width: 100%;
   padding: 14px 20px;
-  border: 2px solid #3d9970; /* Vibrant Green Border */
+  border: 2px solid #009b99;
   border-radius: 10px;
-  background-color: #ffffff; /* Changed to white */
+  background-color: #ffffff;
   font-size: 17px;
-  color: #2e8b57; /* Darker green text for the selected value */
+  color: #009b99;
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   cursor: pointer;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   font-weight: 600;
 }
 
 .select-field-v4:focus {
   outline: none;
-  border-color: #4CAF50; /* Brighter green on focus */
+  border-color: #008681;
   box-shadow: 0 0 0 4px rgba(61, 153, 112, 0.2);
-  background-color: #ffffff; /* Remains white on focus */
 }
 
-/* Option elements inside the select can also be styled for consistency */
 .select-field-v4 option {
-  background-color: #ffffff; /* White background for options */
-  color: #333333; /* Dark text for options */
+  background-color: #ffffff;
+  color: #333333;
 }
 
 .select-arrow-v4 {
@@ -191,11 +248,8 @@ watch(
   right: 20px;
   top: 50%;
   transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  pointer-events: none;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-top: 7px solid #3d9970; /* Green arrow */
+  border-top: 7px solid #008681;
 }
 </style>

@@ -7,21 +7,21 @@
           <div class="carousel-title">알람이 울리는 순간<br>돈기운이 터진다!</div>
           <div class="carousel-desc">놀이터랑 친구하고<br>도나와라 머니클락 굿즈 받기</div>
           <button class="carousel-btn">자세히보기</button>
-        </div>        
+        </div>
       </div>
       <div class="mainpage-icon-menu">
         <button class="icon-menu-btn" @click="onFeatureClick('rate-lookup')"><img src="@/assets/환율버튼.png" alt="환율조회" class="icon-img" /><span>환율조회</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('openbank')"><img src="@/assets/환전버튼.png" alt="환전" class="icon-img" /><span>환전</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/친구송금버튼.png" alt="친구송금" class="icon-img" /><span>친구송금</span></button>
-        <button class="icon-menu-btn" @click="onFeatureClick('cert')"><img src="@/assets/해외송금버튼.png" alt="해외송금" class="icon-img" /><span>해외송금</span></button>
+        <button class="icon-menu-btn" @click="onFeatureClick('ForeignTransfer')"><img src="@/assets/해외송금버튼.png" alt="해외송금" class="icon-img" /><span>해외송금</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('quick')"><img src="@/assets/계좌조회버튼.png" alt="계좌 조회" class="icon-img" /><span>계좌조회</span></button>
       </div>
       <div class="forex-rate-list">
         <div
-          v-for="item in forexRates"
-          :key="item.pair"
-          class="rate-row"
-          :class="item.change > 0 ? 'up' : 'down'"
+            v-for="item in forexRates"
+            :key="item.pair"
+            class="rate-row"
+            :class="item.change > 0 ? 'up' : 'down'"
         >
           <span class="flag" aria-hidden="true">{{ item.flag }}</span>
           <span class="pair">{{ item.pair }}</span>
@@ -33,7 +33,7 @@
           </span>
         </div>
       </div>
-     </div>
+    </div>
   </div>
 </template>
 
@@ -57,7 +57,11 @@ export default {
     onFeatureClick(feature) {
       if (feature === 'rate-lookup') {
         this.$router.push('/rate-lookup');
-      } else {
+      }
+      else if (feature === 'ForeignTransfer') {
+        this.$router.push('/ForeignTransfer')
+      }
+      else {
         alert('준비중인 기능입니다: ' + feature);
       }
     },

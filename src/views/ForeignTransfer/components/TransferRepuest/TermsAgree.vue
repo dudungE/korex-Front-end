@@ -107,7 +107,7 @@ watch(agree3, (val) => { localAgree3.value = val; });
 .section-title-v4 {
   font-size: 26px;
   font-weight: 700;
-  color: #1a7a4f; /* Deeper Green */
+  color: #008681; /* Deeper Green */
   margin-bottom: 28px;
   text-align: center;
 }
@@ -162,7 +162,7 @@ watch(agree3, (val) => { localAgree3.value = val; });
 }
 
 .agree-all-button-v4.active {
-  background-color: #3d9970; /* Green when active */
+  background-color: #009b99; /* Green when active */
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(61, 153, 112, 0.2);
 }
@@ -212,8 +212,8 @@ watch(agree3, (val) => { localAgree3.value = val; });
 
 /* 체크될 때 커스텀 체크박스 스타일 */
 .hidden-checkbox-v4:checked + .custom-checkbox-v4 {
-  background-color: #3d9970; /* Green background */
-  border-color: #3d9970;
+  background-color: #009b99; /* Green background */
+  border-color: #009b99;
 }
 
 /* 체크 마크 (SVG 아이콘이나 폰트 아이콘 사용 권장) */
