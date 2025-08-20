@@ -126,7 +126,7 @@
             {{ countdown>0 ? countdown + '초' : '코드 전송' }}
           </a-button>
         </div>
-        <a-input v-model:value="verifyCode" maxlength="6" placeholder="인증코드 6자리" />
+        <a-input v-model:value="verifyCode" :maxlength="6" placeholder="인증코드 6자리" />
       </a-modal>
     </div>
   </div>
@@ -277,7 +277,7 @@ const openEmailVerify = () => {
   verifyCode.value = ''
   emailVerifyOpen.value = true
 }
-const startCountdown = (sec = 180) => {
+const startCountdown = (sec = 60) => {
   countdown.value = sec
   clearInterval(timer)
   timer = setInterval(() => {
@@ -313,7 +313,6 @@ const handleVerifySubmit = async () => {
       await authStore.refreshToken({ quiet: true })
       profile.emailVerified = true
       emailVerifyOpen.value = false
-      message.success('이메일 인증이 완료되었습니다')
     }
   } catch (err) {
     const msg = err?.response?.data?.message || '인증 코드 확인에 실패했습니다.'
@@ -344,10 +343,8 @@ const changePassword = async () => {
       newPassword: pwdForm.newPassword,
       newPasswordCheck: pwdForm.newPasswordCheck
     })
-    message.success('비밀번호가 변경되었습니다. 다시 로그인해주세요.')
+    message.success('비밀번호가 변경되었습니다.')
     passwordOpen.value = false
-    await authStore.logout()
-    router.push('/login')
   } catch (e) {
     const msg = e?.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
     message.error(msg)

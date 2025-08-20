@@ -19,35 +19,48 @@
 
     <!-- 메인 콘텐츠 -->
     <a-layout-content class="main-content">
-      <component :is="activeComponent" />
+       <keep-alive>
+        <component
+          :is="activeComponent"
+          @open-write="() => setSection('inquiry:new')"
+          @go-list="() => setSection('inquiry')"
+        />
+      </keep-alive>
     </a-layout-content>
   </a-layout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, markRaw } from 'vue'
 
 import MyInfo from './mypage/MyInfo.vue'
 import ExchangeHistory from './mypage/ExchangeHistory.vue'
 import RemittanceHistory from './mypage/RemittanceHistory.vue'
 import InquiryList from './mypage/InquiryList.vue'
+import InquiryWrite from './mypage/InquiryWrite.vue' 
 import CalendarView from './mypage/CalendarView.vue'
 
 const activeSection = ref('info')
 
 const componentsMap = {
-  info: MyInfo,
-  exchange: ExchangeHistory,
-  remittance: RemittanceHistory,
-  inquiry: InquiryList,
-  calendar: CalendarView
+  info: markRaw(MyInfo),
+  exchange: markRaw(ExchangeHistory),
+  remittance: markRaw(RemittanceHistory),
+  inquiry: markRaw(InquiryList),       // 목록
+  'inquiry:new': markRaw(InquiryWrite),// 작성
+  calendar: markRaw(CalendarView),
 }
 
 const activeComponent = computed(() => componentsMap[activeSection.value])
 
 function setSection(section) {
-  activeSection.value = section
+  activeSection.value = section === 'inquiry' ? 'inquiry' : section
 }
+
+const selectedKeys = computed(() => {
+  if (activeSection.value.startsWith('inquiry')) return ['inquiry']
+  return [activeSection.value]
+})
 </script>
 
 <style scoped>
