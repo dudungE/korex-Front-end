@@ -55,10 +55,10 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
-            path: '/OverseasRemittance',
-            name: 'OverseasRemittance',
-            component: () => import('@/views/Remit/views/RemittanceStep1.vue'),
-            meta: {requiresAuth: true}
+            path: '/ForeignTransfer',
+            name: 'ForeignTransfer',
+            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/TransferRequest.vue'),
+            // meta: {requiresAuth: true}
         },
         {
             path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
@@ -102,6 +102,31 @@ const router = createRouter({
             name: 'MyPage',
             component: () => import('@/views/MyPage.vue'),
             meta: {requiresAuth: true}
+        },
+        {
+            path: '/recipients/post',
+            name: 'RecipientsPost',
+            component: () => import('@/views/ForeignTransfer/views/Recipients/PostRecipients.vue'),
+        },
+        {
+            path: '/recipients/put',
+            name: 'RecipientsPut',
+            component: () => import('@/views/ForeignTransfer/views/Recipients/PutRecipients.vue'),
+        },
+        {
+            path: '/recipients',
+            name: 'recipients',
+            component: () => import('@/views/ForeignTransfer/views/Recipients/GetRecipients.vue'),
+        },
+        {
+            path: '/ForeignTransfer/list',
+            name: 'ForeignTransferList',
+            component: () => import('@/views/ForeignTransfer/views/TransferList/TransferList.vue'),
+        },
+        {
+            path: '/ForeignTransfer/info',
+            name: 'ForeignTransferInfo',
+            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/information.vue'),
         },
     ],
 })
