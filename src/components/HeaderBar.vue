@@ -46,11 +46,12 @@
         </div>
 
         <div class="dropdown" @mouseenter="foreignMenu=true" @mouseleave="foreignMenu=false">
-          <a @click="goToOverseasRemittance()" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
+          <a @click="goToTransferInfo()" class="dropdown-toggle" style="cursor: pointer">해외송금</a>
           <ul class="dropdown-menu" v-show="foreignMenu">
-            <li class="section-title" @click="goToOverseasRemittance">해외송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">해외송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">해외송금</li>
+            <li class="section-title" @click="goToTransferInfo()">해외송금안내</li>
+            <li class="section-title" @click="goToTransferRequest()">해외송금신청</li>
+            <li class="section-title" @click="goToForeignTransferList()">거래내역조회</li>
+            <li class="section-title" @click="goToRecipients()">수취인조회</li>
           </ul>
         </div>
 
@@ -105,7 +106,10 @@ const goToAccount = () => router.push('/account')
 const goToReservationExchange = () => router.push('/exchange/reservation')
 const goToLogin = () => router.push('/login')
 const goToMyPage = () => router.push('/mypage')
-const goToOverseasRemittance = () => router.push('/OverseasRemittance')
+const goToTransferInfo = () => router.push('/ForeignTransfer/info')
+const goToTransferRequest = () => router.push('/ForeignTransfer')
+const goToRecipients = () => router.push('/recipients')
+const goToForeignTransferList = () => router.push('/ForeignTransfer/list')
 
 
 const handleLogout = async () => {

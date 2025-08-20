@@ -43,20 +43,22 @@
 
       <div v-if="selectedRecipient" class="info-row-v4 selected-recipient-info">
         <div class="info-details-box-v4">
-          <p><strong>수취인 이름:</strong> {{ selectedRecipient.name }}</p>
-          <p><strong>은행명:</strong> {{ selectedRecipient.bank }}</p>
-          <p><strong>계좌번호:</strong> {{ selectedRecipient.account }}</p>
+          <p><strong>이름:</strong> {{ selectedRecipient.name }}
+            <strong>은행명:</strong> {{ selectedRecipient.bank }}
+            <strong>계좌번호:</strong> {{ selectedRecipient.account }}
+            <strong>통화:</strong> {{selectedRecipient.currency}}</p>
         </div>
       </div>
 
       <div class="info-row-v4 input-row">
-        <label for="sender-phone" class="input-label-v4">보내는 분 핸드폰 번호(- 제외)</label>
+        <label for="sender-phone" class="input-label-v4">보내는 분 핸드폰 번호</label>
         <input
             type="tel"
             id="sender-phone"
             v-model="localSenderPhone"
             class="input-field-v4"
             placeholder="01012345678"
+            maxlength="11"
         />
       </div>
 
@@ -72,51 +74,30 @@
       </div>
 
       <div class="info-row-v4 input-row">
-        <label for="sender-city" class="input-label-v4">보내는 분 주소 (도시)</label>
+        <label for="sender-country" class="input-label-v4">보내는 분 거주 국가</label>
         <input
             type="text"
-            id="sender-city"
-            v-model="localSenderCity"
+            id="sender-country"
+            v-model="localSenderCountry"
             class="input-field-v4"
-            placeholder="서울특별시"
+            placeholder="Korea"
         />
       </div>
 
       <div class="info-row-v4 input-row">
-        <label for="sender-region" class="input-label-v4">보내는 분 주소 (지역)</label>
+        <label for="sender-address" class="input-label-v4">보내는 분 영문 주소</label>
         <input
             type="text"
-            id="sender-region"
-            v-model="localSenderRegion"
+            id="sender-address"
+            v-model="localSenderAddress"
             class="input-field-v4"
-            placeholder="강남구"
-        />
-      </div>
-
-      <div class="info-row-v4 input-row">
-        <label for="sender-district" class="input-label-v4">보내는 분 주소 (동/면/리)</label>
-        <input
-            type="text"
-            id="sender-district"
-            v-model="localSenderDistrict"
-            class="input-field-v4"
-            placeholder="역삼동"
-        />
-      </div>
-
-      <div class="info-row-v4 input-row">
-        <label for="sender-detail-address" class="input-label-v4">보내는 분 주소 (상세 주소)</label>
-        <input
-            type="text"
-            id="sender-detail-address"
-            v-model="localSenderDetailAddress"
-            class="input-field-v4"
-            placeholder="테헤란로 123-45, 1205호"
+            placeholder="6F, 254, Changgyeonggung-ro, Jongno-gu, Seoul"
         />
       </div>
 
       <div class="info-row-v4 file-upload-row">
-        <label class="input-label-v4">보내는 분 신분증 업로드</label>
+        <label class="input-label-v4">본인인증 서류</label>
+        <small>예) 기본 증명서, 신분증, 면허증</small>
         <div class="file-input-wrapper-v4">
           <span class="uploaded-file-name-v4">
             {{ senderIdFileName || '선택된 파일 없음' }}
@@ -135,7 +116,8 @@
       </div>
 
       <div class="info-row-v4 file-upload-row">
-        <label class="input-label-v4">송금 목적 증빙 서류 업로드</label>
+        <label class="input-label-v4">송금 사유 증빙 서류</label>
+        <small>예) 유학 증명서</small>
         <div class="file-input-wrapper-v4">
           <span class="uploaded-file-name-v4">
             {{ proofFileName || '선택된 파일 없음' }}
@@ -174,10 +156,8 @@ const props = defineProps({
   selectedRecipient: Object,
   senderPhone: String,
   senderEmail: String,
-  senderCity: String,
-  senderRegion: String,
-  senderDistrict: String,
-  senderDetailAddress: String,
+  senderCountry: String,
+  senderAddress: String,
   senderIdFileName: String, // 파일 이름 표시용 prop
   proofFileName: String, // 파일 이름 표시용 prop
 })
@@ -188,10 +168,8 @@ const emit = defineEmits([
   'update:selectedRecipient',
   'update:senderPhone',
   'update:senderEmail',
-  'update:senderCity',
-  'update:senderRegion',
-  'update:senderDistrict',
-  'update:senderDetailAddress',
+  'update:senderCountry',
+  'update:senderAddress',
   'uploadSenderId', // 실제 파일 객체 전송 이벤트
   'uploadProof', // 실제 파일 객체 전송 이벤트
   'update:senderIdFileName', // 파일 이름 업데이트 이벤트 추가
@@ -209,19 +187,15 @@ const localSenderName = ref(props.senderName)
 const localSelectedReason = ref(props.selectedReason)
 const localSenderPhone = ref(props.senderPhone)
 const localSenderEmail = ref(props.senderEmail)
-const localSenderCity = ref(props.senderCity)
-const localSenderRegion = ref(props.senderRegion)
-const localSenderDistrict = ref(props.senderDistrict)
-const localSenderDetailAddress = ref(props.senderDetailAddress)
+const localSenderCountry = ref(props.senderCountry)
+const localSenderAddress = ref(props.senderAddress)
 
 watch(localSenderName, (val) => emit('update:senderName', val))
 watch(localSelectedReason, (val) => emit('update:selectedReason', val))
 watch(localSenderPhone, (val) => emit('update:senderPhone', val))
 watch(localSenderEmail, (val) => emit('update:senderEmail', val))
-watch(localSenderCity, (val) => emit('update:senderCity', val))
-watch(localSenderRegion, (val) => emit('update:senderRegion', val))
-watch(localSenderDistrict, (val) => emit('update:senderDistrict', val))
-watch(localSenderDetailAddress, (val) => emit('update:senderDetailAddress', val))
+watch(localSenderCountry, (val) => emit('update:senderCountry', val))
+watch(localSenderAddress, (val) => emit('update:senderAddress', val))
 
 const selectedRecipient = ref(props.selectedRecipient)
 watch(
@@ -246,21 +220,24 @@ function onSenderIdUpload(e) {
   const file = e.target.files[0];
   if (file) {
     emit('uploadSenderId', file); // 실제 파일 객체 전송
-    emit('update:senderIdFileName', file.name); // 파일 이름 업데이트
+    emit('update:senderIdFileName', file.name); // 파일명 업데이트
   } else {
-    emit('update:senderIdFileName', ''); // 파일 선택 취소 시 초기화
+    emit('uploadSenderId', null);
+    emit('update:senderIdFileName', null); // 파일명 초기화
   }
 }
 
 function onProofUpload(e) {
   const file = e.target.files[0];
   if (file) {
-    emit('uploadProof', file); // 실제 파일 객체 전송
-    emit('update:proofFileName', file.name); // 파일 이름 업데이트
+    emit('uploadProof', file);
+    emit('update:proofFileName', file.name); // 파일명 업데이트
   } else {
-    emit('update:proofFileName', ''); // 파일 선택 취소 시 초기화
+    emit('uploadProof', null);
+    emit('update:proofFileName', null); // 파일명 초기화
   }
 }
+
 </script>
 
 <style scoped>
@@ -277,7 +254,7 @@ function onProofUpload(e) {
 .section-title-v4 {
   font-size: 26px;
   font-weight: 700;
-  color: #1a7a4f; /* Deeper Green */
+  color: #008681; /* Deeper Green */
   margin-bottom: 28px;
   text-align: center;
 }
@@ -329,7 +306,7 @@ function onProofUpload(e) {
 
 .input-field-v4:focus {
   outline: none;
-  border-color: #3d9970;
+  border-color: #009b99;
   box-shadow: 0 0 0 3px rgba(61, 153, 112, 0.1);
 }
 
@@ -362,7 +339,7 @@ function onProofUpload(e) {
 
 .radio-input-v4 {
   margin-right: 8px;
-  accent-color: #3d9970;
+  accent-color: #009b99;
 }
 
 /* 수취인 선택 버튼 */
@@ -371,20 +348,20 @@ function onProofUpload(e) {
 }
 
 .action-button-v4 {
-  padding: 10px 18px;
-  background-color: #3d9970;
+  padding: 7px 10px;
+  background-color: #009b99;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  min-width: 80px;
+  min-width: 68px;
 }
 
 .action-button-v4:hover {
-  background-color: #2e8b57;
+  background-color: #008681;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -395,7 +372,7 @@ function onProofUpload(e) {
 }
 
 .info-details-box-v4 {
-  background-color: #f5fff5;
+  background-color: #E6F5F4;
   border: 1px solid #c8e6c9;
   border-radius: 8px;
   padding: 12px 18px;
@@ -405,12 +382,14 @@ function onProofUpload(e) {
 }
 
 .info-details-box-v4 p {
-  margin: 0;
+  margin: 3px;
   padding: 2px 0;
+  text-align: center;
 }
 
 .info-details-box-v4 strong {
-  color: #1a7a4f;
+  color: #008681;
+  padding: 3px;
 }
 
 /* 파일 업로드 필드 정렬 및 스타일 */
@@ -436,8 +415,8 @@ function onProofUpload(e) {
 /* 커스텀 파일 선택 버튼 (label로 변경하여 클릭 가능하게) */
 .custom-file-button-v4 {
   display: inline-block;
-  padding: 8px 15px;
-  background-color: #3d9970; /* Green button */
+  padding: 7px 10px;
+  background-color: #009b99; /* Green button */
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -450,7 +429,7 @@ function onProofUpload(e) {
 }
 
 .custom-file-button-v4:hover {
-  background-color: #2e8b57;
+  background-color: #008681;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
