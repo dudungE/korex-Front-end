@@ -40,12 +40,17 @@
               <table>
                 <thead>
                   <tr>
-                    <th>통화</th>
-                    <th>매매기준율</th>
-                    <th>현찰사실때</th>
-                    <th>현찰파실때</th>
-                    <th>송금보내실때</th>
-                    <th>송금받으실때</th>
+                    <th rowspan="2">통화</th>
+                    <th rowspan="2">매매기준율</th>
+                    <th colspan="2">현찰</th>
+                    <th colspan="2">송금</th>
+                    <th rowspan="2">대미환산율</th>
+                  </tr>
+                  <tr>
+                    <th>사실때</th>
+                    <th>파실때</th>
+                    <th>보내실때</th>
+                    <th>받으실때</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -63,6 +68,7 @@
                     <td>{{ rate.sell_cash_rate }}</td>
                     <td>{{ rate.send_rate }}</td>
                     <td>{{ rate.receive_rate }}</td>
+                    <td>{{ rate.usd_conversion_rate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -90,25 +96,39 @@
               <table>
                 <thead>
                   <tr>
-                    <th>통화</th>
-                    <th>매매기준율</th>
-                    <th>현찰사실때</th>
-                    <th>현찰파실때</th>
-                    <th>송금보내실때</th>
-                    <th>송금받으실때</th>
+                    <th rowspan="2">통화</th>
+                    <th rowspan="2">매매기준율</th>
+                    <th colspan="2">현찰</th>
+                    <th colspan="2">송금</th>
+                    <th rowspan="2">대미환산율</th>
+                  </tr>
+                  <tr>
+                    <th>사실때</th>
+                    <th>파실때</th>
+                    <th>보내실때</th>
+                    <th>받으실때</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rate in ratesByDate" :key="rate.currencyCode">
-                    <td>{{ rate.currencyCode }}</td>
-                    <td>{{ rate.baseRate }}</td>
-                    <td>{{ rate.buyCashRate }}</td>
-                    <td>{{ rate.sellCashRate }}</td>
-                    <td>{{ rate.sendRate }}</td>
-                    <td>{{ rate.receiveRate }}</td>
+                  <tr v-for="rate in realTimeRates" :key="rate.currency_code">
+                    <td>
+                      <button 
+                        class="currency-link" 
+                        @click="showCurrencyDetail(rate.currency_code)"
+                      >
+                        {{ rate.currency_code }}
+                      </button>
+                    </td>
+                    <td>{{ rate.base_rate }}</td>
+                    <td>{{ rate.buy_cash_rate }}</td>
+                    <td>{{ rate.sell_cash_rate }}</td>
+                    <td>{{ rate.send_rate }}</td>
+                    <td>{{ rate.receive_rate }}</td>
+                    <td>{{ rate.usd_conversion_rate }}</td>
                   </tr>
                 </tbody>
               </table>
+
             </div>
           </div>
         </section>
@@ -141,25 +161,39 @@
               <table>
                 <thead>
                   <tr>
-                    <th>날짜</th>
-                    <th>매매기준율</th>
-                    <th>현찰사실때</th>
-                    <th>현찰파실때</th>
-                    <th>송금보내실때</th>
-                    <th>송금받으실때</th>
+                    <th rowspan="2">통화</th>
+                    <th rowspan="2">매매기준율</th>
+                    <th colspan="2">현찰</th>
+                    <th colspan="2">송금</th>
+                    <th rowspan="2">대미환산율</th>
+                  </tr>
+                  <tr>
+                    <th>사실때</th>
+                    <th>파실때</th>
+                    <th>보내실때</th>
+                    <th>받으실때</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rate in ratesByCurrency" :key="rate.date">
-                    <td>{{ formatDate(rate.baseDate) }}</td>
-                    <td>{{ rate.baseRate }}</td>
-                    <td>{{ rate.buyCashRate }}</td>
-                    <td>{{ rate.sellCashRate }}</td>
-                    <td>{{ rate.sendRate }}</td>
-                    <td>{{ rate.receiveRate }}</td>
+                  <tr v-for="rate in realTimeRates" :key="rate.currency_code">
+                    <td>
+                      <button 
+                        class="currency-link" 
+                        @click="showCurrencyDetail(rate.currency_code)"
+                      >
+                        {{ rate.currency_code }}
+                      </button>
+                    </td>
+                    <td>{{ rate.base_rate }}</td>
+                    <td>{{ rate.buy_cash_rate }}</td>
+                    <td>{{ rate.sell_cash_rate }}</td>
+                    <td>{{ rate.send_rate }}</td>
+                    <td>{{ rate.receive_rate }}</td>
+                    <td>{{ rate.usd_conversion_rate }}</td>
                   </tr>
                 </tbody>
               </table>
+
             </div>
           </div>
         </section>
@@ -168,7 +202,7 @@
         <div v-if="showDetailModal" class="modal-overlay" @click="closeDetailModal">
           <div class="modal-content" @click.stop>
             <div class="modal-header">
-              <h3>{{ selectedCurrencyCode }} 상세 환율 데이터</h3>
+              <h3>{{ selectedCurrencyCode }} 실시간 환율 추이</h3>
               <button class="close-btn" @click="closeDetailModal">&times;</button>
             </div>
             
@@ -192,6 +226,7 @@
                         <th>현찰파실때</th>
                         <th>송금보내실때</th>
                         <th>송금받으실때</th>
+                        <th>대미환산율</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -202,6 +237,7 @@
                         <td>{{ data.sell_cash_rate }}</td>
                         <td>{{ data.send_rate }}</td>
                         <td>{{ data.receive_rate }}</td>
+                        <td>{{ data.usd_conversion_rate }}</td>
                       </tr>
                     </tbody>
                   </table>
