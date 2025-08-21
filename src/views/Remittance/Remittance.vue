@@ -6,7 +6,7 @@
         <h2 class="page-title">친구간 송금</h2>
         <div class="welcome-card">
           <h3>간편하고 빠른 친구간 송금</h3>
-          <p>원하는 통화로 직접 송금하세요 (환전 없음)</p>
+          <p>원하는 통화로 직접 송금하세요</p>
           <button class="send-button" @click="nextStep">
             보내기
           </button>
@@ -49,18 +49,18 @@
         <div class="currency-section">
           <h3>어떤 통화로 송금하시겠어요?</h3>
           <p class="section-description">선택한 통화로 바로 송금됩니다 (환전 없음)</p>
-          
+
           <!-- 통화 로딩 상태 -->
           <div v-if="isLoadingCurrencies" class="loading-message">
             지원 통화 조회 중...
           </div>
-          
+
           <!-- 통화 에러 상태 -->
           <div v-else-if="currencyError" class="error-message">
             {{ currencyError }}
             <button @click="fetchSupportedCurrencies" class="retry-btn">다시 시도</button>
           </div>
-          
+
           <!-- 통화 선택 그리드 -->
           <div v-else class="currency-grid">
             <div v-for="currency in availableFromCurrencies" :key="currency.code" class="currency-card"
@@ -113,9 +113,14 @@
           <div class="form-group">
             <label class="form-label">누구에게 보낼까요?</label>
             <div class="input-with-confirm">
-              <input v-model="recipientName" type="text" class="form-input" placeholder="받는 분 이름을 입력하세요"
-                @keyup.enter="confirmNameInput" :disabled="nameConfirmed">
-              <button v-if="recipientName.trim() && !nameConfirmed" class="confirm-btn" @click="confirmNameInput">
+              <input v-model="recipientName" 
+              type="text" 
+              class="form-input" 
+              placeholder="받는 분 이름을 입력하세요"
+              @input="filterNameInput" 
+              @keyup.enter="verifyRecipientName" 
+              :disabled="nameConfirmed">
+              <button v-if="recipientName.trim() && !nameConfirmed" class="confirm-btn" @click="verifyRecipientName">
                 확인
               </button>
               <div v-if="nameConfirmed" class="confirmed-mark">✓</div>
@@ -127,9 +132,16 @@
             <div v-if="nameConfirmed" class="form-group">
               <label class="form-label">휴대폰 번호</label>
               <div class="input-with-confirm">
-                <input v-model="recipientPhone" type="tel" class="form-input" placeholder="010-0000-0000"
-                  @keyup.enter="confirmPhoneInput" :disabled="phoneConfirmed" ref="phoneInput">
-                <button v-if="recipientPhone.trim() && !phoneConfirmed" class="confirm-btn" @click="confirmPhoneInput">
+                <input v-model="recipientPhone" 
+                type="tel" class="form-input" 
+                placeholder="010-0000-0000"
+                @input="filterPhoneInput" 
+                @keydown.space.prevent="" 
+                @keyup.enter="verifyRecipientPhone"
+                :disabled="phoneConfirmed" 
+                ref="phoneInput">
+                <button v-if="recipientPhone.trim() && !phoneConfirmed" class="confirm-btn"
+                  @click="verifyRecipientPhone">
                   확인
                 </button>
                 <div v-if="phoneConfirmed" class="confirmed-mark">✓</div>
@@ -377,7 +389,7 @@ onMounted(() => {
 const fetchSupportedCurrencies = async () => {
   isLoadingCurrencies.value = true
   currencyError.value = ''
-  
+
   try {
     const response = await fetch('http://localhost:8080/api/transfer/currencies', {
       method: 'GET',
@@ -385,13 +397,13 @@ const fetchSupportedCurrencies = async () => {
         'Content-Type': 'application/json',
       }
     })
-    
+
     if (!response.ok) {
       throw new Error('지원 통화 조회에 실패했습니다')
     }
-    
+
     const currencyData = await response.json()
-    
+
     // 백엔드 데이터를 프론트엔드 형식으로 변환
     currencies.value = currencyData.map(currency => ({
       code: currency.currencyCode || currency.code,
@@ -400,13 +412,13 @@ const fetchSupportedCurrencies = async () => {
       decimalPlaces: currency.decimalPlaces,
       countryName: currency.countryName
     }))
-    
+
     console.log('지원 통화 목록:', currencies.value)
-    
+
   } catch (error) {
     console.error('지원 통화 조회 오류:', error)
     currencyError.value = error.message || '지원 통화 조회 중 오류가 발생했습니다'
-    
+
     // 에러 시 기본 통화 목록 사용
     currencies.value = [
       { code: 'KRW', name: '한국 원', countryName: '대한민국' },
@@ -429,7 +441,7 @@ const fetchUserBalances = async () => {
         'Content-Type': 'application/json',
       }
     })
-    
+
     if (!response.ok) {
       throw new Error('잔액 조회에 실패했습니다')
     }
@@ -523,10 +535,79 @@ const calculateTotal = () => {
   return parseFloat(sendAmount.value).toFixed(2)
 }
 
-// 거래 타입 (항상 직접 송금)
-const getTransferType = () => {
-  return 'DIRECT'
+// 한글, 영어만 허용하고 띄어쓰기 제거
+const filterNameInput = (event) => {
+  // recipientName.value = event.target.value.replace(/[^가-힣a-zA-Z]/g, '');
 }
+
+// 숫자만 허용
+const filterPhoneInput = (event) => {
+  recipientPhone.value = event.target.value.replace(/[^0-9]/g, '');
+}
+
+
+// 수취인 이름 검증 (서버에 존재하는지)
+const verifyRecipientName = async () => {
+  if (!recipientName.value.trim()) return
+  
+  // 자기 자신 이름 차단
+  // if (recipientName.value === authStore.user.name) {
+  //   alert("본인에게는 송금할 수 없습니다 ❌")
+  //   return
+  // }
+  try {
+    const response = await fetch("http://localhost:8080/api/user/exists?name=" + encodeURIComponent(recipientName.value), {
+      method: "GET"
+    })
+    const exists = await response.json()
+    if (exists) {
+      nameConfirmed.value = true
+      alert("사용자가 확인되었습니다 ✅ 이름 입력 완료")
+      await nextTick()
+      if (phoneInput.value) {
+        phoneInput.value.focus()
+      }
+    } else {
+      alert("해당 이름의 사용자가 존재하지 않습니다 ❌")
+    }
+  } catch (error) {
+    alert("이름 확인 중 오류 발생")
+    console.error(error)
+  }
+}
+
+// 수취인 전화번호 검증 (이름 + 번호 매칭 확인)
+const verifyRecipientPhone = async () => {
+  if (!recipientPhone.value.trim()) return
+
+  // 자기 자신 번호 차단
+  // if (recipientPhone.value === authStore.user.phone) {
+  //   alert("본인에게는 송금할 수 없습니다 ❌")
+  //   return
+  // }
+
+  try {
+    const response = await fetch("http://localhost:8080/api/user/verify-recipient", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: recipientName.value,
+        phone: recipientPhone.value
+      })
+    })
+    const isValid = await response.json()
+    if (isValid === true) {
+      phoneConfirmed.value = true
+      alert("수취인 확인 완료 ✅ 전화번호가 일치합니다")
+    } else {
+      alert("이름과 전화번호가 일치하지 않습니다 ❌")
+    }
+  } catch (error) {
+    alert("전화번호 확인 중 오류 발생")
+    console.error(error)
+  }
+}
+
 
 const getTransferTypeDescription = () => {
   return `${selectedCurrency.value} 직접 송금`

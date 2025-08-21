@@ -25,8 +25,7 @@
                 <option value="EUR">🇪🇺 유럽연합 EUR</option>
               </select>
 
-              <input type="number" v-model="inputAmount" class="amount-input" placeholder="0"
-                @input="calculateExchange" />
+              <input type="text" v-model="displayAmount" class="amount-input" placeholder="0" @input="onAmountInput" />
             </div>
           </div>
 
@@ -44,14 +43,23 @@
             </div>
 
             <div class="currency-input-row">
-              <select v-model="toCurrency" class="currency-dropdown" @change="calculateExchange">
-                <option value="KRW">🇰🇷 한국 KRW</option>
-                <option value="USD">🇺🇸 미국 USD</option>
-                <option value="JPY">🇯🇵 일본 JPY</option>
-                <option value="EUR">🇪🇺 유럽연합 EUR</option>
+              <select v-model="toCurrency" class="currency-dropdown" @change="calculateExchange"
+                :disabled="fromCurrency !== 'KRW'">
+
+                <!-- FROM이 KRW인 경우: 모든 통화 선택 가능 -->
+                <template v-if="fromCurrency === 'KRW'">
+                  <option value="USD">🇺🇸 미국 USD</option>
+                  <option value="JPY">🇯🇵 일본 JPY</option>
+                  <option value="EUR">🇪🇺 유럽연합 EUR</option>
+                </template>
+
+                <!-- FROM이 KRW가 아닌 경우: KRW만 선택 가능 -->
+                <template v-else>
+                  <option value="KRW">🇰🇷 한국 KRW</option>
+                </template>
               </select>
 
-              <input type="number" :value="convertedAmount" class="amount-input" placeholder="0" readonly />
+              <input type="text" :value="formatNumber(convertedAmount)" class="amount-input" placeholder="0" readonly />
             </div>
           </div>
 
@@ -121,6 +129,7 @@ export default {
       fromCurrency: 'KRW',
       toCurrency: 'USD',
       inputAmount: '',
+      displayAmount: '',
       convertedAmount: 0,
       currentExchangeRate: 0,
       finalAmount: 0,
@@ -143,6 +152,16 @@ export default {
     }
   },
 
+  watch: {
+    fromCurrency(newValue) {
+      // FROM이 KRW가 아니면 TO를 KRW로 자동 설정
+      if (newValue !== 'KRW') {
+        this.toCurrency = 'KRW';
+      }
+      this.calculateExchange();
+    }
+  },
+
   computed: {
     isAmountExceedsBalance() {
       if (!this.inputAmount || this.inputAmount <= 0) {
@@ -152,11 +171,77 @@ export default {
     }
   },
 
+  availableToCurrencies() {
+    if (this.fromCurrency === 'KRW') {
+      // FROM이 KRW면 모든 통화 선택 가능
+      return [
+        { value: 'USD', label: '🇺🇸 미국 USD' },
+        { value: 'JPY', label: '🇯🇵 일본 JPY' },
+        { value: 'EUR', label: '🇪🇺 유럽연합 EUR' }
+      ];
+    } else {
+      // FROM이 KRW가 아니면 KRW만 선택 가능
+      return [
+        { value: 'KRW', label: '🇰🇷 한국 KRW' }
+      ];
+    }
+  },
+
   mounted() {
     this.calculateExchange();
   },
 
   methods: {
+    // 🚨 간단한 입력 처리
+    onAmountInput(event) {
+      let rawValue = event.target.value;
+
+      // 콤마 제거하여 순수 숫자만 추출
+      let numericValue = rawValue.replace(/[^0-9.]/g, '');
+
+      // 소수점 2개 이상 방지
+      const dotCount = (numericValue.match(/\./g) || []).length;
+      if (dotCount > 1) {
+        numericValue = numericValue.substring(0, numericValue.lastIndexOf('.'));
+      }
+
+      // 소수점 이하 2자리 제한
+      if (numericValue.includes('.')) {
+        const parts = numericValue.split('.');
+        if (parts[1] && parts[1].length > 2) {
+          numericValue = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+      }
+
+      // 실제 계산용 값 저장
+      this.inputAmount = numericValue;
+
+      // 포맷팅하여 화면에 표시
+      if (numericValue) {
+        this.displayAmount = this.formatWithCommas(numericValue);
+      } else {
+        this.displayAmount = '';
+      }
+
+      this.calculateExchange();
+    },
+
+    // 🚨 콤마 포맷팅 함수 (단순화)
+    formatWithCommas(value) {
+      if (!value) return '';
+
+      const parts = value.toString().split('.');
+      // 정수 부분에 콤마 추가
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+      // 소수점 이하는 최대 2자리까지만
+      if (parts[1]) {
+        parts[1] = parts[1].substring(0, 2);
+      }
+
+      return parts.join('.');
+    },
+
     calculateExchange() {
       if (!this.inputAmount || this.inputAmount <= 0) {
         this.convertedAmount = 0;
@@ -179,11 +264,6 @@ export default {
         } else if (this.toCurrency === 'KRW') {
           rate = this.rates[this.fromCurrency];
           convertedValue = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
-        } else {
-          // 둘 다 KRW가 아닌 경우
-          const fromToKrw = parseFloat(this.inputAmount) * this.rates[this.fromCurrency];
-          rate = this.rates[this.fromCurrency] / this.rates[this.toCurrency];
-          convertedValue = fromToKrw / this.rates[this.toCurrency];
         }
       }
 
@@ -211,9 +291,31 @@ export default {
       return this.formatNumber(this.balances[currency]);
     },
 
+    // 🚨 커서 위치 계산
+    getCursorPosition(oldValue, newValue, oldCursor) {
+      let newCursor = oldCursor;
+
+      // 콤마가 추가되었을 때 커서 위치 조정
+      for (let i = 0; i < Math.min(oldCursor, newValue.length); i++) {
+        if (oldValue[i] !== newValue[i] && newValue[i] === ',') {
+          newCursor++;
+        }
+      }
+
+      return newCursor;
+    },
+
     setMaxAmount() {
-      this.inputAmount = this.balances[this.fromCurrency];
+      const maxValue = this.balances[this.fromCurrency].toString();
+      this.inputAmount = maxValue;
+      this.displayAmount = this.formatWithCommas(maxValue);
       this.calculateExchange();
+    },
+
+    resetFormatting() {
+      if (this.inputAmount) {
+        this.displayAmount = this.addCommas(this.inputAmount.toString());
+      }
     },
 
     formatNumber(num) {
@@ -325,6 +427,21 @@ export default {
   display: flex;
   gap: 16px;
   align-items: center;
+}
+
+.fixed-currency-notice {
+  color: #009490;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(0, 148, 144, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.currency-dropdown:disabled {
+  background: #f8f9fa;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .currency-dropdown {
