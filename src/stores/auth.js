@@ -71,6 +71,11 @@ export const useAuthStore = defineStore('auth', () => {
      */
     
     async function login(loginData) {
+        const FAIL_KEY = (id) => `fc:${id}`
+        const getFailCount = (id) => Number(localStorage.getItem(FAIL_KEY(id)) || '0')
+        const setFailCount = (id, n) => localStorage.setItem(FAIL_KEY(id), String(n))
+        const incFailCount = (id) => { const n = getFailCount(id) + 1; setFailCount(id, n); return n }
+        const resetFailCount = (id) => localStorage.removeItem(FAIL_KEY(id))
         try {
             console.log('🚀 로그인 요청 시작')
             console.log('📋 요청 데이터:', {
@@ -89,7 +94,6 @@ export const useAuthStore = defineStore('auth', () => {
                 password: '***' // 비밀번호 마스킹
             })
 
-            //const response = await axios.post('/api/auth/login', requestPayload)
             const response = await axios.post('/api/auth/login', requestPayload, {
                 withCredentials: true
             })
@@ -100,7 +104,9 @@ export const useAuthStore = defineStore('auth', () => {
 
             if (response.status === 200 && response.data.authenticated) {
                 // 응답 헤더에서 토큰 추출
-                const token = response.headers['authorization'] || response.data.accessToken
+                const tokenHeader = response.headers?.authorization || response.headers?.Authorization
+                const token = tokenHeader || response.data.accessToken
+                //const token = response.headers['authorization'] || response.data.accessToken
                 console.log('🔑 토큰 추출 결과:', token ? `${token.substring(0, 20)}...` : '토큰 없음')
 
                 if (token) {
@@ -112,7 +118,9 @@ export const useAuthStore = defineStore('auth', () => {
                 }
 
                 isAuthenticated.value = true
-                userInfo.value = response.data.user
+                userInfo.value = response.data.userInfo
+
+                resetFailCount(loginData.loginId)
 
                 if (userInfo.value?.loginId) {
                     localStorage.setItem('loginId', userInfo.value.loginId)
@@ -136,9 +144,25 @@ export const useAuthStore = defineStore('auth', () => {
                 console.error('- 응답 데이터:', error.response?.data)
                 console.error('- 요청 설정:', error.config)
 
-                const code = error.response?.data?.code;
+                const status = error.response?.status
+                const data   = error.response?.data
+                const code   = data?.code
+                //const code = error.response?.data?.code;
 
-                if (error.response?.status === 401) {
+                if (error.response?.status === 400 && code == 'U004') {
+                    let count =  Number.isFinite(data?.failCount) ? data.failCount
+                             : Number(error.response?.headers?.['x-fail-count'])
+                    if (!Number.isFinite(count)) {
+                        alert('로그인 실패')
+                        return false
+                    }
+                    setFailCount(loginData.loginId, count)
+
+                    alert(`로그인 실패: ${count}회`)
+                    if (count >= 5) {
+                        alert('5회 이상 실패로 계정이 제한되었습니다. 1:1문의를 접수해 주세요.')
+                    }
+                } else if (status === 401) {
                     alert('아이디 또는 비밀번호가 일치하지 않습니다.')
                 } else if (error.response?.status === 500) {
                     alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
@@ -263,9 +287,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     /**
-     * 서버에 로그아웃 요청을 보냅니다.
-     */
-    /**
      * 리프레시 토큰을 통해 새로운 액세스 토큰을 발급받습니다.
      */
     async function refreshToken({ quiet = true } = {}) {
@@ -315,11 +336,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-
+    /**
+     * 서버에 로그아웃 요청을 보냅니다.
+     */
     async function logout() {
         try {
             // 로그아웃 요청시 인터셉터에서 토큰 갱신하지 않도록 플래그 설정
             await axios.post('/api/auth/logout', {}, { 
+                withCredentials: true,
                 headers: { 'X-Skip-Auth-Refresh': 'true' }
             })
         } catch (error) {

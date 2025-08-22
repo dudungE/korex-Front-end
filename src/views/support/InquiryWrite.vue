@@ -105,12 +105,18 @@ async function handleSubmit() {
     margin: 0; 
 }
 .inquiry-card {
-  width: 100%;
-  max-width: none;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  padding: 24px 24px 16px;
+  width: 60%; 
+  margin: 20px auto;
+  height: calc(100vh - 40px); 
+  max-width: 900px; 
+  min-width: 320px;
+  display: flex;
+  flex-direction: column; 
+  background: #fff; 
+  border-radius: 16px; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06); 
+  padding: 24px 24px 16px; 
+  box-sizing: border-box;
 }
 .inquiry-header{
   width: 100%;

@@ -12,20 +12,13 @@
         <a-menu-item key="info">개인정보</a-menu-item>
         <a-menu-item key="exchange">환전내역</a-menu-item>
         <a-menu-item key="remittance">송금내역</a-menu-item>
-        <a-menu-item key="inquiry">1:1 문의</a-menu-item>
         <a-menu-item key="calendar">캘린더</a-menu-item>
       </a-menu>
     </a-layout-sider>
 
     <!-- 메인 콘텐츠 -->
     <a-layout-content class="main-content">
-       <keep-alive>
-        <component
-          :is="activeComponent"
-          @open-write="() => setSection('inquiry:new')"
-          @go-list="() => setSection('inquiry')"
-        />
-      </keep-alive>
+      <component :is="activeComponent" />
     </a-layout-content>
   </a-layout>
 </template>
@@ -36,8 +29,6 @@ import { ref, computed, markRaw } from 'vue'
 import MyInfo from './mypage/MyInfo.vue'
 import ExchangeHistory from './mypage/ExchangeHistory.vue'
 import RemittanceHistory from './mypage/RemittanceHistory.vue'
-import InquiryList from './mypage/InquiryList.vue'
-import InquiryWrite from './mypage/InquiryWrite.vue' 
 import CalendarView from './mypage/CalendarView.vue'
 
 const activeSection = ref('info')
@@ -46,21 +37,14 @@ const componentsMap = {
   info: markRaw(MyInfo),
   exchange: markRaw(ExchangeHistory),
   remittance: markRaw(RemittanceHistory),
-  inquiry: markRaw(InquiryList),       // 목록
-  'inquiry:new': markRaw(InquiryWrite),// 작성
   calendar: markRaw(CalendarView),
 }
 
 const activeComponent = computed(() => componentsMap[activeSection.value])
 
 function setSection(section) {
-  activeSection.value = section === 'inquiry' ? 'inquiry' : section
+  activeSection.value = section
 }
-
-const selectedKeys = computed(() => {
-  if (activeSection.value.startsWith('inquiry')) return ['inquiry']
-  return [activeSection.value]
-})
 </script>
 
 <style scoped>

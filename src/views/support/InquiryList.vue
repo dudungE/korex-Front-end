@@ -31,7 +31,7 @@
     </div>
   </div>
 
-  <a-modal
+   <a-modal
     v-model:open="detailOpen"
     title="문의 내용"
     :footer="null"
@@ -50,7 +50,18 @@
             <a-tag class="detail-status" :color="statusColor(detail.status)">
               {{ statusLabel(detail.status) }}
             </a-tag>
+            <div class="spacer"></div>
+
+            <!-- 철회 버튼 -->
+            <a-button
+              v-if="canWithdraw(detail)"
+              danger
+              :loading="withdrawLoading"
+              @click="confirmWithdraw(detail.id)"
+              size="small"
+            >철회</a-button>
           </div>
+
           <div class="meta-row">
             <CalendarOutlined />
             <span class="meta-date">{{ formatDate(detail.createdAt) }}</span>
@@ -62,6 +73,24 @@
         <a-divider class="detail-divider" />
 
         <div class="detail-content">{{ detail.content }}</div>
+
+        <!-- 답변 토글/보기 -->
+        <div class="answer-actions" v-if="canShowAnswerButton(detail)">
+          <a-button type="default" @click="toggleAnswer(detail.id)" :loading="answerLoading" size="small">
+            {{ answerOpen ? '답변 숨기기' : '답변 보기' }}
+          </a-button>
+        </div>
+
+        <a-spin :spinning="answerLoading">
+          <div v-if="answerOpen && answer" class="answer-box">
+            <div class="answer-meta">
+              관리자 답변 · {{ formatDate(answer.createdAt) }}
+            </div>
+            <div class="answer-content">
+              {{ answer.content }}
+            </div>
+          </div>
+        </a-spin>
       </div>
     </a-skeleton>
   </a-modal>
@@ -71,8 +100,9 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { CalendarOutlined } from '@ant-design/icons-vue'
+import { Modal, message } from 'ant-design-vue'
 
-defineEmits(['open-write'])
+const emit = defineEmits(['open-write', 'go-list'])
 
 const columns = [
   { title: '번호', dataIndex: 'id', key: 'id', width: 100 },
@@ -94,16 +124,22 @@ const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref(null)
 
+const answerOpen = ref(false)
+const answerLoading = ref(false)
+const answer = ref(null)
+
+const withdrawLoading = ref(false)
+
 const rowKey = (record) => record.id
 
 function statusColor(s) {
   if (s === 'ANSWERED') return 'success'
-  if (s === 'IN_PROGRESS') return 'processing'
-  return 'default'
+  if (s === 'WITHDRAW') return 'error'
+  return 'default' // REGISTERED
 }
 function statusLabel(s) {
   if (s === 'ANSWERED') return '답변완료'
-  if (s === 'IN_PROGRESS') return '처리중'
+  if (s === 'WITHDRAW') return '철회됨'
   return '접수'
 }
 function formatDate(iso) {
@@ -134,7 +170,7 @@ async function fetchData() {
     pagination.value = { ...pagination.value, total }
   } catch (e) {
     console.error(e)
-    alert('문의 목록을 불러오지 못했습니다.')
+    message.error('문의 목록을 불러오지 못했습니다.')
   } finally {
     loading.value = false
   }
@@ -149,20 +185,86 @@ async function openDetail(id) {
   detailOpen.value = true
   detailLoading.value = true
   detail.value = null
+  answerOpen.value = false
+  answer.value = null
   try {
     const { data } = await axios.get(`/api/inquiries/${id}`)
     detail.value = data
   } catch (e) {
     console.error(e)
-    alert('문의 상세를 불러오지 못했습니다.')
+    message.error('문의 상세 내역을 불러오지 못했습니다.')
     detailOpen.value = false
   } finally {
     detailLoading.value = false
   }
 }
+
 function closeDetail() {
   detailOpen.value = false
   detail.value = null
+  answerOpen.value = false
+  answer.value = null
+}
+
+function canShowAnswerButton(d) {
+  if (!d) return false
+  if (typeof d.hasAnswer === 'boolean') return d.hasAnswer
+  return d.status === 'ANSWERED'
+}
+
+function canWithdraw(d) {
+  if (!d) return false
+  const deleted = d.deleted === true
+  const isOpen = d.status === 'REGISTERED'
+  return isOpen && !deleted
+}
+
+async function toggleAnswer(id) {
+  if (!answerOpen.value) {
+    answerLoading.value = true
+    try {
+      const { data } = await axios.get(`/api/inquiries/${id}/answer`)
+      answer.value = data
+      answerOpen.value = true
+    } catch (e) {
+      if (e?.response?.status === 404) {
+        message.info('등록된 답변이 없습니다.')
+      } else {
+        message.error('답변을 불러오지 못했습니다.')
+      }
+      answer.value = null
+      answerOpen.value = false
+    } finally {
+      answerLoading.value = false
+    }
+  } else {
+    // 닫기
+    answerOpen.value = false
+  }
+}
+
+function confirmWithdraw(id) {
+  Modal.confirm({
+    title: '문의 철회',
+    content: '관리자 답변 전까지만 철회할 수 있습니다. 진행하시겠습니까?',
+    okText: '철회',
+    okType: 'danger',
+    cancelText: '취소',
+    onOk: async () => {
+      withdrawLoading.value = true
+      try {
+        await axios.post(`/api/inquiries/${id}/withdraw`)
+        message.success('문의가 철회되었습니다.')
+        closeDetail()
+        fetchData()
+      } catch (e) {
+        const msg = e?.response?.data?.message || '철회에 실패했습니다.'
+        message.error(msg)
+      } finally {
+        withdrawLoading.value = false
+      }
+    }
+  })
 }
 
 onMounted(fetchData)
@@ -178,20 +280,26 @@ onMounted(fetchData)
   padding: 0; 
   margin: 0; 
 }
-.inquiry-card {
-  width: 100%;
-  max-width: none;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  padding: 24px 24px 16px;
+.inquiry-card { 
+  width: 60%; 
+  margin: 20px auto;
+  height: calc(100vh - 40px); 
+  max-width: 900px; 
+  min-width: 320px;
+  display: flex;
+  flex-direction: column; 
+  background: #fff; 
+  border-radius: 16px; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06); 
+  padding: 24px 24px 16px; 
+  box-sizing: border-box;
 }
-.inquiry-header{
-  width: 100%;
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between;
-  margin-bottom: 12px;
+.inquiry-header{ 
+  width: 100%; 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  margin-bottom: 12px; 
 }
 .inquiry-title{ 
   margin: 0; 
@@ -199,51 +307,36 @@ onMounted(fetchData)
   font-size: 20px; 
   color: #101828; 
 }
-.inquiry-btn {
-  height: 38px; 
-  padding: 0 14px; 
-  border-radius: 12px; 
-  font-size: 0.95rem; 
-  font-weight: 600;
-  border: none; 
-  background: #e0f7f4; 
-  color: #009490; 
-  box-shadow: 0 2px 6px rgba(0,148,144,0.08);
-  cursor: pointer; 
-  transition: background 0.2s, color 0.2s, transform 0.06s;
-}
-.inquiry-btn:hover { 
-  background: #009490; 
-  color: #fff; 
-}
-.inquiry-btn:active { 
-  transform: translateY(1px); 
-}
 
 :deep(.main-content) { 
   padding: 0; 
-  background: transparent; 
-}
-:global(.inquiry-detail-modal .ant-modal-content){ 
-  border-radius: 18px; 
-}
-:global(.inquiry-detail-modal .ant-modal-header){ 
-  border-bottom: none; 
-  padding-bottom: 0; 
-}
-:global(.inquiry-detail-modal .ant-modal-body){
-  height: 60vh;
-  overflow-y: auto;
+  background: transparent;
+ }
+:global(.inquiry-detail-modal .ant-modal-content){
+  border-radius: 18px;
+ }
+:global(.inquiry-detail-modal .ant-modal-header){
+   border-bottom: none; 
+   padding-bottom: 0; 
+  }
+:global(.inquiry-detail-modal .ant-modal-body){ 
+  height: 60vh; 
+  overflow-y: auto; 
   padding: 16px 20px;
-}
+ }
+
 .detail-title { 
   font-weight:700; 
   font-size:18px; 
-  color:#101828; }
+  color:#101828; 
+}
 .title-row { 
   display:flex; 
   align-items:center; 
   gap:8px; 
+}
+.title-row .spacer { 
+  flex: 1; 
 }
 .meta-row { 
   color:#667085; 
@@ -259,12 +352,33 @@ onMounted(fetchData)
   white-space:pre-wrap; 
   word-break:break-word; 
   line-height:1.7; 
-  color:#344054; 
+  color:#344054;
+ }
+
+.answer-actions { 
+  margin-top: 12px;
+ }
+.answer-box { 
+  margin-top: 10px; 
+  background:#f7f9fc; 
+  border:1px solid #edf1f7; 
+  border-radius:12px; 
+  padding:12px 14px; 
+}
+.answer-meta { 
+  font-size: 12px; 
+  color:#667085; 
+  margin-bottom: 6px; 
+}
+.answer-content { 
+  white-space: pre-wrap; 
+  word-break: break-word; 
+  color:#1f2937; 
 }
 
 @media (max-width: 768px) {
   :global(.inquiry-detail-modal .ant-modal-body){ 
-    height: 70vh;
-   }
+    height: 70vh; 
+  }
 }
 </style>
