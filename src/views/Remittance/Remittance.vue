@@ -48,7 +48,7 @@
         <!-- 통화 선택 -->
         <div class="currency-section">
           <h3>어떤 통화로 송금하시겠어요?</h3>
-          <p class="section-description">선택한 통화로 바로 송금됩니다 (환전 없음)</p>
+          <p class="section-description">선택한 통화로 바로 송금됩니다</p>
 
           <!-- 통화 로딩 상태 -->
           <div v-if="isLoadingCurrencies" class="loading-message">
@@ -87,7 +87,7 @@
           </div>
           <div class="summary-info">
             <span class="direct-transfer">
-              {{ selectedCurrency }} 직접 송금 (환전 수수료 없음)
+              {{ selectedCurrency }} 직접 송금
             </span>
           </div>
         </div>
@@ -120,7 +120,9 @@
               @input="filterNameInput" 
               @keyup.enter="verifyRecipientName" 
               :disabled="nameConfirmed">
-              <button v-if="recipientName.trim() && !nameConfirmed" class="confirm-btn" @click="verifyRecipientName">
+              <button v-if="recipientName.trim() && !nameConfirmed" 
+              class="confirm-btn" 
+              @click="verifyRecipientName">
                 확인
               </button>
               <div v-if="nameConfirmed" class="confirmed-mark">✓</div>
@@ -135,14 +137,16 @@
                 <input v-model="recipientPhone" 
                 type="tel" class="form-input" 
                 placeholder="010-0000-0000"
+                maxlength = "11"
                 @input="filterPhoneInput" 
                 @keydown.space.prevent="" 
                 @keyup.enter="verifyRecipientPhone"
                 :disabled="phoneConfirmed" 
                 ref="phoneInput">
                 <button v-if="recipientPhone.trim() && !phoneConfirmed" class="confirm-btn"
-                  @click="verifyRecipientPhone">
-                  확인
+                :disabled="!recipientPhone || recipientPhone.length !== 11" 
+                @click="verifyRecipientPhone">
+                 확인
                 </button>
                 <div v-if="phoneConfirmed" class="confirmed-mark">✓</div>
               </div>
@@ -372,7 +376,7 @@ const transferResult = ref(null)
 const myBalances = ref([])
 const isLoadingBalances = ref(false)
 const balanceError = ref('')
-const currentUserId = ref('1')
+const userId = localStorage.getItem('userId')
 
 // 지원 통화 목록
 const currencies = ref([])
@@ -435,13 +439,13 @@ const fetchUserBalances = async () => {
   balanceError.value = ''
 
   try {
-    const response = await fetch(`http://localhost:8080/api/balance/${currentUserId.value}`, {
+    const response = await fetch(`http://localhost:8080/api/balance/${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       }
     })
-
+    console.log(userId)
     if (!response.ok) {
       throw new Error('잔액 조회에 실패했습니다')
     }
@@ -550,8 +554,8 @@ const filterPhoneInput = (event) => {
 const verifyRecipientName = async () => {
   if (!recipientName.value.trim()) return
   
-  // 자기 자신 이름 차단
-  // if (recipientName.value === authStore.user.name) {
+  //자기 자신 이름 차단
+  // if (recipientName.value === authStore.user.id) {
   //   alert("본인에게는 송금할 수 없습니다 ❌")
   //   return
   // }
@@ -580,33 +584,56 @@ const verifyRecipientName = async () => {
 const verifyRecipientPhone = async () => {
   if (!recipientPhone.value.trim()) return
 
-  // 자기 자신 번호 차단
-  // if (recipientPhone.value === authStore.user.phone) {
-  //   alert("본인에게는 송금할 수 없습니다 ❌")
-  //   return
-  // }
+  if (recipientPhone.value === authStore.loginId) {
+    alert("본인에게는 송금할 수 없습니다 ❌")
+    return
+  }
 
   try {
     const response = await fetch("http://localhost:8080/api/user/verify-recipient", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        currentUserId: userId,
         name: recipientName.value,
         phone: recipientPhone.value
       })
     })
-    const isValid = await response.json()
-    if (isValid === true) {
+
+    const responseData = await response.json()
+
+    if (!response.ok) {
+      // 에러 메시지 내용으로 판단
+      console.log("Error response:", responseData) // 디버깅용
+      
+      const errorMsg = responseData.message || responseData.error || ""
+      
+      // 특정 키워드로 구분
+      if (errorMsg.includes("본인") || errorMsg.includes("송금할 수 없습니다")) {
+        alert("본인에게는 송금할 수 없습니다 ❌")
+      } else if (errorMsg.includes("찾을 수 없습니다")) {
+        alert("해당 전화번호로 가입된 사용자가 없습니다 ❌") 
+      } else {
+        alert("다시 입력해주세요 ❌")
+      }
+      return
+    }
+
+    // 성공 처리
+    if (responseData) {
       phoneConfirmed.value = true
-      alert("수취인 확인 완료 ✅ 전화번호가 일치합니다")
+      alert("수취인 확인 완료 ✅")
     } else {
       alert("이름과 전화번호가 일치하지 않습니다 ❌")
     }
+
   } catch (error) {
-    alert("전화번호 확인 중 오류 발생")
+    alert("네트워크 오류가 발생했습니다.")
     console.error(error)
   }
 }
+
+
 
 
 const getTransferTypeDescription = () => {
@@ -1097,6 +1124,13 @@ body {
   font-weight: bold;
 }
 
+.confirm-btn:disabled {
+  background: #dee2e6;
+  color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 .selected-currency-info {
   display: flex;
   align-items: center;
