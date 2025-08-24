@@ -7,18 +7,24 @@
         <div class="exchange-form">
           <p class="form-subtitle">환전할 통화 선택 및 금액을 입력하세요</p>
 
+          <!-- 잔액 로딩 상태 -->
+          <div v-if="balancesLoading" class="balance-loading">
+            <div class="loading-spinner"></div>
+            <p>잔액 정보를 가져오는 중...</p>
+          </div>
+
           <!-- From Section -->
           <div class="currency-section">
             <div class="section-header">
               <span class="section-label">From</span>
               <div class="balance-info">
                 Balance: {{ getBalanceAmount(fromCurrency) }}
-                <button class="max-btn" @click="setMaxAmount">Max</button>
+                <button class="max-btn" @click="setMaxAmount" :disabled="balancesLoading">Max</button>
               </div>
             </div>
 
             <div class="currency-input-row">
-              <select v-model="fromCurrency" class="currency-dropdown" @change="calculateExchange">
+              <select v-model="fromCurrency" class="currency-dropdown" @change="onCurrencyChange">
                 <option value="KRW">🇰🇷 한국 KRW</option>
                 <option value="USD">🇺🇸 미국 USD</option>
                 <option value="JPY">🇯🇵 일본 JPY</option>
@@ -31,13 +37,14 @@
                 class="amount-input" 
                 placeholder="0" 
                 @input="onAmountInput" 
+                :disabled="balancesLoading"
               />
             </div>
           </div>
 
           <!-- Exchange Icon -->
           <div class="exchange-icon-container">
-            <div class="exchange-icon" @click="swapCurrencies">
+            <div class="exchange-icon" @click="swapCurrencies" :class="{ disabled: balancesLoading }">
               ↕
             </div>
           </div>
@@ -52,17 +59,14 @@
               <select 
                 v-model="toCurrency" 
                 class="currency-dropdown" 
-                @change="calculateExchange"
-                :disabled="fromCurrency !== 'KRW'"
+                @change="onCurrencyChange"
+                :disabled="fromCurrency !== 'KRW' || balancesLoading"
               >
-                <!-- FROM이 KRW인 경우: 모든 통화 선택 가능 -->
                 <template v-if="fromCurrency === 'KRW'">
                   <option value="USD">🇺🇸 미국 USD</option>
                   <option value="JPY">🇯🇵 일본 JPY</option>
                   <option value="EUR">🇪🇺 유럽연합 EUR</option>
                 </template>
-
-                <!-- FROM이 KRW가 아닌 경우: KRW만 선택 가능 -->
                 <template v-else>
                   <option value="KRW">🇰🇷 한국 KRW</option>
                 </template>
@@ -70,7 +74,7 @@
 
               <input 
                 type="text" 
-                :value="formatNumber(convertedAmount)" 
+                :value="formatNumber(simulationResult?.toAmount || 0)" 
                 class="amount-input" 
                 placeholder="0" 
                 readonly 
@@ -79,7 +83,7 @@
           </div>
 
           <!-- 환전 정보 Section -->
-          <div class="exchange-info-section" v-if="inputAmount && inputAmount > 0">
+          <div class="exchange-info-section" v-if="simulationResult && inputAmount && inputAmount > 0">
             <div class="exchange-info-header">
               <span class="info-label">환전 정보</span>
             </div>
@@ -87,30 +91,43 @@
             <div class="fee-details">
               <div class="fee-row">
                 <span class="fee-label">환율</span>
-                <span class="fee-value">{{ currentExchangeRate.toFixed(4) }}</span>
+                <span class="fee-value">{{ simulationResult.exchangeRate?.toFixed(4) || '0.0000' }}</span>
               </div>
               <div class="fee-row">
-                <span class="fee-label">수수료 (0.5%)</span>
-                <span class="fee-value">{{ formatNumber(calculateFee()) }} {{ fromCurrency }}</span>
+                <span class="fee-label">수수료</span>
+                <span class="fee-value">{{ formatNumber(simulationResult.fee || 0) }} {{ fromCurrency }}</span>
               </div>
               <div class="fee-row">
-                <span class="fee-label">우대율</span>
-                <span class="fee-value highlight">90%</span>
+                <span class="fee-label">총 차감 금액</span>
+                <span class="fee-value">{{ formatNumber(simulationResult.totalDeductedAmount || 0) }} {{ fromCurrency }}</span>
               </div>
               <div class="fee-row total-row">
                 <span class="fee-label">실제 받을 금액</span>
-                <span class="fee-value total-amount">{{ formatNumber(finalAmount) }} {{ toCurrency }}</span>
+                <span class="fee-value total-amount">{{ formatNumber(simulationResult.toAmount || 0) }} {{ toCurrency }}</span>
               </div>
+            </div>
+            
+            <div v-if="simulationResult.rateUpdateTime" class="rate-update-time">
+              <small>환율 업데이트: {{ formatDateTime(simulationResult.rateUpdateTime) }}</small>
             </div>
           </div>
 
-          <!-- 환전하기 버튼 부분 -->
+          <!-- 로딩 및 에러 표시 -->
+          <div v-if="loading" class="loading-message">
+            환전 정보를 계산하고 있습니다...
+          </div>
+
+          <div v-if="errorMessage" class="error-message">
+            {{ errorMessage }}
+          </div>
+
+          <!-- 환전하기 버튼 -->
           <button 
             class="exchange-btn" 
-            :disabled="!inputAmount || inputAmount <= 0 || isAmountExceedsBalance"
+            :disabled="!canExecuteExchange"
             @click="executeExchange"
           >
-            {{ isAmountExceedsBalance ? '잔액 부족' : '환전하기' }}
+            {{ getButtonText() }}
           </button>
         </div>
 
@@ -118,7 +135,7 @@
           <div class="chart-header">
             <h3>환율 차트</h3>
             <span class="chart-period" v-if="!chartLoading && chartRates.length > 0">
-              {{ formatNumber(currentExchangeRate) }}
+              {{ formatNumber(simulationResult?.exchangeRate || 0) }}
             </span>
           </div>
 
@@ -163,36 +180,131 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import ExchangeRateChart from '@/components/chart/ExchangeRateChart.vue'
 
-// 반응형 상태
+// ==================== 반응형 상태 ====================
 const fromCurrency = ref('KRW')
 const toCurrency = ref('USD')
 const inputAmount = ref('')
 const displayAmount = ref('')
-const convertedAmount = ref(0)
-const currentExchangeRate = ref(0)
-const finalAmount = ref(0)
+const simulationResult = ref(null)
+const loading = ref(false)
+const errorMessage = ref('')
 
 // 차트 관련 상태
 const chartRates = ref([])
 const chartLoading = ref(false)
 
-// 환율 정보 (KRW 기준)
-const rates = reactive({
-  KRW: 1,
-  USD: 1393.33,
-  JPY: 9.38, // 100엔당 원화
-  EUR: 1617.94
-})
-
-// 잔액 정보 (예시)
+// 잔액 정보 - 서버에서 실제로 가져올 데이터
 const balances = reactive({
-  KRW: 1000000,
-  USD: 500,
-  JPY: 50000,
-  EUR: 300
+  KRW: 0,
+  USD: 0,
+  JPY: 0,
+  EUR: 0
 })
 
-// Computed
+// 원본 잔액 데이터 (서버 응답 그대로 저장)
+const balanceData = reactive({})
+
+// 잔액 로딩 상태
+const balancesLoading = ref(false)
+
+// 디바운스를 위한 타이머
+let simulationTimer = null
+
+// ==================== 인증 관련 ====================
+
+// JWT 토큰 가져오기
+const getAuthToken = () => {
+  return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
+}
+
+// API 요청 헤더 생성
+const getApiHeaders = () => {
+  const token = getAuthToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  }
+}
+
+// ==================== 잔액 관련 함수 ====================
+
+/**
+ * 서버에서 모든 잔액 조회
+ */
+const fetchBalances = async () => {
+  balancesLoading.value = true
+  errorMessage.value = ''
+  
+  try {
+    console.log('잔액 조회 시작...')
+    
+    const response = await fetch('/api/balance', {
+      method: 'GET',
+      headers: getApiHeaders()
+    })
+    
+    const data = await response.json()
+    console.log('잔액 API 응답:', data)
+    
+    if (response.ok && data.success) {
+      // 원본 데이터 저장
+      Object.assign(balanceData, data.balances)
+      
+      // 숫자형 잔액으로 변환하여 reactive 객체에 저장
+      Object.keys(data.balances).forEach(currency => {
+        if (balances.hasOwnProperty(currency)) {
+          // amount 필드는 이미 포맷된 문자열 (예: "1,000,000.00")
+          const amountStr = data.balances[currency].amount
+          const numericAmount = parseFloat(amountStr.replace(/,/g, '')) || 0
+          balances[currency] = numericAmount
+        }
+      })
+      
+      console.log('잔액 업데이트 완료:', balances)
+    } else {
+      console.error('잔액 조회 실패:', data)
+      errorMessage.value = data.message || '잔액을 불러올 수 없습니다.'
+      
+      // 인증 오류 처리
+      if (response.status === 401) {
+        errorMessage.value = '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+      }
+    }
+  } catch (error) {
+    console.error('잔액 조회 API 오류:', error)
+    errorMessage.value = '서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    balancesLoading.value = false
+  }
+}
+
+/**
+ * 환전 완료 후 잔액 업데이트
+ */
+const updateBalances = async () => {
+  console.log('환전 완료 후 잔액 업데이트 시작...')
+  await fetchBalances()
+}
+
+/**
+ * 메모리에서 통화별 잔액 조회 (포맷된 형태로 반환)
+ */
+const getBalanceAmount = (currency) => {
+  if (balancesLoading.value) return '로딩 중...'
+  return formatNumber(balances[currency] || 0)
+}
+
+// ==================== Computed Properties ====================
+
+const canExecuteExchange = computed(() => {
+  return simulationResult.value && 
+         inputAmount.value && 
+         parseFloat(inputAmount.value) > 0 && 
+         !isAmountExceedsBalance.value &&
+         !loading.value &&
+         !balancesLoading.value
+})
+
 const isAmountExceedsBalance = computed(() => {
   if (!inputAmount.value || inputAmount.value <= 0) {
     return false
@@ -200,26 +312,10 @@ const isAmountExceedsBalance = computed(() => {
   return parseFloat(inputAmount.value) > balances[fromCurrency.value]
 })
 
-// Watchers
-watch(fromCurrency, (newValue) => {
-  // FROM이 KRW가 아니면 TO를 KRW로 자동 설정
-  if (newValue !== 'KRW') {
-    toCurrency.value = 'KRW'
-  }
-  calculateExchange()
-  fetchChartData()
-})
+// ==================== 입력 처리 함수 ====================
 
-watch(toCurrency, () => {
-  calculateExchange()
-  fetchChartData()
-})
-
-// Methods
 const onAmountInput = (event) => {
   let rawValue = event.target.value
-
-  // 콤마 제거하여 순수 숫자만 추출
   let numericValue = rawValue.replace(/[^0-9.]/g, '')
 
   // 소수점 2개 이상 방지
@@ -236,27 +332,155 @@ const onAmountInput = (event) => {
     }
   }
 
-  // 실제 계산용 값 저장
   inputAmount.value = numericValue
 
-  // 포맷팅하여 화면에 표시
   if (numericValue) {
     displayAmount.value = formatWithCommas(numericValue)
   } else {
     displayAmount.value = ''
   }
 
-  calculateExchange()
+  // 디바운스를 사용한 시뮬레이션 호출
+  debouncedSimulation()
+}
+
+const debouncedSimulation = () => {
+  if (simulationTimer) {
+    clearTimeout(simulationTimer)
+  }
+  
+  simulationTimer = setTimeout(() => {
+    simulateExchange()
+  }, 300)
+}
+
+const onCurrencyChange = () => {
+  // FROM이 KRW가 아니면 TO를 KRW로 자동 설정
+  if (fromCurrency.value !== 'KRW') {
+    toCurrency.value = 'KRW'
+  } else if (toCurrency.value === fromCurrency.value) {
+    toCurrency.value = 'USD'
+  }
+  
+  simulateExchange()
+  fetchChartData()
+}
+
+// ==================== 환전 관련 함수 ====================
+
+// 환전 시뮬레이션 API 호출
+const simulateExchange = async () => {
+  if (!inputAmount.value || parseFloat(inputAmount.value) <= 0) {
+    simulationResult.value = null
+    errorMessage.value = ''
+    return
+  }
+
+  if (fromCurrency.value === toCurrency.value) {
+    simulationResult.value = null
+    errorMessage.value = '동일한 통화는 환전할 수 없습니다.'
+    return
+  }
+
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await fetch('/api/exchange/simulate', {
+      method: 'POST',
+      headers: getApiHeaders(),
+      body: JSON.stringify({
+        fromCurrency: fromCurrency.value,
+        toCurrency: toCurrency.value,
+        amount: parseFloat(inputAmount.value)
+      })
+    })
+
+    const data = await response.json()
+
+    if (response.ok && data.success) {
+      simulationResult.value = data
+    } else {
+      errorMessage.value = data.message || '환전 시뮬레이션 중 오류가 발생했습니다.'
+      simulationResult.value = null
+    }
+  } catch (error) {
+    console.error('환전 시뮬레이션 오류:', error)
+    errorMessage.value = '서버 연결에 실패했습니다.'
+    simulationResult.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+// 환전 실행 API 호출
+const executeExchange = async () => {
+  if (!canExecuteExchange.value) {
+    return
+  }
+
+  const token = getAuthToken()
+  if (!token) {
+    errorMessage.value = '로그인이 필요합니다.'
+    return
+  }
+
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await fetch('/api/exchange/execute', {
+      method: 'POST',
+      headers: getApiHeaders(),
+      body: JSON.stringify({
+        fromCurrency: fromCurrency.value,
+        toCurrency: toCurrency.value,
+        amount: parseFloat(inputAmount.value)
+      })
+    })
+
+    const data = await response.json()
+
+    if (response.ok && data.success) {
+      // 성공 처리
+      alert(`환전이 완료되었습니다!\n거래번호: ${data.transactionId}`)
+      
+      // 잔액 업데이트 (서버에서 최신 잔액 가져오기)
+      await updateBalances()
+      
+      // 입력 필드 초기화
+      resetForm()
+    } else {
+      errorMessage.value = data.message || '환전 실행 중 오류가 발생했습니다.'
+    }
+  } catch (error) {
+    console.error('환전 실행 오류:', error)
+    if (error.name === 'AuthException') {
+      errorMessage.value = '인증에 실패했습니다. 다시 로그인해 주세요.'
+    } else {
+      errorMessage.value = '서버 연결에 실패했습니다.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// ==================== 유틸리티 함수 ====================
+
+// 폼 초기화
+const resetForm = () => {
+  inputAmount.value = ''
+  displayAmount.value = ''
+  simulationResult.value = null
+  errorMessage.value = ''
 }
 
 const formatWithCommas = (value) => {
   if (!value) return ''
 
   const parts = value.toString().split('.')
-  // 정수 부분에 콤마 추가
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
-  // 소수점 이하는 최대 2자리까지만
   if (parts[1]) {
     parts[1] = parts[1].substring(0, 2)
   }
@@ -264,64 +488,24 @@ const formatWithCommas = (value) => {
   return parts.join('.')
 }
 
-const calculateExchange = () => {
-  if (!inputAmount.value || inputAmount.value <= 0) {
-    convertedAmount.value = 0
-    finalAmount.value = 0
-    currentExchangeRate.value = 0
-    return
-  }
-
-  let rate = 0
-  let convertedValue = 0
-
-  if (fromCurrency.value === toCurrency.value) {
-    rate = 1
-    convertedValue = parseFloat(inputAmount.value)
-  } else {
-    // KRW를 기준으로 환율 계산
-    if (fromCurrency.value === 'KRW') {
-      rate = 1 / rates[toCurrency.value]
-      convertedValue = parseFloat(inputAmount.value) / rates[toCurrency.value]
-    } else if (toCurrency.value === 'KRW') {
-      rate = rates[fromCurrency.value]
-      convertedValue = parseFloat(inputAmount.value) * rates[fromCurrency.value]
-    }
-  }
-
-  currentExchangeRate.value = rate
-  convertedAmount.value = convertedValue
-
-  // 수수료와 우대율 적용
-  const fee = calculateFee()
-  const afterFee = convertedValue - (fee * rate)
-  finalAmount.value = afterFee * 0.9 // 90% 우대율 적용
-}
-
-const calculateFee = () => {
-  return parseFloat(inputAmount.value) * 0.005 // 0.5% 수수료
-}
-
 const swapCurrencies = () => {
+  if (balancesLoading.value) return
+  
   const temp = fromCurrency.value
   fromCurrency.value = toCurrency.value
   toCurrency.value = temp
   
-  // 금액 초기화
-  inputAmount.value = ''
-  displayAmount.value = ''
-  calculateExchange()
-}
-
-const getBalanceAmount = (currency) => {
-  return formatNumber(balances[currency])
+  resetForm()
+  simulateExchange()
 }
 
 const setMaxAmount = () => {
+  if (balancesLoading.value) return
+  
   const maxValue = balances[fromCurrency.value].toString()
   inputAmount.value = maxValue
   displayAmount.value = formatWithCommas(maxValue)
-  calculateExchange()
+  simulateExchange()
 }
 
 const formatNumber = (num) => {
@@ -332,9 +516,28 @@ const formatNumber = (num) => {
   }).format(num)
 }
 
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return ''
+  try {
+    return new Date(dateTime).toLocaleString('ko-KR')
+  } catch (error) {
+    return dateTime
+  }
+}
+
+const getButtonText = () => {
+  if (loading.value || balancesLoading.value) return '처리 중...'
+  if (balancesLoading.value) return '잔액 로딩 중...'
+  if (isAmountExceedsBalance.value) return '잔액 부족'
+  if (!inputAmount.value || parseFloat(inputAmount.value) <= 0) return '금액을 입력하세요'
+  if (!simulationResult.value) return '환전 정보 확인 중'
+  return '환전하기'
+}
+
+// ==================== 차트 관련 함수 ====================
+
 // 차트 데이터 가져오기
 const fetchChartData = async () => {
-  // KRW ↔ KRW는 차트가 의미없으므로 제외
   if (fromCurrency.value === toCurrency.value) {
     chartRates.value = []
     return
@@ -342,30 +545,16 @@ const fetchChartData = async () => {
 
   chartLoading.value = true
   try {
-    // 환전과 관련된 통화들의 데이터 가져오기
-    let targetCurrency
-
-    if (fromCurrency.value === 'KRW') {
-      targetCurrency = toCurrency.value
-    } else if (toCurrency.value === 'KRW') {
-      targetCurrency = fromCurrency.value
-    } else {
-      // 둘 다 외화인 경우는 현재 로직상 불가능하지만 대비
-      targetCurrency = toCurrency.value
-    }
-
+    let targetCurrency = fromCurrency.value === 'KRW' ? toCurrency.value : fromCurrency.value
     const response = await fetch(`/api/exchange/by-currency/${targetCurrency}`)
     
     if (response.ok) {
       const data = await response.json()
-      
-      // 차트 컴포넌트에 맞는 데이터 형태로 변환
       chartRates.value = data.map(rate => ({
         date: formatDate(rate.baseDate),
         [targetCurrency]: parseRateValue(rate.baseRate)
       })).filter(item => item[targetCurrency] !== null)
         .sort((a, b) => new Date(a.date) - new Date(b.date))
-      
     } else {
       console.error('차트 데이터 조회 실패:', response.status)
       chartRates.value = []
@@ -378,7 +567,6 @@ const fetchChartData = async () => {
   }
 }
 
-// 환율 값 파싱
 const parseRateValue = (rate) => {
   if (rate === undefined || rate === null) return null
   const rateValue = typeof rate === 'string' 
@@ -387,7 +575,6 @@ const parseRateValue = (rate) => {
   return isNaN(rateValue) ? null : rateValue
 }
 
-// 날짜 포맷팅
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   try {
@@ -402,7 +589,6 @@ const formatDate = (dateStr) => {
   }
 }
 
-// 차트에 표시할 통화 목록  
 const getChartCurrencies = () => {
   if (fromCurrency.value === 'KRW') {
     return [toCurrency.value]
@@ -410,33 +596,6 @@ const getChartCurrencies = () => {
     return [fromCurrency.value]
   }
   return []
-}
-
-// 환전 실행
-const executeExchange = () => {
-  if (!inputAmount.value || inputAmount.value <= 0 || isAmountExceedsBalance.value) {
-    return
-  }
-  
-  // 여기에 실제 환전 API 호출 로직 추가
-  console.log('환전 실행:', {
-    from: fromCurrency.value,
-    to: toCurrency.value,
-    amount: inputAmount.value,
-    rate: currentExchangeRate.value,
-    finalAmount: finalAmount.value
-  })
-  
-  // 환전 완료 후 잔액 업데이트 (예시)
-  balances[fromCurrency.value] -= parseFloat(inputAmount.value)
-  balances[toCurrency.value] += finalAmount.value
-  
-  // 입력 필드 초기화
-  inputAmount.value = ''
-  displayAmount.value = ''
-  calculateExchange()
-  
-  alert('환전이 완료되었습니다!')
 }
 
 const getToday = () => {
@@ -449,14 +608,82 @@ const getCurrentTime = () => {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시${d.getMinutes()}분${d.getSeconds()}초`
 }
 
+// ==================== Watchers ====================
+
+watch(fromCurrency, onCurrencyChange)
+watch(toCurrency, onCurrencyChange)
+
+// ==================== 컴포넌트 라이프사이클 ====================
+
 // 컴포넌트 마운트 시 실행
-onMounted(() => {
-  calculateExchange()
-  fetchChartData()
+onMounted(async () => {
+  console.log('환전 컴포넌트 마운트 시작')
+  
+  // 잔액과 차트 데이터를 병렬로 가져오기
+  await Promise.all([
+    fetchBalances(),
+    fetchChartData()
+  ])
+  
+  console.log('환전 컴포넌트 초기화 완료')
 })
 </script>
 
 <style scoped>
+/* 기존 스타일에 추가 */
+.balance-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #f0f8f7;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.loading-message {
+  text-align: center;
+  color: #009490;
+  padding: 16px;
+  background: #f0f8f7;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  text-align: center;
+  color: #dc3545;
+  padding: 16px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+
+.rate-update-time {
+  margin-top: 12px;
+  text-align: center;
+  color: #666;
+}
+
+.rate-update-time small {
+  font-size: 0.8rem;
+}
+
+.exchange-icon.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.exchange-icon.disabled:hover {
+  border-color: #e9ecef;
+  color: inherit;
+}
+
+/* 기존 스타일 유지 */
 .forex-system {
   font-family: 'Noto Sans KR', Arial, sans-serif;
   background: #fafbfc;
@@ -495,7 +722,6 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-/* Currency Section Styles */
 .currency-section {
   margin-bottom: 16px;
   padding: 20px;
@@ -536,8 +762,13 @@ onMounted(() => {
   transition: 0.2s;
 }
 
-.max-btn:hover {
+.max-btn:hover:not(:disabled) {
   background: #007c7a;
+}
+
+.max-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .currency-input-row {
@@ -555,12 +786,21 @@ onMounted(() => {
 .currency-dropdown {
   flex: 2;
   padding: 12px 16px;
-  border: 1px solid #ddd;
+  border: 2px solid #e9ecef;
   border-radius: 8px;
   font-size: 1rem;
   background: #fff;
   color: #333;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  transition: all 0.2s ease;
 }
 
 .amount-input {
@@ -574,24 +814,22 @@ onMounted(() => {
   background: #fff;
 }
 
-.amount-input:read-only {
+.amount-input:read-only,
+.amount-input:disabled {
   background: #f8f9fa;
   color: #666;
 }
 
-/* 숫자 input의 화살표(스피너) 제거 */
 .amount-input::-webkit-outer-spin-button,
 .amount-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox용 */
 .amount-input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* Exchange Icon */
 .exchange-icon-container {
   display: flex;
   justify-content: center;
@@ -612,12 +850,11 @@ onMounted(() => {
   transition: 0.2s;
 }
 
-.exchange-icon:hover {
+.exchange-icon:hover:not(.disabled) {
   border-color: #009490;
   color: #009490;
 }
 
-/* 환전 정보 Section */
 .exchange-info-section {
   margin: 24px 0;
   padding: 20px;
@@ -664,18 +901,12 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.fee-value.highlight {
-  color: #009490;
-  font-weight: 600;
-}
-
 .fee-value.total-amount {
   color: #009490;
   font-size: 1.1rem;
   font-weight: 700;
 }
 
-/* Exchange Button */
 .exchange-btn {
   width: 100%;
   background: #009490;
@@ -699,7 +930,6 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* Chart Section */
 .chart-section {
   flex: 4;
   background: #fff;
@@ -726,7 +956,6 @@ onMounted(() => {
   font-weight: bold;
 }
 
-/* 차트 로딩 스타일 */
 .chart-loading {
   display: flex;
   flex-direction: column;
@@ -735,7 +964,8 @@ onMounted(() => {
   height: 200px;
 }
 
-.chart-loading .loading-spinner {
+.chart-loading .loading-spinner,
+.balance-loading .loading-spinner {
   width: 30px;
   height: 30px;
   border: 3px solid #f3f3f3;
@@ -750,13 +980,11 @@ onMounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-/* 차트 컨테이너 */
 .chart-container {
   height: 200px;
   margin-bottom: 12px;
 }
 
-/* 데이터 없음 상태 */
 .no-chart-data {
   display: flex;
   align-items: center;
