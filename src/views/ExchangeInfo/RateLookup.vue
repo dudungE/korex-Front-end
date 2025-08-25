@@ -100,7 +100,6 @@
                     <th rowspan="2">매매기준율</th>
                     <th colspan="2">현찰</th>
                     <th colspan="2">송금</th>
-                    <th rowspan="2">대미환산율</th>
                   </tr>
                   <tr>
                     <th>사실때</th>
@@ -110,21 +109,13 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rate in realTimeRates" :key="rate.currency_code">
-                    <td>
-                      <button 
-                        class="currency-link" 
-                        @click="showCurrencyDetail(rate.currency_code)"
-                      >
-                        {{ rate.currency_code }}
-                      </button>
-                    </td>
-                    <td>{{ rate.base_rate }}</td>
-                    <td>{{ rate.buy_cash_rate }}</td>
-                    <td>{{ rate.sell_cash_rate }}</td>
-                    <td>{{ rate.send_rate }}</td>
-                    <td>{{ rate.receive_rate }}</td>
-                    <td>{{ rate.usd_conversion_rate }}</td>
+                  <tr v-for="rate in ratesByDate" :key="rate.currencyCode">
+                    <td>{{ rate.currencyCode }}</td>
+                    <td>{{ rate.baseRate }}</td>
+                    <td>{{ rate.buyCashRate }}</td>
+                    <td>{{ rate.sellCashRate }}</td>
+                    <td>{{ rate.sendRate }}</td>
+                    <td>{{ rate.receiveRate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -161,11 +152,10 @@
               <table>
                 <thead>
                   <tr>
-                    <th rowspan="2">통화</th>
+                    <th rowspan="2">날짜</th>
                     <th rowspan="2">매매기준율</th>
                     <th colspan="2">현찰</th>
                     <th colspan="2">송금</th>
-                    <th rowspan="2">대미환산율</th>
                   </tr>
                   <tr>
                     <th>사실때</th>
@@ -175,22 +165,14 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rate in realTimeRates" :key="rate.currency_code">
-                    <td>
-                      <button 
-                        class="currency-link" 
-                        @click="showCurrencyDetail(rate.currency_code)"
-                      >
-                        {{ rate.currency_code }}
-                      </button>
-                    </td>
-                    <td>{{ rate.base_rate }}</td>
-                    <td>{{ rate.buy_cash_rate }}</td>
-                    <td>{{ rate.sell_cash_rate }}</td>
-                    <td>{{ rate.send_rate }}</td>
-                    <td>{{ rate.receive_rate }}</td>
-                    <td>{{ rate.usd_conversion_rate }}</td>
-                  </tr>
+                  <tr v-for="rate in ratesByCurrency" :key="rate.date">
+                    <td>{{ formatDate(rate.baseDate) }}</td>
+                    <td>{{ rate.baseRate }}</td>
+                    <td>{{ rate.buyCashRate }}</td>
+                    <td>{{ rate.sellCashRate }}</td>
+                    <td>{{ rate.sendRate }}</td>
+                    <td>{{ rate.receiveRate }}</td>
+                    </tr>
                 </tbody>
               </table>
 
