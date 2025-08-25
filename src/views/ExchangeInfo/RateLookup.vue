@@ -195,7 +195,7 @@
               
               <div v-else-if="currencyDetailData.length > 0" class="detail-content">
                 <p class="detail-description">
-                  {{ selectedCurrencyCode }}의 최근 수집된 실시간 환율 데이터입니다. (수집 시간: {{ formatDetailTime(currencyDetailData[0]?.crawl_time) }} ~ {{ formatDetailTime(currencyDetailData[currencyDetailData.length-1]?.crawl_time) }})
+                  {{ selectedCurrencyCode }}의 최근 수집된 실시간 환율 데이터입니다. (수집 시간: {{ formatDetailTime(currencyDetailData[currencyDetailData.length-1]?.crawl_time) }} ~ {{ formatDetailTime(currencyDetailData[0]?.crawl_time) }})
                 </p>
                 
                 <div class="detail-table">
