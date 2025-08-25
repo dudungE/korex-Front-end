@@ -108,7 +108,7 @@
             </div>
             
             <div v-if="simulationResult.rateUpdateTime" class="rate-update-time">
-              <small>환율 업데이트: {{ formatDateTime(simulationResult.rateUpdateTime) }}</small>
+              <small>환율 업데이트: {{ simulationResult.rateUpdateTime }}</small>
             </div>
           </div>
 
@@ -136,7 +136,7 @@
             <h3>환율 차트</h3>
             <span class="chart-period" v-if="!chartLoading && chartRates.length > 0">
               {{ formatNumber(simulationResult?.exchangeRate || 0) }}
-            </span>
+            </span> 
           </div>
 
           <!-- 로딩 상태 -->
@@ -150,20 +150,13 @@
             <ExchangeRateChart 
               :rates="chartRates" 
               :currencies="getChartCurrencies()"
-              :height="200"
+              :height="150"
             />
           </div>
 
           <!-- 차트 데이터가 없을 때 -->
           <div v-else class="no-chart-data">
             <p>해당 통화의 환율 차트 데이터가 없습니다.</p>
-          </div>
-
-          <!-- 날짜 정보 -->
-          <div class="chart-dates" v-if="chartRates.length > 0">
-            <span>{{ chartRates[0]?.date }}</span>
-            <span>{{ chartRates[Math.floor(chartRates.length/2)]?.date }}</span>
-            <span>{{ chartRates[chartRates.length-1]?.date }}</span>
           </div>
         </div>
       </div>
@@ -397,6 +390,7 @@ const simulateExchange = async () => {
     })
 
     const data = await response.json()
+    console.log("환전 시뮬 : ", data)
 
     if (response.ok && data.success) {
       simulationResult.value = data
@@ -516,14 +510,15 @@ const formatNumber = (num) => {
   }).format(num)
 }
 
-const formatDateTime = (dateTime) => {
-  if (!dateTime) return ''
-  try {
-    return new Date(dateTime).toLocaleString('ko-KR')
-  } catch (error) {
-    return dateTime
-  }
-}
+// const formatDateTime = (dateTime) => {
+//   if (!dateTime) return ''
+//   console.log(dateTime)
+//   try {
+//     return new Date(dateTime).toLocaleString('ko-KR')
+//   } catch (error) {
+//     return dateTime
+//   }
+// }
 
 const getButtonText = () => {
   if (loading.value || balancesLoading.value) return '처리 중...'
@@ -936,13 +931,17 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+   /* position: relative; */
+  z-index: 1;
+  /* contain: layout style; 레이아웃 격리 */
+  min-height: 300px; /* 최소 높이 보장 */
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  /* margin-bottom: 16px; */
 }
 
 .chart-header h3 {
@@ -981,8 +980,7 @@ onMounted(async () => {
 }
 
 .chart-container {
-  height: 200px;
-  margin-bottom: 12px;
+  flex : 1;
 }
 
 .no-chart-data {
