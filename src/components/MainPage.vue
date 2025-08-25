@@ -16,23 +16,55 @@
         <button class="icon-menu-btn" @click="onFeatureClick('ForeignTransfer')"><img src="@/assets/해외송금버튼.png" alt="해외송금" class="icon-img" /><span>해외송금</span></button>
         <button class="icon-menu-btn" @click="onFeatureClick('quick')"><img src="@/assets/계좌조회버튼.png" alt="계좌 조회" class="icon-img" /><span>계좌조회</span></button>
       </div>
-      <div class="forex-rate-list">
-        <div
-            v-for="item in forexRates"
-            :key="item.pair"
-            class="rate-row"
-            :class="item.change > 0 ? 'up' : 'down'"
-        >
-          <span class="flag" aria-hidden="true">{{ item.flag }}</span>
-          <span class="pair">{{ item.pair }}</span>
-          <span class="rate">{{ item.rate.toLocaleString() }}</span>
-          <span class="change">
-            <span v-if="item.change > 0">▲</span>
-            <span v-else>▼</span>
-            {{ item.change }} ({{ item.percent }}%)
-          </span>
-        </div>
-      </div>
+      
+             <!-- 환율 정보와 뉴스 섹션 -->
+       <div class="exchange-news-container">
+         <!-- 환율 정보 섹션 -->
+         <div class="exchange-rate-section">
+           <div class="section-header">
+             <h2>환율 정보</h2>
+             <div class="last-update">
+             </div>
+           </div>
+           
+           <div class="forex-rate-container">
+             <div class="forex-rate-list">
+                            <div
+                    v-for="item in processedForexRates"
+                    :key="item.currency_code"
+                    class="rate-row"
+                >
+                  <span class="flag" aria-hidden="true">{{ item.flag }}</span>
+                  <span class="pair">{{ item.pair }}</span>
+                  <span class="rate">{{ formatRate(item.base_rate) }}</span>
+                </div>
+             </div>
+           </div>
+         </div>
+         
+         <!-- 환율 뉴스 섹션 -->
+         <div class="exchange-news-section">
+           <div class="section-header">
+             <h2>환율 뉴스</h2>
+             <div class="last-update">
+             </div>
+           </div>
+           
+           <div class="news-container">
+             <div class="news-list">
+               <div
+                   v-for="news in exchangeNews"
+                   :key="news.link"
+                   class="news-item"
+                   @click="openNewsLink(news.link)"
+               >
+                 <div class="news-title">{{ news.title }}</div>
+                                   <div class="news-time">{{ formatNewsTime(news.date) }}</div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
     </div>
   </div>
 </template>
@@ -42,18 +74,128 @@ export default {
   name: 'Home',
   data() {
     return {
-      forexRates: [
-        { flag: '🇺🇸', pair: 'USD/KRW', rate: 1380.10, change: -2.90, percent: -0.21 },
-        { flag: '🇯🇵', pair: 'JPY/KRW', rate: 939.42, change: -5.12, percent: -0.54 },
-        { flag: '🇪🇺', pair: 'EUR/KRW', rate: 1619.82, change: -0.23, percent: -0.01 },
-        { flag: '🇬🇧', pair: 'GBP/KRW', rate: 1865.90, change: 0.09, percent: 0.00 }
-      ]
+      forexRates: {},
+      lastUpdateTime: '',
+      exchangeNews: [],
+      newsUpdateTime: '',
+      loading: false,
+      error: null
     };
   },
+  computed: {
+    processedForexRates() {
+      const rates = [];
+      const currencyFlags = {
+        'USD': '🇺🇸', 'JPY': '🇯🇵', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'CHF': '🇨🇭',
+        'CAD': '🇨🇦', 'AUD': '🇦🇺', 'NZD': '🇳🇿', 'HKD': '🇭🇰', 'CNY': '🇨🇳',
+        'SEK': '🇸🇪', 'DKK': '🇩🇰', 'NOK': '🇳🇴', 'THB': '🇹🇭', 'SGD': '🇸🇬'
+      };
+      
+             Object.keys(this.forexRates).forEach(currencyCode => {
+         const currencyData = this.forexRates[currencyCode];
+         if (currencyData && currencyData.currency_code) {
+           rates.push({
+             currency_code: currencyCode,
+             pair: `${currencyCode}/KRW`,
+             flag: currencyFlags[currencyCode] || '💱',
+             base_rate: currencyData.base_rate,
+             crawl_time: currencyData.crawl_time
+           });
+         }
+       });
+      
+             // 원하는 순서대로 정렬
+       const order = ['USD', 'JPY', 'EUR', 'GBP', 'CHF', 'CAD', 'AUD', 'NZD', 'HKD', 'CNY', 'SEK', 'DKK', 'NOK', 'THB', 'SGD'];
+       return rates.sort((a, b) => {
+         const aIndex = order.indexOf(a.currency_code);
+         const bIndex = order.indexOf(b.currency_code);
+         return aIndex - bIndex;
+       });
+    }
+  },
+  async mounted() {
+    await Promise.all([
+      this.fetchExchangeRates(),
+      this.fetchExchangeNews()
+    ]);
+    // 1분마다 환율 데이터 업데이트
+    setInterval(this.fetchExchangeRates, 60 * 1000);
+    // 5분마다 뉴스 데이터 업데이트
+    setInterval(this.fetchExchangeNews, 5 * 60 * 1000);
+  },
   methods: {
+    async fetchExchangeRates() {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await fetch('/api/exchange/main-page-data');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        this.forexRates = data;
+        
+                 // 첫 번째 통화의 최신 데이터에서 시간 가져오기
+         const firstCurrency = Object.keys(data)[0];
+         if (data[firstCurrency] && data[firstCurrency].crawl_time) {
+           this.lastUpdateTime = data[firstCurrency].crawl_time;
+         }
+        
+      } catch (error) {
+        console.error('환율 데이터를 가져오는 중 오류 발생:', error);
+        this.error = '환율 데이터를 불러올 수 없습니다.';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+         formatRate(rate) {
+       if (!rate) return '-';
+       return rate.toString();
+     },
+     
+     async fetchExchangeNews() {
+       try {
+         const response = await fetch('/api/exchange/news');
+         if (!response.ok) {
+           throw new Error(`HTTP error! status: ${response.status}`);
+         }
+         
+         const data = await response.json();
+         this.exchangeNews = data;
+         
+         if (data.length > 0) {
+           this.newsUpdateTime = data[0].crawl_time;
+         }
+         
+       } catch (error) {
+         console.error('환율 뉴스를 가져오는 중 오류 발생:', error);
+       }
+     },
+     
+     formatNewsTime(timeString) {
+       if (!timeString) return '';
+       const date = new Date(timeString);
+       return date.toLocaleString('ko-KR', {
+         month: '2-digit',
+         day: '2-digit',
+         hour: '2-digit',
+         minute: '2-digit'
+       });
+     },
+     
+     openNewsLink(link) {
+       window.open(link, '_blank');
+     },
+    
+    
+    
     goForex() {
       window.location.href = '/rate-lookup';
     },
+    
     onFeatureClick(feature) {
       if (feature === 'rate-lookup') {
         this.$router.push('/rate-lookup');
@@ -65,6 +207,7 @@ export default {
         alert('준비중인 기능입니다: ' + feature);
       }
     },
+    
     goAccount(){
       window.location.href = '#/Account';
     }
@@ -170,7 +313,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 20px;
-  margin: 40px auto 0 auto;
+  margin: 50px auto 40px auto;
   max-width: 700px;
   justify-items: center;
 }
@@ -209,34 +352,69 @@ export default {
   color: #fff;
 }
 
-.forex-rate-list {
-  margin-top: 32px;
+/* 환율 정보와 뉴스 컨테이너 */
+.exchange-news-container {
+  margin-top: 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* 환율 정보 섹션 스타일 */
+.exchange-rate-section {
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
+.section-header {
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.section-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.last-update {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.forex-rate-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.forex-rate-list {
+  background: #fff;
+}
+
 .rate-row {
   display: grid;
-  grid-template-columns: 80px 1fr 120px 140px;
+  grid-template-columns: 80px 1fr 120px;
   align-items: center;
-  padding: 14px 20px;
+  padding: 16px 24px;
   font-size: 1.05rem;
   font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.rate-row:hover {
+  background-color: #f8f9fa;
 }
 
 .rate-row + .rate-row {
   border-top: 1px solid #f0f0f0;
 }
 
-.rate-row.up .change {
-  color: #d60000;
-}
 
-.rate-row.down .change {
-  color: #0066d6;
-}
 
 .flag {
   font-size: 1.7rem;
@@ -252,11 +430,97 @@ export default {
 .rate {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
-.change {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+
+
+/* 스크롤바 스타일링 */
+.forex-rate-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.forex-rate-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.forex-rate-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.forex-rate-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 환율 뉴스 섹션 스타일 */
+.exchange-news-section {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.news-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.news-list {
+  background: #fff;
+}
+
+.news-item {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.news-item:hover {
+  background-color: #f8f9fa;
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-time {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 뉴스 스크롤바 스타일링 */
+.news-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.news-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.news-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.news-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .bottom-menu-item {
@@ -286,13 +550,62 @@ export default {
     flex-direction: column;
     gap: 18px;
   }
+  
+  .exchange-news-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .rate-row {
+    grid-template-columns: 60px 1fr 100px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+  
+  .section-header {
+    padding: 20px 20px 12px 20px;
+  }
+  
+  .section-header h2 {
+    font-size: 1.2rem;
+  }
+  
   .bottom-menu-item {
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
     padding-bottom: 16px;
   }
+  
   .bottom-menu-item:last-child {
     border-bottom: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .exchange-news-container {
+    gap: 12px;
+  }
+  
+  .rate-row {
+    grid-template-columns: 50px 1fr 80px;
+    padding: 12px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .flag {
+    font-size: 1.4rem;
+  }
+  
+  .section-header {
+    padding: 16px 16px 10px 16px;
+  }
+  
+  .news-item {
+    padding: 12px 16px;
+  }
+  
+  .news-title {
+    font-size: 0.9rem;
   }
 }
 </style> 
