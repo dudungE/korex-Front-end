@@ -75,8 +75,14 @@
 
       <!-- 8. 수취인 영문 주소 입력 -->
       <div class="form-group">
-        <label for="eng_Address">받는 분 영문 주소</label>
-        <textarea id="eng_Address" v-model.trim="form.eng_Address" rows="3" placeholder="예: 14, changkuengguro, jonglo" required></textarea>
+        <label for="engAddress">받는 분 영문 주소</label>
+        <textarea
+            id="engAddress"
+            v-model.trim="form.engAddress"
+            rows="3"
+            placeholder="예: 14, changkuengguro, jonglo"
+            required
+        ></textarea>
       </div>
 
       <!-- 버튼 -->
@@ -96,6 +102,9 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// --------------------
+// 폼 상태 (camelCase 통일)
+// --------------------
 const form = reactive({
   name: '',
   selectedCurrency: '',
@@ -105,9 +114,13 @@ const form = reactive({
   localPhoneNumber: '',    // 현지 번호
   email: '',
   country: '',
-  eng_Address: '',
+  engAddress: '',          // ✅ camelCase
+  relationRecipient: '',   // 관계 추가
 })
 
+// --------------------
+// 옵션
+// --------------------
 const currencyOptions = ['USD', 'EUR', 'JPY', 'KRW']
 const bankOptions = ['KOREX', 'BANK OF AMERICA', 'CITIBANK']
 const countryOptions = [
@@ -116,42 +129,69 @@ const countryOptions = [
   { code: 'KR', name: 'KOREA', flag: '🇰🇷', phonePrefix: '+82' }
 ]
 
+// --------------------
+// 상태
+// --------------------
 const isSubmitting = ref(false)
 const error = ref('')
 const success = ref(false)
 
-// onSubmit 안에서 서버 전송용으로 합치기
+// --------------------
+// 수취인 등록
+// --------------------
 async function onSubmit() {
   error.value = ''
   success.value = false
   isSubmitting.value = true
 
   // 국가 코드 + 현지 번호 합치기
-  const country = countryOptions.find(c => c.code === form.countryCode)
-  const fullPhoneNumber = country ? `${country.phonePrefix}${form.localPhoneNumber}` : form.localPhoneNumber
+  const countryObj = countryOptions.find(c => c.code === form.countryCode)
+  const fullPhoneNumber = countryObj ? `${countryObj.phonePrefix}${form.localPhoneNumber}` : form.localPhoneNumber
+  const countryNumber = countryObj ? countryObj.phonePrefix.replace('+', '') : ''
 
+  // JWT 토큰
+  const token = localStorage.getItem('accessToken')
+
+  // payload 구성 (DTO 필드명과 일치)
   const payload = {
-    ...form,
-    phoneNumber: fullPhoneNumber, // 서버에 보내는 실제 번호
+    name: form.name,
+    bankName: form.bankName,
+    accountNumber: form.accountNumber,
+    countryNumber: countryNumber,
+    country: form.country,
+    phoneNumber: fullPhoneNumber,
+    email: form.email,
+    relationRecipient: form.relationRecipient || '기타',
+    currency: form.selectedCurrency,
+    engAddress: form.engAddress // ✅ camelCase 맞춤
   }
 
   try {
-    const res = await fetch('/api/recipients', {
+    const res = await fetch('/api/ForeignTransfer/recipients', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(payload),
-      credentials: 'include',
     })
-    if (!res.ok) throw new Error('등록 실패')
+
+    if (!res.ok) {
+      const errMsg = await res.text()
+      throw new Error(errMsg || '등록 실패')
+    }
+
     success.value = true
     setTimeout(() => router.push('/recipients'), 800)
   } catch (e) {
     error.value = e?.message || '오류가 발생했습니다.'
+    console.error('등록 오류:', e)
   } finally {
     isSubmitting.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .recipient-form {
