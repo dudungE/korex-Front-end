@@ -4,6 +4,7 @@
       <div class="header-actions">
         <template v-if="isAuthenticated">
           <a @click="goToMyPage()" style="cursor: pointer">마이페이지</a>
+          <a v-if="isAdmin" @click="goToAdmin()" style="cursor: pointer">관리자</a>
           <a @click="handleLogout" style="cursor: pointer">로그아웃</a>
         </template>
         <template v-else>
@@ -63,6 +64,13 @@
             <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
         </div>
+
+        <div class="dropdown" @mouseenter="supportMenu=true" @mouseleave="supportMenu=false">
+          <a @click="goToSupport()" class="dropdown-toggle" style="cursor: pointer">고객센터</a>
+          <ul class="dropdown-menu" v-show="supportMenu">
+            <li class="section-title" @click="goToSupport()">1:1문의</li>
+          </ul>
+        </div>
       </nav>
 
       <div class="header-icons">
@@ -95,6 +103,7 @@ const exchangeMenu = ref(false)
 const friendMenu = ref(false)
 const foreignMenu = ref(false)
 const accountMenu = ref(false)
+const supportMenu = ref(false)
 
 // 네비게이션 메서드
 const goToRateLookup = () => router.push('/rate-lookup')
@@ -110,7 +119,18 @@ const goToTransferInfo = () => router.push('/ForeignTransfer/info')
 const goToTransferRequest = () => router.push('/ForeignTransfer')
 const goToRecipients = () => router.push('/recipients')
 const goToForeignTransferList = () => router.push('/ForeignTransfer/list')
+const goToSupport = () => router.push('/inquiry/list')
+const goToAdmin = () => router.push('/admin')
 
+const isAdmin = computed(() => {
+  const u = authStore.userInfo || {}
+  return (
+    u.role === 2 ||
+    u.role === 'ADMIN' ||
+    u.role?.roleName === 'ROLE_ADMIN' ||
+    (Array.isArray(u.roles) && u.roles.includes('ROLE_ADMIN'))
+  )
+})
 
 const handleLogout = async () => {
   await authStore.logout()

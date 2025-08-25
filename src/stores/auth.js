@@ -118,7 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
                 }
 
                 isAuthenticated.value = true
-                userInfo.value = response.data.userInfo
+                userInfo.value = response.data.user
 
                 resetFailCount(loginData.loginId)
 
