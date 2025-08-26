@@ -546,7 +546,7 @@ const filterNameInput = (event) => {
 
 // 숫자만 허용
 const filterPhoneInput = (event) => {
-  recipientPhone.value = event.target.value.replace(/[^0-9]/g, '');
+  recipientPhone.value = event.target.value.replace(/^010-\d{4}-\d{4}$/, '');
 }
 
 
