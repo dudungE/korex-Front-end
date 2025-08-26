@@ -2,6 +2,7 @@ import {createRouter, createWebHistory} from 'vue-router'
 import SignupPage from '@/views/auth/SignUpForm.vue'
 import LoginPages from '@/views/auth/LoginPages.vue'
 import { useAuthStore } from '@/stores/auth'
+import axios from 'axios'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,25 +16,25 @@ const router = createRouter({
             path: '/rate-lookup',
             name: 'RateLookup',
             component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: true, requiresVerified: true }
         },
         {
             path: '/rate-calculator',
             name: 'RateCalculator',
             component: () => import('@/views/ExchangeInfo/Calculator.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: true, requiresVerified: true }
         },
         {
             path: '/rate-alert',
             name: 'RateAlert',
             component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: true, requiresVerified: true }
         },
         {
             path: '/rate-chart',
             name: 'RateChart',
             component: () => import('@/views/ExchangeInfo/RateChart.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: true, requiresVerified: true }
         },
         {
             path: '/exchange',
@@ -109,7 +110,7 @@ const router = createRouter({
             component: () => import('@/views/ForeignTransfer/views/Recipients/PostRecipients.vue'),
         },
         {
-            path: '/recipients/put',
+            path: '/recipients/edit/:id',
             name: 'RecipientsPut',
             component: () => import('@/views/ForeignTransfer/views/Recipients/PutRecipients.vue'),
         },
@@ -131,40 +132,72 @@ const router = createRouter({
     ],
 })
 
+function parseJwt(token) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(base64))
+  } catch { return null }
+}
+
+function hasVerifiedFromToken(token) {
+  if (!token) return false
+  const payload = parseJwt(token)
+  if (!payload) return false
+  if (payload.verified === true) return true
+  const auths = payload.authorities || payload.auth || payload.roles || payload.scope
+  if (Array.isArray(auths)) return auths.includes('VERIFIED') || auths.includes('ROLE_VERIFIED')
+  if (typeof auths === 'string') {
+    return auths.split(/[,\s]/).includes('VERIFIED') || auths.includes('ROLE_VERIFIED')
+  }
+  return false
+}
+
+async function ensureVerifiedViaAPI() {
+  try {
+    const res = await axios.get('/api/user/myinfo') // 또는 /api/user/me
+    const d = res.data || {}
+    if (d.verified === true) return true
+    if (d.status === 'VERIFIED') return true
+    if (typeof d.authority === 'string' && d.authority.includes('VERIFIED')) return true
+    if (Array.isArray(d.authorities) && d.authorities.includes('VERIFIED')) return true
+  } catch {}
+  try {
+    await axios.head('/api/exchange/rates')
+    return true
+  } catch { return false }
+}
+
 // 🔒 인증 가드 설정
 router.beforeEach(async (to, from, next) => {
-    const authStore = useAuthStore()
+  const authStore = useAuthStore()
 
-    // 인증 상태 확인 (액세스 토큰이 없어도 리프레시 토큰으로 복구 시도)
-    const token = authStore.getToken()
-    if (!authStore.isAuthenticated) {
-        if (token) {
-            // 토큰은 있지만 store의 인증 상태가 false인 경우 (페이지 새로고침 등)
-            console.log('🔄 액세스 토큰 있음, 인증 상태 재확인 중...')
-        } else {
-            // 액세스 토큰 없음, 리프레시 토큰으로 복구 시도
-            console.log('🔄 액세스 토큰 없음, 리프레시 토큰으로 복구 시도 중...')
-        }
-        await authStore.checkAuthStatus()
+  // 인증 상태 확인 (액세스 토큰이 없어도 리프레시 토큰으로 복구 시도)
+  const token = authStore.getToken?.() || localStorage.getItem('accessToken')
+  if (!authStore.isAuthenticated) {
+    await authStore.checkAuthStatus?.()
+  }
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    alert('로그인이 필요합니다.')
+    return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  // VERIFIED 필요
+  if (to.meta.requiresVerified) {
+    let ok = authStore.userInfo?.verified === true || hasVerifiedFromToken(token)
+    if (!ok) ok = await ensureVerifiedViaAPI()
+    if (!ok) {
+      alert('인증 완료 사용자만 접근할 수 있습니다.')
+      return next(from.name ? false : '/403')
     }
+  }
 
-    const isAuthenticated = authStore.isAuthenticated
+  if (to.path === '/login' && isAuthenticated) {
+    return next('/')
+  }
 
-    console.log(`🔍 Route Guard - Going to: ${to.path}, Authenticated: ${isAuthenticated}`)
-
-    // 인증이 필요한 페이지 체크
-    if (to.meta.requiresAuth && !isAuthenticated) {
-        console.log('❌ 인증 필요, 로그인 페이지로 리다이렉트')
-        next('/login')
-    } else if (to.path === '/login' && isAuthenticated) {
-        // 이미 로그인되어 있으면 홈페이지로 리다이렉트
-        console.log('✅ 이미 로그인됨, 홈으로 리다이렉트')
-        next('/')
-    } else {
-        // 정상적으로 진행
-        console.log('✅ Route guard 통과')
-        next()
-    }
+  next()
 })
 
 export default router
