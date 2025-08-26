@@ -7,8 +7,12 @@
       row-key="id"
       :loading="loading"
       bordered
+      :scroll="{ x: 800 }"
     >
-      <template #bodyCell="{ column, record }">
+      <template #bodyCell="{ column, record, index }">
+        <span v-if="column.dataIndex === 'no'">
+          {{ index + 1 }}
+        </span>
         <span v-if="column.dataIndex === 'email'" class="masked-text">
           {{ maskEmail(record.email) }}
         </span>
@@ -24,6 +28,14 @@
             @click="unlockAccount(record)"
           >
             해제
+          </a-button>
+          <a-button
+            v-else-if="record.status === '활성'"
+            type="primary"
+            size="small"
+            @click="lockAccount(record)"
+          >
+            잠금
           </a-button>
         </span>
         <span v-else>{{ record[column.dataIndex] }}</span>
@@ -42,7 +54,7 @@ const users = ref([])
 
 // 컬럼 정의
 const columns = [
-  { title: 'NO', key: 'index', customRender: ({ index }) => index + 1 },
+  { title: 'NO', dataIndex: 'no', key: 'no' },
   { title: 'name', dataIndex: 'name', key: 'name' },
   { title: 'Login ID', dataIndex: 'loginId', key: 'loginId' },
   { title: 'e-mail', dataIndex: 'email', key: 'email' },
@@ -99,6 +111,25 @@ async function unlockAccount(user) {
     }
   })
 }
+
+// 계정 잠금
+async function lockAccount(user) {
+  Modal.confirm({
+    title: '계정 잠금',
+    content: `${user.loginId} 계정을 잠금하시겠습니까?`,
+    async onOk() {
+      try {
+        await axios.post(`/api/admin/${user.loginId}/lock`)
+        message.success('계정이 잠금되었습니다.')
+        user.status = '제한'
+      } catch (err) {
+        message.error('잠금 실패')
+        console.error(err)
+      }
+    }
+  })
+}
+
 
 // 초기 로드
 onMounted(fetchUsers)
