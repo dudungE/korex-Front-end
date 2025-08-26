@@ -110,7 +110,7 @@ const router = createRouter({
             component: () => import('@/views/ForeignTransfer/views/Recipients/PostRecipients.vue'),
         },
         {
-            path: '/recipients/put',
+            path: '/recipients/edit/:id',
             name: 'RecipientsPut',
             component: () => import('@/views/ForeignTransfer/views/Recipients/PutRecipients.vue'),
         },
