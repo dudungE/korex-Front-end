@@ -42,15 +42,15 @@
                         <div class="chart-center">
                             <div class="chart-total">총 보유</div>
                             <div class="chart-currencies">
-                                {{ currencyWallets.length }}개 통화
-                                <span v-if="currencyWallets.length > 4" class="other-count">
+                                {{ availableWalletsCount }}개 통화
+                                <span v-if="availableWalletsCount > 4" class="other-count">
                                     (상위 4개 표시)
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 범례 -->
+                    <!-- 🔥 범례 - 원본 통화 금액과 원화 환산 금액 함께 표시 -->
                     <div class="chart-legend">
                         <div v-for="(segment, index) in chartSegments" :key="segment.id" class="legend-item"
                             :class="{ highlighted: highlightedIndex === index }">
@@ -62,7 +62,11 @@
                                         ({{ segment.otherCount }}개 통화)
                                     </span>
                                 </div>
-                                <div class="legend-amount">
+                                <!-- 🔥 원본 통화 금액 표시 추가 -->
+                                <div v-if="!segment.isOther" class="legend-original-amount">
+                                    {{ formatCurrencyAmount(segment.originalAmount, segment.currency) }}
+                                </div>
+                                <div class="legend-krw-amount">
                                     {{ formatAmount(segment.krwAmount) }}
                                 </div>
                                 <div class="legend-percentage">
@@ -161,13 +165,23 @@
                 </div>
             </div>
 
-            <!-- 거래 내역 (최근 4개만) -->
+            <!-- 🔥 거래 내역 (최근 4개만) - 빈 상태 처리 추가 -->
             <div class="transaction-history">
                 <div class="section-header">
                     <h3>최근 거래 내역</h3>
                     <button class="more-btn" @click="goToTransactionHistory">전체보기</button>
                 </div>
-                <div class="transaction-list">
+                
+                <!-- 거래내역이 없을 때 -->
+                <div v-if="!recentTransactions || recentTransactions.length === 0" class="no-transaction-data">
+                    <div class="no-transaction-message">
+                        <div class="no-transaction-icon">📋</div>
+                        <div class="no-transaction-text">최근 거래내역이 없습니다</div>
+                    </div>
+                </div>
+                
+                <!-- 거래내역이 있을 때 -->
+                <div v-else class="transaction-list">
                     <div v-for="transaction in recentTransactions" :key="transaction.id" class="transaction-item">
                         <div class="transaction-icon" :class="getTransactionType(transaction)">
                             {{ getTransactionIcon(transaction) }}
@@ -532,14 +546,19 @@ export default {
             }, 0)
         })
 
-        // 통화를 KRW 환산 금액 기준으로 정렬 (KRW 우선)
+        // 🔥 잔액이 있는 지갑만 정렬 (잔액 0인 지갑 제외)
         const sortedWallets = computed(() => {
-            return [...currencyWallets.value].sort((a, b) => {
-                if (a.code === 'KRW') return -1
-                if (b.code === 'KRW') return 1
-                return b.krwAmount - a.krwAmount
-            })
+            return [...currencyWallets.value]
+                .filter(wallet => parseCleanFloat(wallet.amount) > 0) // 🔥 잔액이 0보다 큰 지갑만
+                .sort((a, b) => {
+                    if (a.code === 'KRW') return -1
+                    if (b.code === 'KRW') return 1
+                    return b.krwAmount - a.krwAmount
+                })
         })
+
+        // 🔥 잔액이 있는 지갑 개수
+        const availableWalletsCount = computed(() => sortedWallets.value.length)
 
         // 상위 4개 지갑 (차트용)
         const topWallets = computed(() => sortedWallets.value.slice(0, 4))
@@ -559,7 +578,7 @@ export default {
             return currencyWallets.value.find(wallet => wallet.code === selectedCurrencyFilter.value)
         })
 
-        // 차트 세그먼트 계산 (상위 4개 + 기타)
+        // 🔥 차트 세그먼트 계산 - 원본 통화 금액 포함
         const chartSegments = computed(() => {
             const total = totalBalance.value
             if (total === 0) return []
@@ -579,6 +598,7 @@ export default {
                     currency: wallet.code,
                     name: wallet.name,
                     flag: wallet.flag,
+                    originalAmount: wallet.amount,  // 🔥 원본 통화 금액 추가
                     krwAmount,
                     percentage,
                     color: wallet.color,
@@ -652,9 +672,15 @@ export default {
                     await loadExchangeRates(currencyCodes)
                 }
 
-                // 4. 기본 선택 통화 설정
-                const krwWallet = balanceData.value.find(w => w.code === 'KRW')
-                selectedCurrencyFilter.value = krwWallet ? 'KRW' : balanceData.value[0]?.code || 'KRW'
+                // 4. 기본 선택 통화 설정 - 잔액이 있는 지갑 중에서 선택
+                setTimeout(() => {
+                    if (sortedWallets.value.length > 0) {
+                        selectedCurrencyFilter.value = sortedWallets.value[0].code
+                    } else {
+                        // 잔액이 있는 지갑이 없으면 첫 번째 지갑 선택
+                        selectedCurrencyFilter.value = balanceData.value[0]?.code || 'KRW'
+                    }
+                }, 100)
 
             } catch (error) {
                 console.error('Failed to load balance data:', error)
@@ -1064,6 +1090,7 @@ export default {
             selectedCurrencyFilter,
             selectedCurrencyWallet,
             totalBalance,
+            availableWalletsCount, // 🔥 추가
             topWallets,
             otherWallets,
             otherWalletsTotal,
@@ -1119,7 +1146,102 @@ export default {
 </script>
 
 <style scoped>
-/* 기존 CSS 유지 - 변경사항 없음 */
+/* 🔥 범례 스타일 수정 */
+.chart-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.legend-item:hover,
+.legend-item.highlighted {
+    background: #e9ecef;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.legend-info {
+    flex: 1;
+}
+
+.legend-currency {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.other-detail {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+/* 🔥 원본 통화 금액 스타일 추가 */
+.legend-original-amount {
+    font-size: 0.9rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.legend-krw-amount {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.125rem;
+}
+
+.legend-percentage {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #20c997;
+}
+
+/* 🔥 거래내역 빈 상태 스타일 추가 */
+.no-transaction-data {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem 1rem;
+}
+
+.no-transaction-message {
+    text-align: center;
+    color: #6c757d;
+}
+
+.no-transaction-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+.no-transaction-text {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* 기존 CSS는 모두 그대로 유지... */
 * {
     margin: 0;
     padding: 0;
@@ -1274,69 +1396,6 @@ export default {
     font-weight: 400;
     display: block;
     margin-top: 0.125rem;
-}
-
-/* 범례 */
-.chart-legend {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 12px;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.legend-item:hover,
-.legend-item.highlighted {
-    background: #e9ecef;
-    transform: translateX(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.legend-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.legend-info {
-    flex: 1;
-}
-
-.legend-currency {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 0.25rem;
-    font-size: 0.95rem;
-}
-
-.other-detail {
-    font-size: 0.8rem;
-    color: #6c757d;
-    font-weight: 400;
-}
-
-.legend-amount {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-bottom: 0.125rem;
-}
-
-.legend-percentage {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #20c997;
 }
 
 /* 통화별 지갑 섹션 */
