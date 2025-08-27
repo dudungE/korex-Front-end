@@ -3,37 +3,41 @@
     <div class="main-content">
         <h2 class="page-title">계좌 조회</h2>
 
-        <div class="dashboard-grid">
+        <!-- 로딩 상태 -->
+        <div v-if="isLoading" class="loading-container">
+            <div class="loading-spinner">로딩 중...</div>
+        </div>
+
+        <!-- 데이터가 없을 때 -->
+        <div v-else-if="!balanceData || balanceData.length === 0" class="no-account-data">
+            <p>계좌 정보를 불러올 수 없습니다.</p>
+            <button @click="loadInitialData" class="retry-btn">다시 시도</button>
+        </div>
+
+        <div v-else class="dashboard-grid">
             <!-- 총 보유 금액 - 도넛 차트 -->
             <div class="total-balance-card">
                 <div class="balance-header">
                     <span class="balance-title">총 보유 금액</span>
                 </div>
                 <div class="total-amount">{{ formatAmount(totalBalance) }}</div>
-                
+
                 <!-- 도넛 차트 -->
                 <div class="currency-chart-container">
                     <div class="donut-chart">
                         <svg width="200" height="200" viewBox="0 0 200 200">
                             <!-- 배경 원 -->
-                            <circle cx="100" cy="100" r="80" fill="none" 
-                                   stroke="#f1f3f4" stroke-width="25"/>
-                            
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#f1f3f4" stroke-width="25" />
+
                             <!-- 각 통화별 도넛 조각 -->
-                            <circle v-for="(segment, index) in chartSegments" 
-                                   :key="segment.id"
-                                   cx="100" cy="100" r="80" 
-                                   fill="none" 
-                                   :stroke="segment.color" 
-                                   stroke-width="25"
-                                   :stroke-dasharray="`${segment.dashArray} ${502 - segment.dashArray}`"
-                                   :stroke-dashoffset="segment.offset"
-                                   transform="rotate(-90 100 100)"
-                                   class="chart-segment"
-                                   @mouseover="highlightSegment(index)"
-                                   @mouseout="unhighlightSegment"/>
+                            <circle v-for="(segment, index) in chartSegments" :key="segment.id" cx="100" cy="100" r="80"
+                                fill="none" :stroke="segment.color" stroke-width="25"
+                                :stroke-dasharray="`${segment.dashArray} ${502 - segment.dashArray}`"
+                                :stroke-dashoffset="segment.offset" transform="rotate(-90 100 100)"
+                                class="chart-segment" @mouseover="highlightSegment(index)"
+                                @mouseout="unhighlightSegment" />
                         </svg>
-                        
+
                         <!-- 중앙 텍스트 -->
                         <div class="chart-center">
                             <div class="chart-total">총 보유</div>
@@ -45,13 +49,11 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- 범례 -->
                     <div class="chart-legend">
-                        <div v-for="(segment, index) in chartSegments" 
-                             :key="segment.id" 
-                             class="legend-item"
-                             :class="{ highlighted: highlightedIndex === index }">
+                        <div v-for="(segment, index) in chartSegments" :key="segment.id" class="legend-item"
+                            :class="{ highlighted: highlightedIndex === index }">
                             <div class="legend-color" :style="{ backgroundColor: segment.color }"></div>
                             <div class="legend-info">
                                 <div class="legend-currency">
@@ -78,13 +80,9 @@
                     <h3>통화별 계좌</h3>
                     <div class="currency-controls">
                         <!-- 통화 선택 드롭다운 -->
-                        <select class="currency-selector" 
-                                v-model="selectedCurrencyFilter"
-                                @change="filterCurrency">
-                            <option v-for="wallet in sortedWallets" 
-                                    :key="wallet.currency" 
-                                    :value="wallet.currency">
-                                {{ wallet.flag }} {{ wallet.name }} ({{ wallet.currency }})
+                        <select class="currency-selector" v-model="selectedCurrencyFilter" @change="filterCurrency">
+                            <option v-for="wallet in sortedWallets" :key="wallet.code" :value="wallet.code">
+                                {{ wallet.flag }} {{ wallet.name }} ({{ wallet.code }})
                             </option>
                         </select>
                     </div>
@@ -97,27 +95,29 @@
                             <div class="currency-flag-large">{{ selectedCurrencyWallet.flag }}</div>
                             <div class="currency-info-large">
                                 <div class="currency-name-large">{{ selectedCurrencyWallet.name }}</div>
-                                <div class="currency-code-large">{{ selectedCurrencyWallet.currency }}</div>
+                                <div class="currency-code-large">{{ selectedCurrencyWallet.code }}</div>
                             </div>
                         </div>
                         <div class="currency-balance-large">
-                            {{ formatCurrencyAmount(selectedCurrencyWallet.balance, selectedCurrencyWallet.currency) }}
+                            {{ formatCurrencyAmount(selectedCurrencyWallet.amount, selectedCurrencyWallet.code) }}
                         </div>
                         <div class="currency-krw-large">
-                            ≈ {{ formatAmount(convertToKRW(selectedCurrencyWallet.balance, selectedCurrencyWallet.rate)) }}
+                            ≈ {{ formatAmount(convertToKRW(selectedCurrencyWallet.amount,
+                            selectedCurrencyWallet.exchangeRate)) }}
                         </div>
                         <div class="currency-actions">
-                            <button class="action-btn exchange-btn" @click="goToExchange(selectedCurrencyWallet.currency)">
+                            <button class="action-btn exchange-btn" @click="goToExchange(selectedCurrencyWallet.code)">
                                 환전하기
                             </button>
-                            <button class="action-btn detail-btn" @click="goToWalletDetail(selectedCurrencyWallet.currency)">
+                            <button class="action-btn detail-btn"
+                                @click="goToWalletDetail(selectedCurrencyWallet.code)">
                                 상세보기
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- 자주 쓰는 계좌 즐겨찾기 카드 -->
             <div class="favorite-accounts-card">
                 <div class="favorite-header">
@@ -126,41 +126,34 @@
                         {{ isManagingFavorites ? '완료' : '관리' }}
                     </button>
                 </div>
-                
+
                 <div class="favorite-accounts-list">
-                    <div v-for="account in favoriteAccounts" :key="account.id" 
-                         class="favorite-account-item" 
-                         :class="{ 'manage-mode': isManagingFavorites }"
-                         @click="!isManagingFavorites && openTransferModal(account)">
+                    <div v-for="account in favoriteAccounts" :key="account.favoriteId" class="favorite-account-item"
+                        :class="{ 'manage-mode': isManagingFavorites }"
+                        @click="!isManagingFavorites && openTransferModal(account)">
                         <div class="account-avatar">
                             <span class="avatar-icon">{{ account.icon }}</span>
                         </div>
                         <div class="account-details">
-                            <div class="account-name">{{ account.nickname }}</div>
+                            <div class="account-name">{{ account.realName }}</div>
                             <div class="account-info">
-                                <span class="real-name">{{ account.realName }}</span>
                                 <span class="account-number">{{ account.phoneNumber }}</span>
                             </div>
                             <div class="last-transfer">{{ account.lastTransfer }}</div>
                         </div>
                         <div class="quick-actions">
-                            <button v-if="!isManagingFavorites" 
-                                    class="quick-transfer-btn" 
-                                    @click.stop="openTransferModal(account)">
+                            <button v-if="!isManagingFavorites" class="quick-transfer-btn"
+                                @click.stop="openTransferModal(account)">
                                 💸 송금
                             </button>
-                            <button v-else 
-                                    class="delete-btn" 
-                                    @click.stop="deleteFavorite(account.id)">
+                            <button v-else class="delete-btn" @click.stop="deleteFavorite(account.favoriteId)">
                                 🗑️ 삭제
                             </button>
                         </div>
                     </div>
                 </div>
-                
-                <button v-if="favoriteAccounts.length < 4" 
-                        class="add-favorite-btn" 
-                        @click="openAddModal">
+
+                <button v-if="favoriteAccounts.length < 4" class="add-favorite-btn" @click="openAddModal">
                     + 자주 쓰는 계좌 추가
                 </button>
                 <div v-else class="max-favorites-notice">
@@ -176,15 +169,16 @@
                 </div>
                 <div class="transaction-list">
                     <div v-for="transaction in recentTransactions" :key="transaction.id" class="transaction-item">
-                        <div class="transaction-icon" :class="transaction.type">
-                            {{ getTransactionIcon(transaction.category) }}
+                        <div class="transaction-icon" :class="getTransactionType(transaction)">
+                            {{ getTransactionIcon(transaction) }}
                         </div>
                         <div class="transaction-info">
-                            <div class="transaction-desc">{{ transaction.description }}</div>
-                            <div class="transaction-date">{{ transaction.date }}</div>
+                            <div class="transaction-desc">{{ getTransactionDescription(transaction) }}</div>
+                            <div class="transaction-date">{{ formatTransactionDate(transaction.createdAt) }}</div>
                         </div>
-                        <div class="transaction-amount" :class="transaction.type">
-                            {{ transaction.type === 'expense' ? '-' : '+' }}{{ formatAmount(transaction.amount) }}
+                        <div class="transaction-amount" :class="getTransactionType(transaction)">
+                            {{ getTransactionType(transaction) === 'expense' ? '-' : '+' }}{{
+                                formatAmount(getTransactionAmount(transaction)) }}
                         </div>
                     </div>
                 </div>
@@ -198,46 +192,23 @@
                     <h3>친구 추가</h3>
                     <button class="close-btn" @click="closeAddModal">×</button>
                 </div>
-                
+
                 <form @submit.prevent="addFriend" class="add-friend-form">
                     <div class="form-group">
-                        <label for="friendNickname">닉네임</label>
-                        <input 
-                            type="text" 
-                            id="friendNickname"
-                            v-model="newFriend.nickname" 
-                            placeholder="표시할 닉네임을 입력하세요 (예: 엄마, 딸래미, 친구 등)"
-                            :class="{ error: errors.nickname }"
-                            required>
-                        <span v-if="errors.nickname" class="error-message">{{ errors.nickname }}</span>
+                        <label for="friendName">친구 이름</label>
+                        <input type="text" id="friendName" v-model="newFriend.name" placeholder="친구 이름을 입력하세요"
+                            :class="{ error: errors.name }" required>
+                        <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
                     </div>
 
                     <div class="form-group">
-                        <label for="friendName">친구 이름</label>
-                        <input 
-                            type="text" 
-                            id="friendName"
-                            v-model="newFriend.name" 
-                            placeholder="친구의 실제 이름을 입력하세요"
-                            :class="{ error: errors.name }"
-                            required>
-                        <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="friendPhone">전화번호</label>
-                        <input 
-                            type="tel" 
-                            id="friendPhone"
-                            v-model="newFriend.phoneNumber" 
-                            placeholder="전화번호를 입력하세요 (예: 010-1234-5678)"
-                            :class="{ error: errors.phoneNumber }"
-                            maxlength="13"
-                            @input="formatPhoneNumber"
-                            required>
+                        <input type="tel" id="friendPhone" v-model="newFriend.phoneNumber"
+                            placeholder="전화번호를 입력하세요 (예: 010-1234-5678)" :class="{ error: errors.phoneNumber }"
+                            maxlength="13" @input="formatPhoneNumber" required>
                         <span v-if="errors.phoneNumber" class="error-message">{{ errors.phoneNumber }}</span>
                     </div>
-                    
+
                     <div class="modal-actions">
                         <button type="button" class="cancel-btn" @click="closeAddModal">취소</button>
                         <button type="submit" class="confirm-btn" :disabled="isVerifying">
@@ -252,30 +223,29 @@
         <div v-if="showTransferModal" class="modal-overlay" @click="closeTransferModal">
             <div class="modal-content transfer-modal" @click.stop>
                 <div class="modal-header">
-                    <h3>{{ selectedAccount?.nickname }}에게 송금</h3>
+                    <h3>{{ selectedAccount?.realName }}에게 송금</h3>
                     <button class="close-btn" @click="closeTransferModal">×</button>
                 </div>
-                
+
                 <div class="transfer-form">
                     <!-- 통화 선택 -->
                     <div class="form-group">
                         <label>송금할 통화 선택</label>
                         <div class="currency-selection">
-                            <div v-for="wallet in availableWallets" 
-                                 :key="wallet.currency"
-                                 class="currency-card"
-                                 :class="{ selected: selectedCurrency === wallet.currency }"
-                                 @click="selectCurrency(wallet)">
+                            <div v-for="wallet in availableWallets" :key="wallet.code" class="currency-card"
+                                :class="{ selected: selectedCurrency === wallet.code }" @click="selectCurrency(wallet)">
                                 <div class="currency-info">
                                     <span class="currency-flag">{{ wallet.flag }}</span>
                                     <div class="currency-details">
                                         <div class="currency-name">{{ wallet.name }}</div>
-                                        <div class="currency-code">{{ wallet.currency }}</div>
+                                        <div class="currency-code">{{ wallet.code }}</div>
                                     </div>
                                 </div>
                                 <div class="currency-balance">
-                                    <div class="balance-amount">{{ formatCurrencyAmount(wallet.balance, wallet.currency) }}</div>
-                                    <div class="balance-krw">{{ formatAmount(convertToKRW(wallet.balance, wallet.rate)) }}</div>
+                                    <div class="balance-amount">{{ formatCurrencyAmount(wallet.amount, wallet.code) }}
+                                    </div>
+                                    <div class="balance-krw">{{ formatAmount(convertToKRW(wallet.amount,
+                                        wallet.exchangeRate)) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -285,20 +255,15 @@
                     <div class="form-group">
                         <label>송금 금액</label>
                         <div class="amount-input-container">
-                            <input 
-                                type="number" 
-                                v-model="transferAmount" 
-                                :placeholder="`${selectedCurrency}로 입력`"
-                                class="amount-input"
-                                min="0"
-                                step="0.01">
+                            <input type="number" v-model="transferAmount" :placeholder="`${selectedCurrency}로 입력`"
+                                class="amount-input" min="0" step="0.01">
                             <span class="currency-symbol">{{ selectedCurrency }}</span>
                         </div>
                         <div class="balance-info">
                             사용 가능한 잔액: {{ formatCurrencyAmount(selectedWalletBalance, selectedCurrency) }}
                         </div>
-                        <div v-if="transferAmount && parseFloat(transferAmount) > selectedWalletBalance" 
-                             class="error-message">
+                        <div v-if="transferAmount && parseFloat(transferAmount) > selectedWalletBalance"
+                            class="error-message">
                             잔액이 부족합니다
                         </div>
                     </div>
@@ -306,29 +271,22 @@
                     <!-- 계좌 비밀번호 입력 -->
                     <div class="form-group">
                         <label>계좌 비밀번호</label>
-                        <input 
-                            type="password" 
-                            v-model="accountPassword" 
-                            placeholder="계좌 비밀번호 6자리를 입력하세요"
-                            class="password-input"
-                            maxlength="6"
-                            pattern="[0-9]{6}"
-                            @input="validatePassword"
-                            required>
+                        <input type="password" v-model="accountPassword" placeholder="계좌 비밀번호 4자리를 입력하세요"
+                            class="password-input" maxlength="6" pattern="[0-9]{6}" @input="validatePassword" required>
                         <div class="password-dots">
-                            <span v-for="i in 6" :key="i" 
-                                  class="password-dot" 
-                                  :class="{ filled: accountPassword.length >= i }"></span>
+                            <span v-for="i in 4" :key="i" class="password-dot"
+                                :class="{ filled: accountPassword.length >= i }"></span>
                         </div>
                         <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
                     </div>
 
                     <!-- 송금 확인 정보 -->
-                    <div v-if="transferAmount && selectedCurrency && accountPassword.length === 6" class="transfer-summary">
+                    <div v-if="transferAmount && selectedCurrency && accountPassword.length === 4"
+                        class="transfer-summary">
                         <div class="summary-title">송금 정보</div>
                         <div class="summary-row">
                             <span>받는 사람</span>
-                            <span>{{ selectedAccount?.nickname }} ({{ selectedAccount?.realName }})</span>
+                            <span>{{ selectedAccount?.realName }}</span>
                         </div>
                         <div class="summary-row">
                             <span>송금 금액</span>
@@ -347,11 +305,9 @@
                     <!-- 송금 버튼 -->
                     <div class="modal-actions">
                         <button type="button" class="cancel-btn" @click="closeTransferModal">취소</button>
-                        <button type="button" 
-                                class="confirm-btn transfer-confirm-btn" 
-                                :disabled="!canTransfer"
-                                @click="confirmTransfer">
-                            송금하기
+                        <button type="button" class="confirm-btn transfer-confirm-btn" :disabled="!canTransfer"
+                            @click="confirmTransfer">
+                            {{ isTransferring ? '송금 중...' : '송금하기' }}
                         </button>
                     </div>
                 </div>
@@ -361,33 +317,36 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 export default {
     name: 'AccountDashboard',
     setup() {
         const router = useRouter()
-        
-        const highlightedIndex = ref(-1)
-        const selectedCurrencyFilter = ref('KRW') // 디폴트로 KRW 설정
 
-        // 관리 모드 상태
+        // 상태 관리
+        const isLoading = ref(true)
+        const isTransferring = ref(false)
+        const highlightedIndex = ref(-1)
+        const selectedCurrencyFilter = ref('KRW')
         const isManagingFavorites = ref(false)
-        
+
         // 친구 추가 모달 관련 상태
         const showAddModal = ref(false)
         const isVerifying = ref(false)
         const newFriend = ref({
-            nickname: '',
             name: '',
             phoneNumber: ''
         })
         const errors = ref({
-            nickname: '',
             name: '',
             phoneNumber: ''
         })
+
+        // 전화번호 전달용 
+        const rawPhone = ref('')
 
         // 송금 모달 관련 상태
         const showTransferModal = ref(false)
@@ -397,119 +356,188 @@ export default {
         const accountPassword = ref('')
         const passwordError = ref('')
 
-        // 가상의 친구 데이터베이스 (모든 통화 지원)
-        const friendDatabase = ref([
-            { 
-                name: '김지연', 
-                phoneNumber: '010-1234-2845'
-            },
-            { 
-                name: '김민수', 
-                phoneNumber: '010-5678-1234'
-            },
-            { 
-                name: '박영희', 
-                phoneNumber: '010-9999-7777'
-            },
-            { 
-                name: '이철수', 
-                phoneNumber: '010-1111-2222'
-            },
-            { 
-                name: '최영수', 
-                phoneNumber: '010-3333-4444'
-            }
-        ])
+        // 데이터 - DTO는 4개 필드만, 환율은 별도 관리
+        const balanceData = ref([]) // DTO: code, name, amount, flag 만
+        const exchangeRates = ref({}) // 통화별 환율 저장
+        const favoriteAccounts = ref([])
+        const recentTransactions = ref([])
+        const supportedCurrencies = ref([])
+        const userId = localStorage.getItem('userId')
 
-        // 통화별 지갑 (많은 통화를 시뮬레이션)
-        const currencyWallets = ref([
-            {
-                currency: 'KRW',
-                name: '원화',
-                flag: '🇰🇷',
-                balance: 12547000,
-                rate: 1,
-                color: '#20c997'
-            },
-            {
-                currency: 'USD',
-                name: '달러',
-                flag: '🇺🇸',
-                balance: 8420.50,
-                rate: 1293.33,
-                color: '#fd7e14'
-            },
-            {
-                currency: 'JPY',
-                name: '엔화',
-                flag: '🇯🇵',
-                balance: 850000,
-                rate: 8.95,
-                color: '#6f42c1'
-            },
-            {
-                currency: 'EUR',
-                name: '유로',
-                flag: '🇪🇺',
-                balance: 3250.80,
-                rate: 1410.25,
-                color: '#e83e8c'
-            },
-            {
-                currency: 'CNY',
-                name: '위안',
-                flag: '🇨🇳',
-                balance: 1520.30,
-                rate: 177.82,
-                color: '#dc3545'
-            },
-            {
-                currency: 'GBP',
-                name: '파운드',
-                flag: '🇬🇧',
-                balance: 890.75,
-                rate: 1634.12,
-                color: '#0d6efd'
-            },
-            {
-                currency: 'CAD',
-                name: '캐나다달러',
-                flag: '🇨🇦',
-                balance: 1120.40,
-                rate: 956.78,
-                color: '#198754'
-            },
-            {
-                currency: 'AUD',
-                name: '호주달러',
-                flag: '🇦🇺',
-                balance: 765.20,
-                rate: 866.45,
-                color: '#ffc107'
-            },
-            {
-                currency: 'CHF',
-                name: '스위스프랑',
-                flag: '🇨🇭',
-                balance: 445.60,
-                rate: 1456.78,
-                color: '#6610f2'
-            }
-        ])
+        // API 설정
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
-        // 총 보유 금액 계산
+        // Axios 기본 설정
+        axios.defaults.baseURL = API_BASE_URL
+        axios.defaults.withCredentials = true
+
+        // API 함수들
+        const api = {
+            // 사용자 잔액 조회 (4개 필드만: code, name, amount, flag)
+            async getUserBalances(userId) {
+                try {
+                    const response = await axios.get(`/api/balance/${userId}`)
+                    return response.data
+                } catch (error) {
+                    console.error('Balance API Error:', error)
+                    throw error
+                }
+            },
+
+            // 특정 통화의 실시간 환율 조회
+            async getExchangeRate(currencyCode) {
+                try {
+                    const response = await axios.get(`/api/exchange/realtime/${currencyCode}`)
+                    const rateData = response.data
+
+                    if (rateData && rateData.length > 0 && rateData[0].base_rate) {
+                        const baseRateStr = rateData[0].base_rate  // "1,396.40"
+                        const cleanRate = baseRateStr.replace(/,/g, '')  // "1396.40"
+                        let rate = parseFloat(cleanRate)  // 1396.40
+
+                        // JPY는 100단위 통화이므로 환율을 100으로 나눔
+                        if (currencyCode === 'JPY') {
+                            rate = rate / 100
+                            
+                        }
+                        return rate
+                    }
+
+                    // 기본값 반환
+                    return currencyCode === 'KRW' ? 1 : (currencyCode === 'JPY' ? 9.4 : 1300)
+                } catch (error) {
+                    console.error(`Exchange Rate API Error for ${currencyCode}:`, error)
+                    return currencyCode === 'KRW' ? 1 : (currencyCode === 'JPY' ? 9.4 : 1300)
+                }
+            },
+
+            // 즐겨찾기 목록 조회
+            async getFavorites() {
+                try {
+                    const response = await axios.get('/api/favorites')
+                    return response.data
+                } catch (error) {
+                    console.error('Favorites API Error:', error)
+                    throw error
+                }
+            },
+
+            // 즐겨찾기 추가
+            async addFavorite(friendData) {
+                try {
+                    const response = await axios.post('/api/favorites', friendData)
+                    return response.data
+                } catch (error) {
+                    console.error('Add Favorite API Error:', error)
+                    throw error
+                }
+            },
+
+            // 즐겨찾기 삭제
+            async deleteFavorite(favoriteId) {
+                try {
+                    await axios.delete(`/api/favorites/${favoriteId}`)
+                } catch (error) {
+                    console.error('Delete Favorite API Error:', error)
+                    throw error
+                }
+            },
+
+            // 거래내역 조회
+            async getTransactionHistory(userId) {
+                try {
+                    const response = await axios.get(`/api/transaction/history/${userId}`)
+                    return response.data
+                } catch (error) {
+                    console.error('Transaction History API Error:', error)
+                    throw error
+                }
+            },
+
+            // 지원 통화 목록 조회
+            async getSupportedCurrencies() {
+                try {
+                    const response = await axios.get('/api/transfer/currencies')
+                    return response.data
+                } catch (error) {
+                    console.error('Supported Currencies API Error:', error)
+                    throw error
+                }
+            },
+
+            // 송금 실행
+            async executeTransfer(transferData) {
+                try {
+                    const response = await axios.post('/api/transfer/execute', transferData, {
+                        headers: {
+                            'X-User-Id': userId
+                        }
+                    })
+                    return response.data
+                } catch (error) {
+                    console.error('Transfer API Error:', error)
+                    throw error
+                }
+            }
+        }
+
+        // 환율 정보 로드
+        const loadExchangeRates = async (currencyCodes) => {
+            const ratePromises = currencyCodes.map(async (code) => {
+                if (code === 'KRW') {
+                    return { code, rate: 1 }
+                }
+
+                try {
+                    const rate = await api.getExchangeRate(code)
+                    return { code, rate }
+                } catch (error) {
+                    console.error(`Failed to load exchange rate for ${code}:`, error)
+                    return { code, rate: code === 'JPY' ? 9.4 : 1300 } // 기본값
+                }
+            })
+
+            const rates = await Promise.all(ratePromises)
+            const rateMap = {}
+            rates.forEach(({ code, rate }) => {
+                rateMap[code] = rate
+            })
+
+            exchangeRates.value = rateMap
+            console.log("로드된 환율 정보:", rateMap)
+        }
+
+        // Computed Properties - DTO와 환율 정보 결합
+        const currencyWallets = computed(() => {
+
+            return balanceData.value.map(balance => {
+                const exchangeRate = exchangeRates.value[balance.code] || 1
+                const krwAmount = convertToKRW(balance.amount, exchangeRate)
+
+                return {
+                    code: balance.code,        // DTO 필드
+                    name: balance.name,        // DTO 필드
+                    amount: balance.amount,    // DTO 필드
+                    flag: balance.flag,        // DTO 필드
+                    exchangeRate: exchangeRate, // 실시간 환율 API에서 가져온 값
+                    krwAmount: krwAmount,
+                    color: getCurrencyColor(balance.code)
+                }
+            })
+        })
+
         const totalBalance = computed(() => {
             return currencyWallets.value.reduce((total, wallet) => {
-                return total + convertToKRW(wallet.balance, wallet.rate)
+                return total + wallet.krwAmount
             }, 0)
         })
 
-        // 통화를 KRW 환산 금액 기준으로 정렬
+        // 통화를 KRW 환산 금액 기준으로 정렬 (KRW 우선)
         const sortedWallets = computed(() => {
             return [...currencyWallets.value].sort((a, b) => {
-                const aKrw = convertToKRW(a.balance, a.rate)
-                const bKrw = convertToKRW(b.balance, b.rate)
-                return bKrw - aKrw
+                if (a.code === 'KRW') return -1
+                if (b.code === 'KRW') return 1
+                return b.krwAmount - a.krwAmount
             })
         })
 
@@ -522,31 +550,33 @@ export default {
         // 기타 지갑들의 총합
         const otherWalletsTotal = computed(() => {
             return otherWallets.value.reduce((total, wallet) => {
-                return total + convertToKRW(wallet.balance, wallet.rate)
+                return total + wallet.krwAmount
             }, 0)
         })
 
         // 선택된 통화 지갑
         const selectedCurrencyWallet = computed(() => {
-            return currencyWallets.value.find(wallet => wallet.currency === selectedCurrencyFilter.value)
+            return currencyWallets.value.find(wallet => wallet.code === selectedCurrencyFilter.value)
         })
 
         // 차트 세그먼트 계산 (상위 4개 + 기타)
         const chartSegments = computed(() => {
             const total = totalBalance.value
+            if (total === 0) return []
+
             const circumference = 2 * Math.PI * 80
             let currentOffset = 0
             const segments = []
-            
+
             // 상위 4개 통화
-            topWallets.value.forEach((wallet, index) => {
-                const krwAmount = convertToKRW(wallet.balance, wallet.rate)
+            topWallets.value.forEach((wallet) => {
+                const krwAmount = wallet.krwAmount
                 const percentage = (krwAmount / total) * 100
                 const dashArray = (percentage / 100) * circumference
-                
+
                 segments.push({
-                    id: wallet.currency,
-                    currency: wallet.currency,
+                    id: wallet.code,
+                    currency: wallet.code,
                     name: wallet.name,
                     flag: wallet.flag,
                     krwAmount,
@@ -556,16 +586,16 @@ export default {
                     offset: -currentOffset,
                     isOther: false
                 })
-                
+
                 currentOffset += dashArray
             })
-            
+
             // 기타 통화들 (5개 이상일 때만)
             if (otherWallets.value.length > 0) {
                 const otherKrwAmount = otherWalletsTotal.value
                 const otherPercentage = (otherKrwAmount / total) * 100
                 const otherDashArray = (otherPercentage / 100) * circumference
-                
+
                 segments.push({
                     id: 'others',
                     currency: 'OTHERS',
@@ -580,103 +610,105 @@ export default {
                     otherCount: otherWallets.value.length
                 })
             }
-            
+
             return segments
         })
 
-        // 송금 가능한 지갑 (잔액이 있는 지갑만)
+        // 송금 가능한 지갑
         const availableWallets = computed(() => {
-            return currencyWallets.value.filter(wallet => wallet.balance > 0)
+            return currencyWallets.value.filter(wallet => parseCleanFloat(wallet.amount) > 0)
         })
 
         // 선택된 통화의 잔액
         const selectedWalletBalance = computed(() => {
-            const wallet = currencyWallets.value.find(w => w.currency === selectedCurrency.value)
-            return wallet ? wallet.balance : 0
+            const wallet = currencyWallets.value.find(w => w.code === selectedCurrency.value)
+            return wallet ? parseCleanFloat(wallet.amount) : 0
         })
 
         // 송금 가능 여부
         const canTransfer = computed(() => {
             const amount = parseFloat(transferAmount.value)
-            return amount > 0 && 
-                   amount <= selectedWalletBalance.value &&
-                   selectedAccount.value &&
-                   accountPassword.value.length === 6 &&
-                   !passwordError.value
+            return amount > 0 &&
+                amount <= selectedWalletBalance.value &&
+                selectedAccount.value &&
+                accountPassword.value.length === 4 &&
+                !passwordError.value &&
+                !isTransferring.value
         })
 
-        // 거래 내역 (확장된 데이터)
-        const transactions = ref([
-            {
-                id: 1,
-                type: 'expense',
-                category: 'exchange',
-                description: 'KRW → JPY 환전',
-                date: '08월 26일 2025',
-                amount: 89000,
-                currency: 'JPY',
-                originalAmount: 10000
-            },
-            {
-                id: 2,
-                type: 'income',
-                category: 'deposit',
-                description: '원화 충전',
-                date: '08월 25일 2025',
-                amount: 3200000,
-                currency: 'KRW',
-                originalAmount: 3200000
-            },
-            {
-                id: 3,
-                type: 'expense',
-                category: 'transfer',
-                description: 'USD 친구송금 (민수)',
-                date: '08월 24일 2025',
-                amount: 64667,
-                currency: 'USD',
-                originalAmount: 50
-            },
-            {
-                id: 4,
-                type: 'expense',
-                category: 'transfer',
-                description: 'KRW 친구송금 (지연)',
-                date: '08월 23일 2025',
-                amount: 100000,
-                currency: 'KRW',
-                originalAmount: 100000
-            },
-            {
-                id: 5,
-                type: 'expense',
-                category: 'exchange',
-                description: 'USD → EUR 환전',
-                date: '08월 22일 2025',
-                amount: 129333,
-                currency: 'EUR',
-                originalAmount: 100
-            },
-            {
-                id: 6,
-                type: 'income',
-                category: 'deposit',
-                description: 'USD 충전',
-                date: '08월 21일 2025',
-                amount: 1293330,
-                currency: 'USD',
-                originalAmount: 1000
+        // 데이터 로드 - 잔액 DTO와 환율을 분리해서 로드
+        const loadBalanceData = async () => {
+            try {
+                // 1. 잔액 정보 먼저 로드 (4개 필드만: code, name, amount, flag)
+                const data = await api.getUserBalances(userId)
+                balanceData.value = Array.isArray(data) ? data : []
+                console.log("계좌 정보 (4개 필드)", balanceData.value)
+
+                // 2. 통화 코드 목록 추출
+                const currencyCodes = balanceData.value.map(item => item.code)
+
+                // 3. 각 통화별 환율 정보를 실시간 API에서 로드
+                if (currencyCodes.length > 0) {
+                    await loadExchangeRates(currencyCodes)
+                }
+
+                // 4. 기본 선택 통화 설정
+                const krwWallet = balanceData.value.find(w => w.code === 'KRW')
+                selectedCurrencyFilter.value = krwWallet ? 'KRW' : balanceData.value[0]?.code || 'KRW'
+
+            } catch (error) {
+                console.error('Failed to load balance data:', error)
+                balanceData.value = []
+                exchangeRates.value = { 'KRW': 1 }
+                alert('계좌 정보를 불러오는데 실패했습니다.')
             }
-        ])
+        }
 
-        // 최근 4개 거래내역만
-        const recentTransactions = computed(() => {
-            return transactions.value
-                .sort((a, b) => new Date(b.date.replace(/년|월|일/g, '').replace(/ /g, '/')) - new Date(a.date.replace(/년|월|일/g, '').replace(/ /g, '/')))
-                .slice(0, 4)
-        })
+        const loadFavorites = async () => {
+            try {
+                const data = await api.getFavorites()
+                favoriteAccounts.value = data
+            } catch (error) {
+                console.error('Failed to load favorites:', error)
+            }
+        }
 
-        // 세그먼트 하이라이트
+        const loadTransactionHistory = async () => {
+            try {
+                const data = await api.getTransactionHistory(userId)
+                recentTransactions.value = data.slice(0, 4)
+            } catch (error) {
+                console.error('Failed to load transaction history:', error)
+            }
+        }
+
+        const loadSupportedCurrencies = async () => {
+            try {
+                const data = await api.getSupportedCurrencies()
+                supportedCurrencies.value = data
+            } catch (error) {
+                console.error('Failed to load supported currencies:', error)
+            }
+        }
+
+        // 초기 데이터 로드
+        const loadInitialData = async () => {
+            isLoading.value = true
+            try {
+                await Promise.all([
+                    loadBalanceData(), // 잔액과 환율 정보를 함께 로드
+                    loadFavorites(),
+                    loadTransactionHistory(),
+                    loadSupportedCurrencies()
+                ])
+            } catch (error) {
+                console.error('Failed to load initial data:', error)
+            } finally {
+                isLoading.value = false
+            }
+        }
+
+        // 이벤트 핸들러들
         const highlightSegment = (index) => {
             highlightedIndex.value = index
         }
@@ -685,48 +717,25 @@ export default {
             highlightedIndex.value = -1
         }
 
-        // 자주 쓰는 계좌 즐겨찾기 데이터 (닉네임 추가, usualAmount 제거)
-        const favoriteAccounts = ref([
-            {
-                id: 1,
-                nickname: '딸래미',
-                realName: '김지연',
-                phoneNumber: '010-***-2845',
-                icon: '👧',
-                lastTransfer: '3일 전 송금'
-            },
-            {
-                id: 3,
-                nickname: '민수',
-                realName: '김민수',
-                phoneNumber: '010-***-1234',
-                icon: '👦',
-                lastTransfer: '5일 전 송금'
-            }
-        ])
-
-        // 통화 필터링
         const filterCurrency = () => {
             // 드롭다운 선택에 따른 처리는 computed에서 자동으로 됨
         }
 
-        // 비밀번호 검증
         const validatePassword = () => {
             const password = accountPassword.value
             if (password.length > 0 && !/^\d+$/.test(password)) {
                 passwordError.value = '숫자만 입력 가능합니다'
-            } else if (password.length > 6) {
-                accountPassword.value = password.slice(0, 6)
+            } else if (password.length > 4) {
+                accountPassword.value = password.slice(0, 4)
                 passwordError.value = ''
             } else {
                 passwordError.value = ''
             }
         }
 
-        // 전화번호 포맷팅
         const formatPhoneNumber = (event) => {
             let value = event.target.value.replace(/\D/g, '')
-            
+
             if (value.length <= 3) {
                 value = value
             } else if (value.length <= 7) {
@@ -734,25 +743,34 @@ export default {
             } else {
                 value = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11)
             }
-            
             newFriend.value.phoneNumber = value
+            rawPhone.value = value.replace(/\D/g, '').slice(0, 11)
         }
 
-        // 관리 모드 토글
         const toggleManageMode = () => {
             isManagingFavorites.value = !isManagingFavorites.value
         }
 
-        // 즐겨찾기 삭제
-        const deleteFavorite = (accountId) => {
+        const deleteFavorite = async (favoriteId) => {
             if (confirm('정말로 즐겨찾기에서 삭제하시겠습니까?')) {
-                favoriteAccounts.value = favoriteAccounts.value.filter(account => account.id !== accountId)
+                try {
+                    await api.deleteFavorite(favoriteId)
+                    await loadFavorites()
+                    alert('즐겨찾기에서 삭제되었습니다.')
+                } catch (error) {
+                    if (error.response?.data?.message) {
+                        alert(error.response.data.message)
+                    } else {
+                        alert('삭제 중 오류가 발생했습니다.')
+                    }
+                }
             }
         }
 
-        // 친구 추가 모달 열기/닫기
+        // 모달 관리
         const openAddModal = () => {
             showAddModal.value = true
+            console.log("지갑", currencyWallets.value)
             resetForm()
         }
 
@@ -761,10 +779,9 @@ export default {
             resetForm()
         }
 
-        // 송금 모달 열기/닫기
         const openTransferModal = (account) => {
             selectedAccount.value = account
-            selectedCurrency.value = 'KRW' // 기본값
+            selectedCurrency.value = 'KRW'
             transferAmount.value = ''
             accountPassword.value = ''
             passwordError.value = ''
@@ -780,79 +797,15 @@ export default {
             passwordError.value = ''
         }
 
-        // 통화 선택
         const selectCurrency = (wallet) => {
-            selectedCurrency.value = wallet.currency
+            selectedCurrency.value = wallet.code
         }
 
-        // 송금 확인
-        const confirmTransfer = () => {
-            if (!canTransfer.value) return
-
-            // 간단한 비밀번호 검증 (실제로는 서버에서)
-            if (accountPassword.value !== '123456') {
-                passwordError.value = '비밀번호가 올바르지 않습니다'
-                return
-            }
-
-            if (confirm(`${selectedAccount.value.nickname}님에게 ${formatCurrencyAmount(parseFloat(transferAmount.value), selectedCurrency.value)}를 송금하시겠습니까?`)) {
-                // 잔액에서 차감
-                const walletIndex = currencyWallets.value.findIndex(w => w.currency === selectedCurrency.value)
-                if (walletIndex !== -1) {
-                    currencyWallets.value[walletIndex].balance -= parseFloat(transferAmount.value)
-                }
-
-                // 거래 내역 추가
-                const newTransaction = {
-                    id: Date.now(),
-                    type: 'expense',
-                    category: 'transfer',
-                    description: `${selectedCurrency.value} 친구송금 (${selectedAccount.value.nickname})`,
-                    date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '월').replace(/\s/g, '').replace(/월월/g, '월 ') + '일',
-                    amount: parseFloat(transferAmount.value) * (selectedCurrency.value === 'KRW' ? 1 : currencyWallets.value.find(w => w.currency === selectedCurrency.value)?.rate || 1),
-                    currency: selectedCurrency.value,
-                    originalAmount: parseFloat(transferAmount.value)
-                }
-                transactions.value.unshift(newTransaction)
-
-                alert('송금이 완료되었습니다!')
-                closeTransferModal()
-            }
-        }
-
-        // 폼 리셋
-        const resetForm = () => {
-            newFriend.value = {
-                nickname: '',
-                name: '',
-                phoneNumber: ''
-            }
-            errors.value = {
-                nickname: '',
-                name: '',
-                phoneNumber: ''
-            }
-        }
-
-        // 전화번호 유효성 검사
-        const validatePhoneNumber = (phoneNumber) => {
-            const phoneRegex = /^010-\d{4}-\d{4}$/
-            return phoneRegex.test(phoneNumber)
-        }
-
-        // 친구 검증 및 추가
+        // 친구 추가
         const addFriend = async () => {
-            // 에러 초기화
             errors.value = {
-                nickname: '',
                 name: '',
                 phoneNumber: ''
-            }
-
-            // 기본 유효성 검사
-            if (!newFriend.value.nickname.trim()) {
-                errors.value.nickname = '닉네임을 입력해주세요'
-                return
             }
 
             if (!newFriend.value.name.trim()) {
@@ -871,56 +824,103 @@ export default {
             }
 
             isVerifying.value = true
-
             try {
-                // 친구 데이터베이스에서 검증 (실제로는 API 호출)
-                const friend = friendDatabase.value.find(f => 
-                    f.name === newFriend.value.name.trim()
-                )
-
-                if (!friend) {
-                    errors.value.name = '등록되지 않은 사용자입니다'
-                    return
+                const friendData = {
+                    name: newFriend.value.name.trim(),
+                    phoneNumber: rawPhone.value
                 }
 
-                // 전화번호 일치 검사
-                if (friend.phoneNumber !== newFriend.value.phoneNumber) {
-                    errors.value.phoneNumber = '이름과 전화번호가 일치하지 않습니다'
-                    return
-                }
-
-                // 이미 즐겨찾기에 있는지 확인 (실제 이름으로)
-                const isDuplicate = favoriteAccounts.value.some(account => 
-                    account.realName === friend.name
-                )
-
-                if (isDuplicate) {
-                    errors.value.name = '이미 즐겨찾기에 등록된 친구입니다'
-                    return
-                }
-
-                // 성공: 즐겨찾기에 추가
-                const newId = Math.max(...favoriteAccounts.value.map(a => a.id), 0) + 1
-                const icons = ['👨', '👩', '👦', '👧', '🧑', '👴', '👵']
-                const randomIcon = icons[Math.floor(Math.random() * icons.length)]
-
-                favoriteAccounts.value.push({
-                    id: newId,
-                    nickname: newFriend.value.nickname.trim(),
-                    realName: friend.name,
-                    phoneNumber: `010-***-${friend.phoneNumber.slice(-4)}`,
-                    icon: randomIcon,
-                    lastTransfer: '방금 추가됨'
-                })
-
-                alert(`${newFriend.value.nickname}님이 즐겨찾기에 추가되었습니다!`)
+                await api.addFavorite(friendData)
+                await loadFavorites()
+                alert(`${friendData.name}님이 즐겨찾기에 추가되었습니다!`)
                 closeAddModal()
 
             } catch (error) {
-                alert('친구 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
+                if (error.response?.status === 400) {
+                    const message = error.response.data.message || '잘못된 요청입니다.'
+                    if (message.includes('사용자를 찾을 수 없습니다') || message.includes('등록되지 않은 사용자')) {
+                        errors.value.name = '등록되지 않은 사용자입니다'
+                    } else if (message.includes('이미 즐겨찾기') || message.includes('중복')) {
+                        errors.value.name = '이미 즐겨찾기에 등록된 친구입니다'
+                    } else if (message.includes('최대') || message.includes('4명')) {
+                        alert('최대 4명까지만 등록할 수 있습니다')
+                    } else {
+                        alert(message)
+                    }
+                } else {
+                    alert('친구 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
+                }
             } finally {
                 isVerifying.value = false
             }
+        }
+
+        // 송금 확인
+        const confirmTransfer = async () => {
+            if (!canTransfer.value) return
+
+            const transferData = {
+                recipientName: selectedAccount.value.realName,
+                recipientPhone: selectedAccount.value.phoneNumber,
+                fromCurrencyCode: selectedCurrency.value,
+                toCurrencyCode: selectedCurrency.value,
+                sendAmount: parseFloat(transferAmount.value),
+                transactionPassword: accountPassword.value
+            }
+
+            if (confirm(`${selectedAccount.value.realName}님에게 ${formatCurrencyAmount(transferData.sendAmount, selectedCurrency.value)}를 송금하시겠습니까?`)) {
+                isTransferring.value = true
+
+                try {
+                    await api.executeTransfer(transferData)
+
+                    await Promise.all([
+                        loadBalanceData(),
+                        loadFavorites(),
+                        loadTransactionHistory()
+                    ])
+
+                    alert('송금이 완료되었습니다!')
+                    closeTransferModal()
+
+                } catch (error) {
+                    let errorMessage = '송금 중 오류가 발생했습니다. 다시 시도해주세요.'
+
+                    if (error.response?.data?.message) {
+                        const message = error.response.data.message
+                        if (message.includes('비밀번호') || message.includes('password')) {
+                            passwordError.value = '계좌 비밀번호가 올바르지 않습니다'
+                            return
+                        } else if (message.includes('잔액') || message.includes('balance')) {
+                            errorMessage = '잔액이 부족합니다'
+                        } else if (message.includes('사용자') || message.includes('user')) {
+                            errorMessage = '받는 사람을 찾을 수 없습니다'
+                        } else {
+                            errorMessage = message
+                        }
+                    }
+
+                    alert(errorMessage)
+                } finally {
+                    isTransferring.value = false
+                }
+            }
+        }
+
+        const resetForm = () => {
+            newFriend.value = {
+                name: '',
+                phoneNumber: ''
+            }
+            errors.value = {
+                name: '',
+                phoneNumber: ''
+            }
+        }
+
+        const validatePhoneNumber = (phoneNumber) => {
+            const phoneRegex = /^010-\d{4}-\d{4}$/
+            return phoneRegex.test(phoneNumber)
         }
 
         // 네비게이션 함수들
@@ -936,51 +936,139 @@ export default {
             router.push('/account/transactions')
         }
 
-        // 헬퍼 함수들
+        // 🔥 핵심 헬퍼 함수 수정
+        
+        // 콤마가 포함된 문자열을 안전하게 숫자로 변환
+        const parseCleanFloat = (value) => {
+            if (typeof value === 'number') return value
+            if (typeof value === 'string') {
+                return parseFloat(value.replace(/,/g, ''))
+            }
+            return parseFloat(value) || 0
+        }
+
         const formatAmount = (amount) => {
             return new Intl.NumberFormat('ko-KR').format(Math.floor(amount)) + '원'
         }
 
         const formatCurrencyAmount = (amount, currency) => {
+            const cleanAmount = parseCleanFloat(amount)
+            
             if (currency === 'KRW') {
-                return new Intl.NumberFormat('ko-KR').format(Math.floor(amount)) + '원'
+                return new Intl.NumberFormat('ko-KR').format(Math.floor(cleanAmount)) + '원'
             }
             return new Intl.NumberFormat('ko-KR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(amount) + ' ' + currency
+            }).format(cleanAmount) + ' ' + currency
         }
 
+        // 🔥 핵심 수정: convertToKRW 함수
         const convertToKRW = (amount, rate) => {
-            return Math.floor(amount * rate)
+            // console.log(`convertToKRW 호출: amount="${amount}", rate=${rate}`)
+            
+            // 콤마 제거 후 파싱
+            const cleanAmount = parseCleanFloat(amount)
+            // console.log(`cleanAmount: ${cleanAmount}`)
+            
+            // 환율 적용
+            const result = Math.floor(cleanAmount * rate)
+            
+            return result
         }
 
-        const getTransactionIcon = (category) => {
-            const icons = {
-                exchange: '💱',
-                deposit: '💰',
-                transfer: '💸',
-                withdraw: '🏧',
-                investment: '📈'
+        const getCurrencyColor = (currencyCode) => {
+            const colors = {
+                'KRW': '#20c997', 'USD': '#fd7e14', 'JPY': '#6f42c1',
+                'EUR': '#e83e8c', 'CNY': '#dc3545', 'GBP': '#0d6efd',
+                'CAD': '#198754', 'AUD': '#ffc107', 'CHF': '#6610f2'
             }
-            return icons[category] || '💳'
+            return colors[currencyCode] || '#6c757d'
         }
+
+        // 거래내역 관련 헬퍼 함수들
+        const getTransactionType = (transaction) => {
+            if (transaction.fromUser && transaction.fromUser.id === userId) {
+                return 'expense'
+            } else if (transaction.toUser && transaction.toUser.id === userId) {
+                return 'income'
+            }
+            return 'expense'
+        }
+
+        const getTransactionIcon = (transaction) => {
+            const type = transaction.transactionType
+            const icons = {
+                'EXCHANGE': '💱',
+                'DEPOSIT': '💰',
+                'TRANSFER': '💸',
+                'WITHDRAW': '🏧'
+            }
+            return icons[type] || '💳'
+        }
+
+        const getTransactionDescription = (transaction) => {
+            const type = transaction.transactionType
+            const isExpense = getTransactionType(transaction) === 'expense'
+
+            switch (type) {
+                case 'TRANSFER':
+                    if (isExpense) {
+                        return `${transaction.fromCurrencyCode?.code} 친구송금 (${transaction.toUser?.name})`
+                    } else {
+                        return `${transaction.toCurrencyCode?.code} 친구송금 받음 (${transaction.fromUser?.name})`
+                    }
+                case 'EXCHANGE':
+                    return `${transaction.fromCurrencyCode?.code} → ${transaction.toCurrencyCode?.code} 환전`
+                case 'DEPOSIT':
+                    return `${transaction.toCurrencyCode?.code} 충전`
+                case 'WITHDRAW':
+                    return `${transaction.fromCurrencyCode?.code} 출금`
+                default:
+                    return '기타 거래'
+            }
+        }
+
+        const getTransactionAmount = (transaction) => {
+            const isExpense = getTransactionType(transaction) === 'expense'
+            if (isExpense) {
+                return transaction.totalDeductedAmount || transaction.sendAmount
+            } else {
+                return transaction.receiveAmount
+            }
+        }
+
+        const formatTransactionDate = (dateString) => {
+            const date = new Date(dateString)
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\./g, '월').replace(/\s/g, '').replace(/월월/g, '월 ') + '일'
+        }
+
+        // 컴포넌트 마운트
+        onMounted(() => {
+            loadInitialData()
+        })
 
         return {
+            // 상태
+            isLoading,
+            isTransferring,
             highlightedIndex,
-            totalBalance,
+            balanceData,
+            exchangeRates,
             currencyWallets,
             sortedWallets,
+            selectedCurrencyFilter,
+            selectedCurrencyWallet,
+            totalBalance,
             topWallets,
             otherWallets,
             otherWalletsTotal,
-            selectedCurrencyFilter,
-            selectedCurrencyWallet,
             chartSegments,
-            highlightSegment,
-            unhighlightSegment,
             favoriteAccounts,
-            transactions,
             recentTransactions,
             isManagingFavorites,
             showAddModal,
@@ -996,6 +1084,10 @@ export default {
             availableWallets,
             selectedWalletBalance,
             canTransfer,
+
+            // 메소드
+            highlightSegment,
+            unhighlightSegment,
             filterCurrency,
             validatePassword,
             toggleManageMode,
@@ -1011,17 +1103,23 @@ export default {
             formatAmount,
             formatCurrencyAmount,
             convertToKRW,
+            getCurrencyColor,
+            getTransactionType,
             getTransactionIcon,
+            getTransactionDescription,
+            getTransactionAmount,
+            formatTransactionDate,
             goToWalletDetail,
             goToExchange,
-            goToTransactionHistory
+            goToTransactionHistory,
+            loadInitialData
         }
     }
 }
 </script>
 
 <style scoped>
-/* 기존 스타일들과 새로운 스타일 추가 */
+/* 기존 CSS 유지 - 변경사항 없음 */
 * {
     margin: 0;
     padding: 0;
@@ -1045,6 +1143,38 @@ export default {
     font-weight: 600;
     color: #333;
     margin-bottom: 2rem;
+}
+
+/* 로딩 및 에러 상태 */
+.loading-container,
+.no-account-data {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    gap: 1rem;
+}
+
+.loading-spinner {
+    font-size: 1.2rem;
+    color: #20c997;
+    font-weight: 600;
+}
+
+.retry-btn {
+    background: #20c997;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.retry-btn:hover {
+    background: #17a2b8;
 }
 
 .dashboard-grid {
@@ -1420,22 +1550,16 @@ export default {
 }
 
 .account-name {
-    font-weight: 700;
+    font-weight: 600;
     color: #333;
     margin-bottom: 0.25rem;
-    font-size: 1.05rem;
+    font-size: 1rem;
 }
 
 .account-info {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
     margin-bottom: 0.25rem;
-}
-
-.real-name {
-    font-size: 0.85rem;
-    color: #6c757d;
-    font-weight: 500;
 }
 
 .account-number {
@@ -1908,9 +2032,6 @@ export default {
 .confirm-btn:disabled {
     background: #6c757d;
     cursor: not-allowed;
-}
-
-.transfer-confirm-btn:disabled {
     opacity: 0.6;
 }
 
