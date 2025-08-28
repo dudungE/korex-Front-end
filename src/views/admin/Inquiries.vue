@@ -14,7 +14,7 @@
       :loading="loading"
       bordered
       :scroll="{ x: 800 }"
-      @rowClick="openAnswerModal"  <!-- 행 클릭 이벤트 추가 -->
+      @rowClick="openAnswerModal"
     >
       <template #bodyCell="{ column, record, index }">
         <span v-if="column.dataIndex === 'no'">
@@ -46,7 +46,7 @@
     <!-- 답변 모달 -->
     <a-modal
       v-model:open="answerModalVisible"
-      title="문의 확인 및 답변 작성"
+      title="문의 상세보기"
       @ok="submitAnswer"
       :confirm-loading="modalLoading"
       :wrap-class-name="'custom-modal-width'"

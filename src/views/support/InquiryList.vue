@@ -4,7 +4,7 @@
       <div class="inquiry-card">
         <div class="inquiry-header">
           <h3>1:1 문의</h3>
-          <a-button type="primary" @click="$emit('open-write')">문의하기</a-button>
+          <a-button type="primary" @click="goToInquiryWrite()">문의하기</a-button>
         </div>
 
         <a-table
@@ -98,14 +98,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { CalendarOutlined } from '@ant-design/icons-vue'
 import { Modal, message } from 'ant-design-vue'
 
-const emit = defineEmits(['open-write', 'go-list'])
+const router = useRouter()
+
+const goToInquiryWrite = () => router.push('/inquiry/write')
 
 const columns = [
-  { title: '번호', dataIndex: 'id', key: 'id', width: 100 },
+  { title: '번호', dataIndex: 'number', key: 'number', width: 100 },
   { title: '제목', dataIndex: 'title', key: 'title', ellipsis: true },
   { title: '상태', dataIndex: 'status', key: 'status', width: 120 },
   { title: '등록일', dataIndex: 'createdAt', key: 'createdAt', width: 180 },
@@ -161,8 +164,9 @@ async function fetchData() {
     const content = res.data?.content ?? []
     const total   = res.data?.totalElements ?? content.length
 
-    rows.value = content.map((it) => ({
+    rows.value = content.map((it, index) => ({
       id: it.id,
+      number: index + 1,
       title: it.title,
       status: it.status,
       createdAt: formatDate(it.createdAt),
@@ -274,6 +278,8 @@ onMounted(fetchData)
 .inquiry-page { 
   width: 100%; 
   background: transparent; 
+  background-color: #f0f2f5;
+  padding-top: 20px;
 }
 .inquiry-wrap { 
   width: 100%; 
