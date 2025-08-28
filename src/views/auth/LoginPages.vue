@@ -98,10 +98,21 @@ const handleLogin = async (values) => {
 
     if (success) {
       message.success('로그인 성공!')
-      router.push('/')
+
+      const userRole = authStore.userInfo?.role
+
+      if (userRole === 'ROLE_ADMIN') {
+        router.push('/admin/dashboard');
+      } else if (userRole === 'ROLE_USER') {
+        router.push('/');
+      } else {
+        console.warn('알 수 없는 사용자 역할:', userRole);
+        router.push('/');
+      }
     }
   } catch (err) {
-    message.error('로그인에 실패했습니다.')
+    message.error('로그인에 실패했습니다. 아이디와 비밀번호를 다시 확인해주세요.')
+    console.error('로그인 처리 중 예외:', err)
   } finally {
     loading.value = false
   }
