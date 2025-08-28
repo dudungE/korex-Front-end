@@ -115,13 +115,6 @@ async function fetchRemittances() {
         ],
         status: '대기중',
       },
-      {
-        id: 3,
-        customer: '이영희',
-        amount: 3000,
-        documents: [{ name: '여권 사본.pdf', url: '/files/passport_lee.pdf' }],
-        status: '승인완료',
-      },
     ]
   } catch (err) {
     message.error('송금 요청 데이터를 불러오는 데 실패했습니다.')

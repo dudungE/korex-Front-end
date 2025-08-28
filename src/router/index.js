@@ -38,6 +38,12 @@ const router = createRouter({
             meta: {requiresAuth: true, requiresVerified: true }
         },
         {
+            path: '/rate-news',
+            name: 'News',
+            component: () => import('@/views/News.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
             path: '/exchange',
             name: 'Exchange',
             component: () => import('@/views/CurrentExchange/CurrentExchange.vue'),
