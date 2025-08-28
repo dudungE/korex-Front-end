@@ -72,9 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     async function login(loginData) {
         const FAIL_KEY = (id) => `fc:${id}`
-        const getFailCount = (id) => Number(localStorage.getItem(FAIL_KEY(id)) || '0')
         const setFailCount = (id, n) => localStorage.setItem(FAIL_KEY(id), String(n))
-        const incFailCount = (id) => { const n = getFailCount(id) + 1; setFailCount(id, n); return n }
         const resetFailCount = (id) => localStorage.removeItem(FAIL_KEY(id))
         try {
             console.log('🚀 로그인 요청 시작')

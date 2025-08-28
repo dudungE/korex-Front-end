@@ -2,7 +2,7 @@
   <div class="inquiry-page">
     <div class="inquiry-header">
       <h2>문의 관리</h2>
-      <a-checkbox v-model:checked="showUnansweredOnly" >
+      <a-checkbox v-model:checked="showUnansweredOnly">
         답변 미작성
       </a-checkbox>
     </div>
@@ -14,6 +14,7 @@
       :loading="loading"
       bordered
       :scroll="{ x: 800 }"
+      @rowClick="openAnswerModal"  <!-- 행 클릭 이벤트 추가 -->
     >
       <template #bodyCell="{ column, record, index }">
         <span v-if="column.dataIndex === 'no'">
@@ -24,7 +25,7 @@
             <a-button
               type="primary"
               size="small"
-              @click="openAnswerModal(record)"
+              @click.stop="openAnswerModal(record)"
             >
               답변 작성
             </a-button>
@@ -45,15 +46,28 @@
     <!-- 답변 모달 -->
     <a-modal
       v-model:open="answerModalVisible"
-      title="답변 작성"
+      title="문의 확인 및 답변 작성"
       @ok="submitAnswer"
       :confirm-loading="modalLoading"
+      :wrap-class-name="'custom-modal-width'"
+      :bodyStyle="{ maxHeight: '400px', overflowY: 'auto', padding: '24px' }"
     >
-      <ATextarea
-        :rows="4"
-        placeholder="답변을 입력하세요"
-        v-model:value="answerContent"
-      />
+      <div v-if="currentInquiry">
+        <p><strong>작성자:</strong> {{ currentInquiry.userName }}</p>
+        <p><strong>카테고리:</strong> {{ currentInquiry.category }}</p>
+        <p><strong>제목:</strong> {{ currentInquiry.title }}</p>
+        <p><strong>작성일:</strong> {{ currentInquiry.createdAt }}</p>
+        <p><strong>문의 내용:</strong></p>
+        <div class="inquiry-content">
+          {{ currentInquiry.content }}
+        </div>
+        <p><strong>답변:</strong></p>
+        <ATextarea
+          :rows="4"
+          placeholder="답변을 입력하세요"
+          v-model:value="answerContent"
+        />
+      </div>
     </a-modal>
   </div>
 </template>
@@ -157,5 +171,18 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.inquiry-content {
+  padding: 12px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.custom-modal-width .ant-modal {
+  width: 500px !important;
+  max-width: 90% !important;
 }
 </style>
