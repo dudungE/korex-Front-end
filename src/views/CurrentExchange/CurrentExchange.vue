@@ -94,7 +94,7 @@
                 <span class="fee-value">{{ simulationResult.exchangeRate?.toFixed(4) || '0.0000' }}</span>
               </div>
               <div class="fee-row">
-                <span class="fee-label">수수료</span>
+                <span class="fee-label">수수료(0.005%)</span>
                 <span class="fee-value">{{ formatNumber(simulationResult.fee || 0) }} {{ fromCurrency }}</span>
               </div>
               <div class="fee-row">

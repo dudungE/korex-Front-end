@@ -83,9 +83,9 @@
                 <div class="section-header">
                     <h3>통화별 계좌</h3>
                     <div class="currency-controls">
-                        <!-- 통화 선택 드롭다운 -->
+                        <!-- 통화 선택 드롭다운 - 🔥 모든 통화 표시용으로 변경 -->
                         <select class="currency-selector" v-model="selectedCurrencyFilter" @change="filterCurrency">
-                            <option v-for="wallet in sortedWallets" :key="wallet.code" :value="wallet.code">
+                            <option v-for="wallet in allWalletsForDropdown" :key="wallet.code" :value="wallet.code">
                                 {{ wallet.flag }} {{ wallet.name }} ({{ wallet.code }})
                             </option>
                         </select>
@@ -107,7 +107,7 @@
                         </div>
                         <div class="currency-krw-large">
                             ≈ {{ formatAmount(convertToKRW(selectedCurrencyWallet.amount,
-                            selectedCurrencyWallet.exchangeRate)) }}
+                                selectedCurrencyWallet.exchangeRate)) }}
                         </div>
                         <div class="currency-actions">
                             <button class="action-btn exchange-btn" @click="goToExchange(selectedCurrencyWallet.code)">
@@ -158,7 +158,7 @@
                 </div>
 
                 <button v-if="favoriteAccounts.length < 4" class="add-favorite-btn" @click="openAddModal">
-                    + 자주 쓰는 계좌 추가
+                    + 자주 송금하는 친구 추가
                 </button>
                 <div v-else class="max-favorites-notice">
                     최대 4명까지 등록 가능합니다
@@ -171,7 +171,7 @@
                     <h3>최근 거래 내역</h3>
                     <button class="more-btn" @click="goToTransactionHistory">전체보기</button>
                 </div>
-                
+
                 <!-- 거래내역이 없을 때 -->
                 <div v-if="!recentTransactions || recentTransactions.length === 0" class="no-transaction-data">
                     <div class="no-transaction-message">
@@ -179,7 +179,7 @@
                         <div class="no-transaction-text">최근 거래내역이 없습니다</div>
                     </div>
                 </div>
-                
+
                 <!-- 거래내역이 있을 때 -->
                 <div v-else class="transaction-list">
                     <div v-for="transaction in recentTransactions" :key="transaction.id" class="transaction-item">
@@ -190,9 +190,10 @@
                             <div class="transaction-desc">{{ getTransactionDescription(transaction) }}</div>
                             <div class="transaction-date">{{ formatTransactionDate(transaction.createdAt) }}</div>
                         </div>
+                        <!-- 🔥 수정된 부분 - 통화별로 올바르게 표시 -->
                         <div class="transaction-amount" :class="getTransactionType(transaction)">
                             {{ getTransactionType(transaction) === 'expense' ? '-' : '+' }}{{
-                                formatAmount(getTransactionAmount(transaction)) }}
+                                getFormattedTransactionAmount(transaction) }}
                         </div>
                     </div>
                 </div>
@@ -344,7 +345,7 @@ export default {
         const isLoading = ref(true)
         const isTransferring = ref(false)
         const highlightedIndex = ref(-1)
-        const selectedCurrencyFilter = ref('KRW')
+        const selectedCurrencyFilter = ref('KRW') // 🔥 통화별 계좌용 - KRW로 다시 설정
         const isManagingFavorites = ref(false)
 
         // 친구 추가 모달 관련 상태
@@ -412,7 +413,7 @@ export default {
                         // JPY는 100단위 통화이므로 환율을 100으로 나눔
                         if (currencyCode === 'JPY') {
                             rate = rate / 100
-                            
+
                         }
                         return rate
                     }
@@ -546,10 +547,16 @@ export default {
             }, 0)
         })
 
-        // 🔥 잔액이 있는 지갑만 정렬 (잔액 0인 지갑 제외)
+        // 🔥 차트용 - 잔액이 있는 지갑만 정렬 (KRW 우선순위 제거, 원화 환산 금액 기준)
         const sortedWallets = computed(() => {
             return [...currencyWallets.value]
-                .filter(wallet => parseCleanFloat(wallet.amount) > 0) // 🔥 잔액이 0보다 큰 지갑만
+                .filter(wallet => parseCleanFloat(wallet.amount) > 0) // 잔액이 0보다 큰 지갑만
+                .sort((a, b) => b.krwAmount - a.krwAmount) // 원화 환산 금액 기준으로만 정렬
+        })
+
+        // 🔥 드롭다운용 - 모든 통화 표시, KRW 우선
+        const allWalletsForDropdown = computed(() => {
+            return [...currencyWallets.value]
                 .sort((a, b) => {
                     if (a.code === 'KRW') return -1
                     if (b.code === 'KRW') return 1
@@ -581,8 +588,25 @@ export default {
         // 🔥 차트 세그먼트 계산 - 원본 통화 금액 포함
         const chartSegments = computed(() => {
             const total = totalBalance.value
-            if (total === 0) return []
-
+            if (total === 0) {
+                const krwWallet = currencyWallets.value.find(wallet => wallet.code === 'KRW')
+                if (krwWallet) {
+                    return [{
+                        id: 'KRW',
+                        currency: 'KRW',
+                        name: krwWallet.name,
+                        flag: krwWallet.flag,
+                        originalAmount: 0,
+                        krwAmount: 0,
+                        percentage: 100,
+                        color: getCurrencyColor('KRW'),
+                        dashArray: 2 * Math.PI * 80, // 전체 원둘레
+                        offset: 0,
+                        isOther: false
+                    }]
+                }
+                return []
+            }
             const circumference = 2 * Math.PI * 80
             let currentOffset = 0
             const segments = []
@@ -672,15 +696,8 @@ export default {
                     await loadExchangeRates(currencyCodes)
                 }
 
-                // 4. 기본 선택 통화 설정 - 잔액이 있는 지갑 중에서 선택
-                setTimeout(() => {
-                    if (sortedWallets.value.length > 0) {
-                        selectedCurrencyFilter.value = sortedWallets.value[0].code
-                    } else {
-                        // 잔액이 있는 지갑이 없으면 첫 번째 지갑 선택
-                        selectedCurrencyFilter.value = balanceData.value[0]?.code || 'KRW'
-                    }
-                }, 100)
+                // 4. 🔥 통화별 계좌는 KRW 기본값으로 고정
+                selectedCurrencyFilter.value = 'KRW'
 
             } catch (error) {
                 console.error('Failed to load balance data:', error)
@@ -963,7 +980,7 @@ export default {
         }
 
         // 🔥 핵심 헬퍼 함수 수정
-        
+
         // 콤마가 포함된 문자열을 안전하게 숫자로 변환
         const parseCleanFloat = (value) => {
             if (typeof value === 'number') return value
@@ -979,7 +996,7 @@ export default {
 
         const formatCurrencyAmount = (amount, currency) => {
             const cleanAmount = parseCleanFloat(amount)
-            
+
             if (currency === 'KRW') {
                 return new Intl.NumberFormat('ko-KR').format(Math.floor(cleanAmount)) + '원'
             }
@@ -992,14 +1009,14 @@ export default {
         // 🔥 핵심 수정: convertToKRW 함수
         const convertToKRW = (amount, rate) => {
             // console.log(`convertToKRW 호출: amount="${amount}", rate=${rate}`)
-            
+
             // 콤마 제거 후 파싱
             const cleanAmount = parseCleanFloat(amount)
             // console.log(`cleanAmount: ${cleanAmount}`)
-            
+
             // 환율 적용
             const result = Math.floor(cleanAmount * rate)
-            
+
             return result
         }
 
@@ -1014,9 +1031,9 @@ export default {
 
         // 거래내역 관련 헬퍼 함수들
         const getTransactionType = (transaction) => {
-            if (transaction.fromUser && transaction.fromUser.id === userId) {
+            if (transaction.fromUserId && transaction.fromUserId === parseInt(userId)) {
                 return 'expense'
-            } else if (transaction.toUser && transaction.toUser.id === userId) {
+            } else if (transaction.toUserId && transaction.toUserId === parseInt(userId)) {
                 return 'income'
             }
             return 'expense'
@@ -1040,16 +1057,16 @@ export default {
             switch (type) {
                 case 'TRANSFER':
                     if (isExpense) {
-                        return `${transaction.fromCurrencyCode?.code} 친구송금 (${transaction.toUser?.name})`
+                        return `${transaction.fromCurrencyCode} 친구송금 (${transaction.toUserName})`
                     } else {
-                        return `${transaction.toCurrencyCode?.code} 친구송금 받음 (${transaction.fromUser?.name})`
+                        return `${transaction.toCurrencyCode} 친구송금 받음 (${transaction.fromUserName})`
                     }
                 case 'EXCHANGE':
-                    return `${transaction.fromCurrencyCode?.code} → ${transaction.toCurrencyCode?.code} 환전`
+                    return `${transaction.fromCurrencyCode} → ${transaction.toCurrencyCode} 환전`
                 case 'DEPOSIT':
-                    return `${transaction.toCurrencyCode?.code} 충전`
+                    return `${transaction.toCurrencyCode} 충전`
                 case 'WITHDRAW':
-                    return `${transaction.fromCurrencyCode?.code} 출금`
+                    return `${transaction.fromCurrencyCode} 출금`
                 default:
                     return '기타 거래'
             }
@@ -1064,14 +1081,34 @@ export default {
             }
         }
 
+        // 🔥 새로 추가된 함수 - 거래내역 금액을 올바른 통화로 포맷팅
+        const getFormattedTransactionAmount = (transaction) => {
+            const amount = getTransactionAmount(transaction)
+            const isExpense = getTransactionType(transaction) === 'expense'
+
+            // 거래 타입에 따라 적절한 통화 코드 선택
+            let currencyCode
+            if (isExpense) {
+                // 지출: fromCurrencyCode 사용
+                currencyCode = transaction.fromCurrencyCode
+            } else {
+                // 수입: toCurrencyCode 사용
+                currencyCode = transaction.toCurrencyCode
+            }
+
+            // 통화 코드로 포맷팅
+            return formatCurrencyAmount(amount, currencyCode)
+        }
+
         const formatTransactionDate = (dateString) => {
             const date = new Date(dateString)
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).replace(/\./g, '월').replace(/\s/g, '').replace(/월월/g, '월 ') + '일'
+            const year = date.getFullYear()
+            const month = date.getMonth() + 1
+            const day = date.getDate()
+
+            return `${year}년 ${month}월 ${day}일`
         }
+
 
         // 컴포넌트 마운트
         onMounted(() => {
@@ -1087,10 +1124,11 @@ export default {
             exchangeRates,
             currencyWallets,
             sortedWallets,
+            allWalletsForDropdown, // 🔥 추가
             selectedCurrencyFilter,
             selectedCurrencyWallet,
             totalBalance,
-            availableWalletsCount, // 🔥 추가
+            availableWalletsCount,
             topWallets,
             otherWallets,
             otherWalletsTotal,
@@ -1135,6 +1173,7 @@ export default {
             getTransactionIcon,
             getTransactionDescription,
             getTransactionAmount,
+            getFormattedTransactionAmount, // 🔥 새로 추가된 함수
             formatTransactionDate,
             goToWalletDetail,
             goToExchange,
@@ -1146,7 +1185,7 @@ export default {
 </script>
 
 <style scoped>
-/* 🔥 범례 스타일 수정 */
+/* 동일한 CSS 코드 유지 */
 .chart-legend {
     flex: 1;
     display: flex;
@@ -1197,7 +1236,6 @@ export default {
     font-weight: 400;
 }
 
-/* 🔥 원본 통화 금액 스타일 추가 */
 .legend-original-amount {
     font-size: 0.9rem;
     color: #495057;
@@ -1217,7 +1255,6 @@ export default {
     color: #20c997;
 }
 
-/* 🔥 거래내역 빈 상태 스타일 추가 */
 .no-transaction-data {
     display: flex;
     justify-content: center;
@@ -1241,7 +1278,7 @@ export default {
     font-weight: 500;
 }
 
-/* 기존 CSS는 모두 그대로 유지... */
+/* 나머지 CSS는 동일하게 유지... */
 * {
     margin: 0;
     padding: 0;
@@ -1267,7 +1304,6 @@ export default {
     margin-bottom: 2rem;
 }
 
-/* 로딩 및 에러 상태 */
 .loading-container,
 .no-account-data {
     display: flex;
@@ -1305,7 +1341,6 @@ export default {
     gap: 2rem;
 }
 
-/* 총 보유 금액 카드 */
 .total-balance-card {
     background: white;
     padding: 2rem;
@@ -1334,14 +1369,12 @@ export default {
     margin-bottom: 2rem;
 }
 
-/* 도넛 차트 컨테이너 */
 .currency-chart-container {
     display: flex;
     align-items: flex-start;
     gap: 2rem;
 }
 
-/* 도넛 차트 */
 .donut-chart {
     position: relative;
     width: 200px;
@@ -1398,7 +1431,6 @@ export default {
     margin-top: 0.125rem;
 }
 
-/* 통화별 지갑 섹션 */
 .currency-wallets-section {
     background: white;
     padding: 2rem;
@@ -1445,7 +1477,6 @@ export default {
     box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.1);
 }
 
-/* 선택된 통화 상세 정보 */
 .selected-currency-detail {
     display: flex;
     flex-direction: column;
@@ -1521,7 +1552,6 @@ export default {
     color: #20c997;
 }
 
-/* 자주 쓰는 계좌 즐겨찾기 카드 */
 .favorite-accounts-card {
     background: white;
     padding: 2rem;
@@ -1582,7 +1612,6 @@ export default {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 관리 모드 스타일 */
 .favorite-account-item.manage-mode {
     background: #fff3cd !important;
     border: 1px solid #ffeaa7;
@@ -1702,7 +1731,6 @@ export default {
     border: 1px dashed #e9ecef;
 }
 
-/* 거래 내역 */
 .transaction-history {
     background: white;
     padding: 2rem;
@@ -1784,7 +1812,6 @@ export default {
     color: #20c997;
 }
 
-/* 모달 스타일 */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1887,7 +1914,6 @@ export default {
     font-weight: 500;
 }
 
-/* 비밀번호 입력 스타일 */
 .password-input {
     text-align: center;
     font-size: 1.2rem;
@@ -1915,7 +1941,6 @@ export default {
     transform: scale(1.2);
 }
 
-/* 송금 모달 전용 스타일 */
 .currency-selection {
     display: flex;
     flex-direction: column;
@@ -2094,7 +2119,6 @@ export default {
     opacity: 0.6;
 }
 
-/* 반응형 */
 @media (max-width: 1200px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
