@@ -85,6 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
             console.log('🌐 요청 URL:', '/api/auth/login')
 
             const requestPayload = {
+
                 loginId: loginData.loginId,
                 password: loginData.password,
             }
@@ -125,6 +126,11 @@ export const useAuthStore = defineStore('auth', () => {
                 if (userInfo.value?.loginId) {
                     localStorage.setItem('loginId', userInfo.value.loginId)
                     console.log('💾 loginId 저장 완료:', userInfo.value.loginId)
+                }
+
+                if (userInfo.value?.id) {
+                    localStorage.setItem('userId', userInfo.value.id)
+                    console.log('💾 userId 저장 완료:', userInfo.value.id)
                 }
 
                 console.log('✅ 로그인 성공:', userInfo.value)

@@ -36,9 +36,15 @@
             <button @click="fetchUserBalances" class="retry-btn">다시 시도</button>
           </div>
 
-          <!-- 잔액 표시 -->
+          <!-- 잔액이 없을 때 -->
+          <div v-else-if="availableBalances.length === 0" class="no-balance-message">
+            <p>송금 가능한 잔액이 없습니다.</p>
+            <p>먼저 입금을 진행해주세요.</p>
+          </div>
+
+          <!-- 잔액 표시 (0보다 큰 잔액만) -->
           <div v-else class="balance-grid">
-            <div v-for="balance in myBalances" :key="balance.code" class="balance-item">
+            <div v-for="balance in availableBalances" :key="balance.code" class="balance-item">
               <span class="balance-currency">{{ balance.code }}</span>
               <span class="balance-amount">{{ balance.amount }}</span>
             </div>
@@ -61,7 +67,13 @@
             <button @click="fetchSupportedCurrencies" class="retry-btn">다시 시도</button>
           </div>
 
-          <!-- 통화 선택 그리드 -->
+          <!-- 송금 가능한 통화가 없을 때 -->
+          <div v-else-if="availableFromCurrencies.length === 0" class="no-currencies-message">
+            <p>송금 가능한 통화가 없습니다.</p>
+            <p>먼저 입금하여 잔액을 확보해주세요.</p>
+          </div>
+
+          <!-- 통화 선택 그리드 (잔액이 있는 통화만) -->
           <div v-else class="currency-grid">
             <div v-for="currency in availableFromCurrencies" :key="currency.code" class="currency-card"
               :class="{ active: selectedCurrency === currency.code }" @click="selectCurrency(currency.code)">
@@ -94,7 +106,7 @@
       </div>
 
       <div class="step-actions">
-        <button class="continue-btn" :disabled="!selectedCurrency" @click="nextStep">
+        <button class="continue-btn" :disabled="!selectedCurrency || availableFromCurrencies.length === 0" @click="nextStep">
           계속
         </button>
       </div>
@@ -372,7 +384,7 @@ const transferResult = ref(null)
 const myBalances = ref([])
 const isLoadingBalances = ref(false)
 const balanceError = ref('')
-const currentUserId = ref('1')
+const userId = localStorage.getItem('userId')
 
 // 지원 통화 목록
 const currencies = ref([])
@@ -435,7 +447,7 @@ const fetchUserBalances = async () => {
   balanceError.value = ''
 
   try {
-    const response = await fetch(`http://localhost:8080/api/balance/${currentUserId.value}`, {
+    const response = await fetch(`http://localhost:8080/api/balance/${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -457,11 +469,23 @@ const fetchUserBalances = async () => {
   }
 }
 
-// 계산된 속성: 보낼 수 있는 통화 (잔액이 있는 통화만)
+// 계산된 속성: 잔액이 0보다 큰 통화만 표시
+const availableBalances = computed(() => {
+  return myBalances.value.filter(balance => {
+    const balanceAmount = parseFloat(balance.amount.replace(/,/g, ''))
+    return balanceAmount > 0
+  })
+})
+
+// 계산된 속성: 보낼 수 있는 통화 (잔액이 0보다 큰 통화만)
 const availableFromCurrencies = computed(() => {
-  return currencies.value.filter(currency =>
-    myBalances.value.some(balance => balance.code === currency.code)
-  )
+  return currencies.value.filter(currency => {
+    const balance = myBalances.value.find(b => b.code === currency.code)
+    if (!balance) return false
+    
+    const balanceAmount = parseFloat(balance.amount.replace(/,/g, ''))
+    return balanceAmount > 0
+  })
 })
 
 // 통화 선택 함수 (단일)
@@ -545,16 +569,10 @@ const filterPhoneInput = (event) => {
   recipientPhone.value = event.target.value.replace(/[^0-9]/g, '');
 }
 
-
 // 수취인 이름 검증 (서버에 존재하는지)
 const verifyRecipientName = async () => {
   if (!recipientName.value.trim()) return
   
-  // 자기 자신 이름 차단
-  // if (recipientName.value === authStore.user.name) {
-  //   alert("본인에게는 송금할 수 없습니다 ❌")
-  //   return
-  // }
   try {
     const response = await fetch("http://localhost:8080/api/user/exists?name=" + encodeURIComponent(recipientName.value), {
       method: "GET"
@@ -580,12 +598,6 @@ const verifyRecipientName = async () => {
 const verifyRecipientPhone = async () => {
   if (!recipientPhone.value.trim()) return
 
-  // 자기 자신 번호 차단
-  // if (recipientPhone.value === authStore.user.phone) {
-  //   alert("본인에게는 송금할 수 없습니다 ❌")
-  //   return
-  // }
-
   try {
     const response = await fetch("http://localhost:8080/api/user/verify-recipient", {
       method: "POST",
@@ -607,7 +619,6 @@ const verifyRecipientPhone = async () => {
     console.error(error)
   }
 }
-
 
 const getTransferTypeDescription = () => {
   return `${selectedCurrency.value} 직접 송금`
@@ -636,7 +647,7 @@ const executeTransfer = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-Id': currentUserId.value.toString(),
+        'X-User-Id': userId.toString(),
       },
       body: JSON.stringify(transferData)
     })
@@ -829,6 +840,30 @@ body {
 
 .retry-btn:hover {
   background: #c82333;
+}
+
+/* 잔액/통화 없음 메시지 */
+.no-balance-message,
+.no-currencies-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6c757d;
+  background: rgba(248, 249, 250, 0.9);
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 2rem;
+}
+
+.no-balance-message p,
+.no-currencies-message p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.no-balance-message p:first-child,
+.no-currencies-message p:first-child {
+  font-weight: 600;
+  color: #495057;
 }
 
 /* 통화 섹션 */

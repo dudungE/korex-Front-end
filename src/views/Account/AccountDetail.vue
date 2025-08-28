@@ -138,9 +138,9 @@ export default {
   name: 'WalletDetail',
   props: {
     currency: {
-      type: String,
-      required: false, // 바로 앞 단에서 ROUTER로 값을 들고 들어올 때 TRUE 여야지 요청이 되고 그 값을 들고 들어와서 데이터를 보여 줄 수 있음. 
-      default : 'USD' // 지금 프론트 하드코딩으로만 하고 있기 때문에 default를 통해서 요청은 받지않고 고정값으로 들어오게 함. 
+      type: String
+       // 바로 앞 단에서 ROUTER로 값을 들고 들어올 때 TRUE 여야지 요청이 되고 그 값을 들고 들어와서 데이터를 보여 줄 수 있음. 
+      // default : 'USD' // 지금 프론트 하드코딩으로만 하고 있기 때문에 default를 통해서 요청은 받지않고 고정값으로 들어오게 함. 
     }
   },
   setup(props) {
