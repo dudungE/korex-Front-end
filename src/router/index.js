@@ -65,6 +65,7 @@ const router = createRouter({
             path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
             name: 'AccountDetail',
             component: () => import('@/views/Account/AccountDetail.vue'),
+            props: true,
             meta: {requiresAuth: true}
         },
         {
