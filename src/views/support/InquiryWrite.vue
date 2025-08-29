@@ -4,7 +4,6 @@
       <div class="inquiry-card">
         <div class="inquiry-header">
           <h2 class="inquiry-title">문의 글 작성</h2>
-          <a-button @click="$emit('go-list')">목록</a-button>
         </div>
 
         <a-form
@@ -38,7 +37,7 @@
           </a-form-item>
 
           <a-space>
-            <a-button class="inquiry-btn" @click="$emit('go-list')">취소</a-button>
+            <a-button class="inquiry-btn" @click="goToInquirList()">취소</a-button>
             <a-button class="inquiry-btn" type="default" :loading="submitting" html-type="submit">등록</a-button>
           </a-space>
         </a-form>
@@ -50,8 +49,11 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits(['go-list'])
+const router = useRouter()
+
+const goToInquirList = () => router.push('/inquiry/list')
 
 const formRef = ref(null)
 const submitting = ref(false)
@@ -84,7 +86,7 @@ async function handleSubmit() {
     })
 
     alert('문의가 등록되었습니다.')
-    emit('go-list')
+    goToInquirList()
   } catch (e) {
     console.error(e)
     alert('문의 등록에 실패했습니다.')

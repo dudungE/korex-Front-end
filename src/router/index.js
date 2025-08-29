@@ -2,6 +2,7 @@ import {createRouter, createWebHistory} from 'vue-router'
 import SignupPage from '@/views/auth/SignUpForm.vue'
 import LoginPages from '@/views/auth/LoginPages.vue'
 import { useAuthStore } from '@/stores/auth'
+import adminRoutes from './admin'
 import axios from 'axios'
 
 const router = createRouter({
@@ -16,25 +17,31 @@ const router = createRouter({
             path: '/rate-lookup',
             name: 'RateLookup',
             component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
-            meta: {requiresAuth: true, requiresVerified: true }
+            meta: {requiresAuth: true}
         },
         {
             path: '/rate-calculator',
             name: 'RateCalculator',
             component: () => import('@/views/ExchangeInfo/Calculator.vue'),
-            meta: {requiresAuth: true, requiresVerified: true }
+            meta: {requiresAuth: true}
         },
         {
             path: '/rate-alert',
-            name: 'RateAlert',
+            name: 'RateAlert', 
             component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
-            meta: {requiresAuth: true, requiresVerified: true }
+            meta: {requiresAuth: true}
         },
         {
             path: '/rate-chart',
             name: 'RateChart',
             component: () => import('@/views/ExchangeInfo/RateChart.vue'),
             meta: {requiresAuth: true, requiresVerified: true }
+        },
+        {
+            path: '/rate-news',
+            name: 'News',
+            component: () => import('@/views/News.vue'),
+            meta: {requiresAuth: true}
         },
         {
             path: '/exchange',
@@ -129,6 +136,18 @@ const router = createRouter({
             name: 'ForeignTransferInfo',
             component: () => import('@/views/ForeignTransfer/views/TransferRepuest/information.vue'),
         },
+        {
+            path: '/inquiry/list',
+            name: 'InquiryList',
+            component: () => import('@/views/support/InquiryList.vue')
+        },
+        {
+            path: '/inquiry/write',
+            name: 'InquiryWrite',
+            component: () => import('@/views/support/InquiryWrite.vue')
+        },
+        adminRoutes,
+
     ],
 })
 
@@ -181,6 +200,14 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !isAuthenticated) {
     alert('로그인이 필요합니다.')
     return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  if (to.meta.requiresAdmin) {
+    const isAdmin = authStore.userInfo.role === 'ROLE_ADMIN'
+    if (!isAdmin) {
+      alert('접근 권한이 없습니다. 관리자만 이용할 수 있어요.')
+      return next('/')
+    } 
   }
 
   // VERIFIED 필요

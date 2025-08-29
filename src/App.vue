@@ -1,20 +1,19 @@
 <template>
   <div id="app">
-    <div v-if="hideLayoutRoutes.includes(route.path)">
+    <template v-if="isHideLayout">
       <router-view />
-    </div>
+    </template>
 
-    <div v-else>
-      <a-layout class="app-layout">
+    <template v-else>
+      <AdminLayout v-if="isAdminRoute" />
+      <div v-else class="default-layout">
         <HeaderBar />
-
         <a-layout-content class="main-content">
           <router-view />
         </a-layout-content>
-
         <FooterBar />
-      </a-layout>
-    </div>
+      </div>
+    </template>
 
     <div v-if="globalLoading" class="global-loading">
       <a-spin size="large" tip="로딩 중...">
@@ -29,6 +28,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderBar from '@/components/HeaderBar.vue'
 import FooterBar from '@/components/FooterBar.vue'
+import AdminLayout from '@/components/admin/AdminLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { message } from 'ant-design-vue'
 import axios from 'axios'
@@ -41,6 +41,13 @@ const globalLoading = ref(false)
 
 // 헤더/푸터 제외할 라우트 목록
 const hideLayoutRoutes = ['/login', '/sign-up', '/find-id', '/reset-password', '/signup/terms']
+const isHideLayout = computed(() => {
+  return hideLayoutRoutes.includes(route.path) || route.path.startsWith('/admin')
+})
+
+const isAdminRoute = computed(() => {
+  return route.path.startsWith('/admin');
+});
 
 // 앱 시작 시 토큰 로드
 onMounted(() => {
