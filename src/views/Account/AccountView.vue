@@ -719,7 +719,17 @@ export default {
         const loadTransactionHistory = async () => {
             try {
                 const data = await api.getTransactionHistory(userId)
-                recentTransactions.value = data.slice(0, 4)
+                let transactions = []
+
+                if (Array.isArray(data)) {
+                    transactions = data
+                } else if (data && Array.isArray(data.transactions)) {
+                    transactions = data.transactions
+                } else if (data && Array.isArray(data.data)) {
+                    transactions = data.data
+                }
+
+                recentTransactions.value = transactions.slice(0, 4)
             } catch (error) {
                 console.error('Failed to load transaction history:', error)
             }
@@ -1294,7 +1304,7 @@ export default {
 
 .main-content {
     flex: 1;
-    margin: 3rem;
+    padding: 40px 48px;
 }
 
 .page-title {
