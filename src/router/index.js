@@ -56,6 +56,12 @@ const router = createRouter({
             meta: {requiresAuth: true}
         },
         {
+            path: '/favorites',
+            name: 'Favorites',
+            component: () => import('@/views/Remittance/FavoriteFriend.vue'),
+            meta: {requiresAuth: true}
+        },
+        {
             path: '/account',
             name: 'Account',
             component: () => import('@/views/Account/AccountView.vue'),
@@ -68,9 +74,23 @@ const router = createRouter({
             // meta: {requiresAuth: true}
         },
         {
-            path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
+            path: '/account/detail', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
             name: 'AccountDetail',
             component: () => import('@/views/Account/AccountDetail.vue'),
+            props: true,
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/remittance/list', 
+            name: 'RemittanceDetail',
+            component: () => import('@/views/Remittance/RemittanceDetail.vue'),
+            props: true,
+            meta: {requiresAuth: true}
+        },
+        {
+            path: '/exchange/list', 
+            name: 'currentExchangeDetail',
+            component: () => import('@/views/CurrentExchange/CurrentExchangeDetail.vue'),
             props: true,
             meta: {requiresAuth: true}
         },
