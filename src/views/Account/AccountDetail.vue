@@ -24,17 +24,18 @@
           <h1 class="page-title">거래 내역</h1>
           <div class="currency-selector">
             <label for="currency-select">통화 선택:</label>
-            <select 
-              id="currency-select" 
-              v-model="selectedCurrency" 
-              @change="onCurrencyChange"
-              class="currency-select"
-            >
+            <select id="currency-select" v-model="selectedCurrency" @change="onCurrencyChange" class="currency-select">
               <option value="KRW">🇰🇷 원화 (KRW)</option>
               <option value="USD">🇺🇸 달러 (USD)</option>
               <option value="EUR">🇪🇺 유로 (EUR)</option>
               <option value="JPY">🇯🇵 엔화 (JPY)</option>
+              <option value="GBP">🇬🇧 파운드 (GBP)</option>
+              <option value="AUD">🇦🇺 호주달러 (AUD)</option>
+              <option value="CAD">🇨🇦 캐나다달러 (CAD)</option>
+              <option value="CHF">🇨🇭 스위스프랑 (CHF)</option>
+              <option value="CNY">🇨🇳 위안화 (CNY)</option>
             </select>
+
           </div>
         </div>
       </div>
@@ -103,7 +104,7 @@
           {{ getCurrencyName(selectedCurrency) }} 거래 내역
           <span class="transaction-count">({{ filteredTransactions.length }}건)</span>
         </h3>
-        
+
         <!-- 거래 내역이 없는 경우 -->
         <div v-if="filteredTransactions.length === 0" class="empty-state">
           <div class="empty-state-icon">📝</div>
@@ -113,12 +114,8 @@
 
         <!-- 거래 내역 목록 -->
         <div v-else class="transaction-list">
-          <div 
-            v-for="transaction in filteredTransactions" 
-            :key="transaction.id"
-            class="transaction-item"
-            @click="showTransactionDetail(transaction)"
-          >
+          <div v-for="transaction in filteredTransactions" :key="transaction.id" class="transaction-item"
+            @click="showTransactionDetail(transaction)">
             <div class="transaction-icon" :class="getTransactionTypeClass(transaction)">
               {{ getTransactionIcon(transaction) }}
             </div>
@@ -202,10 +199,10 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
-    
+
     // 기본 설정
     const currentUserId = ref(localStorage.getItem('userId') || 1)
-    
+
     // 반응형 데이터
     const loading = ref(true)
     const error = ref(null)
@@ -219,7 +216,7 @@ export default {
     })
     const allTransactions = ref([]) // 모든 거래 저장
     const transactions = ref([]) // 표시할 거래
-    
+
     // 필터 및 정렬
     const selectedPeriod = ref('all')
     const selectedType = ref('all')
@@ -231,8 +228,14 @@ export default {
       'KRW': { name: '원화', flag: '🇰🇷' },
       'USD': { name: '달러', flag: '🇺🇸' },
       'EUR': { name: '유로', flag: '🇪🇺' },
-      'JPY': { name: '엔화', flag: '🇯🇵' }
+      'JPY': { name: '엔화', flag: '🇯🇵' },
+      'GBP': { name: '파운드', flag: '🇬🇧' },
+      'AUD': { name: '호주달러', flag: '🇦🇺' },
+      'CAD': { name: '캐나다달러', flag: '🇨🇦' },
+      'CHF': { name: '스위스프랑', flag: '🇨🇭' },
+      'CNY': { name: '위안화', flag: '🇨🇳' }
     }
+
 
     // **핵심 수정**: 특정 통화 기준으로 필터링된 거래 목록
     const filteredTransactions = computed(() => {
@@ -242,26 +245,26 @@ export default {
       filtered = filtered.filter(transaction => {
         // 환전의 경우: 선택된 통화가 from 또는 to에 포함된 경우
         if (transaction.transactionType === 'EXCHANGE') {
-          return transaction.fromCurrencyCode === selectedCurrency.value || 
-                 transaction.toCurrencyCode === selectedCurrency.value
+          return transaction.fromCurrencyCode === selectedCurrency.value ||
+            transaction.toCurrencyCode === selectedCurrency.value
         }
-        
+
         // 송금의 경우: 선택된 통화가 거래 통화와 일치하는 경우
         if (transaction.transactionType === 'TRANSFER') {
-          return transaction.fromCurrencyCode === selectedCurrency.value || 
-                 transaction.toCurrencyCode === selectedCurrency.value
+          return transaction.fromCurrencyCode === selectedCurrency.value ||
+            transaction.toCurrencyCode === selectedCurrency.value
         }
-        
+
         // 기타 거래: 통화 코드가 일치하는 경우
-        return transaction.fromCurrencyCode === selectedCurrency.value || 
-               transaction.toCurrencyCode === selectedCurrency.value
+        return transaction.fromCurrencyCode === selectedCurrency.value ||
+          transaction.toCurrencyCode === selectedCurrency.value
       })
 
       // 2. 거래 타입 필터링 (핵심 수정)
       if (selectedType.value !== 'all') {
         filtered = filtered.filter(transaction => {
           const transactionTypeClass = getTransactionTypeClass(transaction)
-          
+
           if (selectedType.value === 'income') {
             return transactionTypeClass === 'income'
           } else if (selectedType.value === 'expense') {
@@ -276,7 +279,7 @@ export default {
         const now = new Date()
         filtered = filtered.filter(transaction => {
           const transactionDate = new Date(transaction.createdAt)
-          
+
           if (selectedPeriod.value === 'week') {
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
             return transactionDate >= weekAgo
@@ -308,64 +311,64 @@ export default {
       const now = new Date()
       // **수정**: 현재 달의 1일 00:00:00부터 계산
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-      
+
       console.log('현재 날짜:', now)
       console.log('이번 달 시작일:', startOfMonth)
-      
+
       // 이번 달 거래만 필터링
       const monthlyTransactions = allTransactions.value.filter(transaction => {
         const transactionDate = new Date(transaction.createdAt)
         return transactionDate >= startOfMonth && transactionDate <= now
       })
-      
+
       console.log('이번 달 전체 거래:', monthlyTransactions.length)
-      
+
       // 선택된 통화와 관련된 거래만 필터링
       const currencyRelatedTransactions = monthlyTransactions.filter(transaction => {
         if (transaction.transactionType === 'EXCHANGE') {
-          return transaction.fromCurrencyCode === selectedCurrency.value || 
-                 transaction.toCurrencyCode === selectedCurrency.value
+          return transaction.fromCurrencyCode === selectedCurrency.value ||
+            transaction.toCurrencyCode === selectedCurrency.value
         }
-        
+
         if (transaction.transactionType === 'TRANSFER') {
-          return transaction.fromCurrencyCode === selectedCurrency.value || 
-                 transaction.toCurrencyCode === selectedCurrency.value
+          return transaction.fromCurrencyCode === selectedCurrency.value ||
+            transaction.toCurrencyCode === selectedCurrency.value
         }
-        
-        return transaction.fromCurrencyCode === selectedCurrency.value || 
-               transaction.toCurrencyCode === selectedCurrency.value
+
+        return transaction.fromCurrencyCode === selectedCurrency.value ||
+          transaction.toCurrencyCode === selectedCurrency.value
       })
-      
+
       console.log(`${selectedCurrency.value} 관련 이번 달 거래:`, currencyRelatedTransactions.length)
-      
+
       let income = 0
       let expense = 0
       let count = currencyRelatedTransactions.length
-      
+
       currencyRelatedTransactions.forEach(transaction => {
         const transactionTypeClass = getTransactionTypeClass(transaction)
         const amount = getTransactionAmount(transaction)
-        
+
         console.log(`거래 ID ${transaction.id}:`, {
           type: transaction.transactionType,
           typeClass: transactionTypeClass,
           amount: amount,
           date: transaction.createdAt
         })
-        
+
         if (transactionTypeClass === 'income') {
           income += amount
         } else {
           expense += amount
         }
       })
-      
+
       console.log(`${selectedCurrency.value} 이번 달 통계:`, {
         income,
         expense,
         count
       })
-      
+
       return {
         income,
         expense,
@@ -393,11 +396,11 @@ export default {
       // URL 업데이트
       router.replace({
         path: '/account/detail',
-        query: { 
-          currencyCode: selectedCurrency.value 
+        query: {
+          currencyCode: selectedCurrency.value
         }
       })
-      
+
       // 데이터 재로드
       await loadData()
     }
@@ -439,21 +442,21 @@ export default {
           },
           credentials: 'include'
         })
-        
+
         if (!response.ok) {
           throw new Error('잔액 조회 실패')
         }
-        
+
         const data = await response.json()
         console.log('Balance API Response:', data) // 디버깅용
-        
+
         // AccountView.vue 형식: 배열에서 해당 통화 찾기
         if (Array.isArray(data)) {
           const currencyBalance = data.find(b => b.code === selectedCurrency.value)
           if (currencyBalance) {
             // 콤마 제거 후 파싱
             currentBalance.value = parseFloat(currencyBalance.amount.toString().replace(/,/g, '')) || 0
-            
+
             // 환율 정보 로드
             if (selectedCurrency.value !== 'KRW') {
               await loadExchangeRate()
@@ -481,17 +484,17 @@ export default {
       try {
         const response = await fetch(`http://localhost:8080/api/exchange/realtime/${selectedCurrency.value}`)
         const rateData = await response.json()
-        
+
         if (rateData && rateData.length > 0 && rateData[0].base_rate) {
           const baseRateStr = rateData[0].base_rate
           const cleanRate = baseRateStr.replace(/,/g, '')
           let rate = parseFloat(cleanRate)
-          
+
           // JPY는 100단위 통화이므로 환율을 100으로 나눔
           if (selectedCurrency.value === 'JPY') {
             rate = rate / 100
           }
-          
+
           exchangeRate.value = rate
         } else {
           exchangeRate.value = selectedCurrency.value === 'JPY' ? 9.4 : 1300
@@ -513,7 +516,7 @@ export default {
         })
 
         const response = await fetch(
-          `http://localhost:8080/api/transaction/history/${currentUserId.value}?${params}`, 
+          `http://localhost:8080/api/transaction/history/${currentUserId.value}?${params}`,
           {
             method: 'GET',
             headers: {
@@ -522,14 +525,14 @@ export default {
             credentials: 'include'
           }
         )
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const data = await response.json()
         console.log('Transaction API Response:', data) // 디버깅용
-        
+
         // 응답 데이터 안전하게 처리 (AccountView.vue 형식)
         if (data) {
           if (data.success && Array.isArray(data.transactions)) {
@@ -548,9 +551,9 @@ export default {
         } else {
           allTransactions.value = []
         }
-        
+
         console.log('처리된 모든 거래내역:', allTransactions.value) // 디버깅용
-        
+
       } catch (error) {
         console.error('거래 내역 로드 실패:', error)
         allTransactions.value = []
@@ -601,7 +604,7 @@ export default {
     const formatCurrencyAmount = (amount, currencyCode) => {
       if (!amount && amount !== 0) return `0 ${currencyCode}`
       const cleanAmount = parseFloat(amount.toString().replace(/,/g, ''))
-      
+
       if (currencyCode === 'KRW') {
         return new Intl.NumberFormat('ko-KR').format(Math.floor(cleanAmount)) + '원'
       }
@@ -619,10 +622,10 @@ export default {
     const formatDate = (dateString) => {
       if (!dateString) return ''
       const date = new Date(dateString)
-      return date.toLocaleDateString('ko-KR', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit' 
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
       })
     }
 
@@ -649,12 +652,12 @@ export default {
           return 'expense' // 해당 통화에서 보내는 경우 = 출금
         }
       }
-      
+
       // 송금의 경우: 사용자 기준으로 판단
       if (transaction.transactionType === 'TRANSFER') {
         return transaction.toUserId === parseInt(currentUserId.value) ? 'income' : 'expense'
       }
-      
+
       // 기타 거래
       return transaction.toUserId === parseInt(currentUserId.value) ? 'income' : 'expense'
     }
@@ -663,7 +666,7 @@ export default {
     const getTransactionDescription = (transaction) => {
       if (transaction.transactionType === 'TRANSFER') {
         return transaction.fromUserId === parseInt(currentUserId.value)
-          ? `${transaction.toUserName}님에게 송금` 
+          ? `${transaction.toUserName}님에게 송금`
           : `${transaction.fromUserName}님으로부터 수신`
       } else if (transaction.transactionType === 'EXCHANGE') {
         return `${transaction.fromCurrencyCode} → ${transaction.toCurrencyCode} 환전`
@@ -693,7 +696,7 @@ export default {
     // **핵심 수정**: 거래 금액 계산 - 선택된 통화 기준으로
     const getTransactionAmount = (transaction) => {
       const isIncome = getTransactionTypeClass(transaction) === 'income'
-      
+
       if (transaction.transactionType === 'EXCHANGE') {
         // 환전의 경우: 선택된 통화 기준으로 금액 결정
         if (transaction.toCurrencyCode === selectedCurrency.value) {
@@ -702,12 +705,12 @@ export default {
           return transaction.sendAmount || transaction.totalDeductedAmount // 보내는 금액
         }
       }
-      
+
       // 송금의 경우
       if (transaction.transactionType === 'TRANSFER') {
         return isIncome ? transaction.receiveAmount : (transaction.sendAmount || transaction.totalDeductedAmount)
       }
-      
+
       // 기타 거래
       return isIncome ? transaction.receiveAmount : (transaction.sendAmount || transaction.totalDeductedAmount)
     }
@@ -758,7 +761,7 @@ export default {
       sortBy,
       selectedTransaction,
       currentUserId,
-      
+
       // 메서드
       onCurrencyChange,
       loadData,
@@ -766,7 +769,7 @@ export default {
       goBack,
       showTransactionDetail,
       closeModal,
-      
+
       // 헬퍼 함수
       getCurrencyName,
       getCurrencyFlag,
@@ -825,8 +828,13 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 에러 상태 */
@@ -1038,7 +1046,8 @@ export default {
   gap: 1rem;
 }
 
-.filter-select, .sort-select {
+.filter-select,
+.sort-select {
   border: 1px solid #e9ecef;
   border-radius: 6px;
   padding: 0.5rem 1rem;
@@ -1048,7 +1057,8 @@ export default {
   transition: border-color 0.2s;
 }
 
-.filter-select:focus, .sort-select:focus {
+.filter-select:focus,
+.sort-select:focus {
   outline: none;
   border-color: #20c997;
 }
@@ -1103,7 +1113,7 @@ export default {
   padding: 0.75rem;
   border-radius: 12px;
   background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .transaction-info {
@@ -1184,7 +1194,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1199,7 +1209,7 @@ export default {
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
@@ -1282,64 +1292,64 @@ export default {
     margin-left: 2rem;
     margin-right: 2rem;
   }
-  
+
   .page-header-section {
     flex-direction: column;
     gap: 1.5rem;
   }
-  
+
   .header-info {
     flex-direction: column;
     gap: 1rem;
     width: 100%;
   }
-  
+
   .currency-selector {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .currency-select {
     flex: 1;
     min-width: auto;
   }
-  
+
   .single-currency-balance {
     flex-direction: column;
     gap: 1.5rem;
     text-align: center;
   }
-  
+
   .currency-display {
     justify-content: center;
   }
-  
+
   .balance-display {
     text-align: center;
   }
-  
+
   .filter-section {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .filter-options {
     justify-content: space-between;
     flex-wrap: wrap;
   }
-  
+
   .transaction-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .transaction-amount {
     align-self: flex-end;
     text-align: right;
   }
-  
+
   .modal-content {
     width: 95%;
     margin: 1rem;

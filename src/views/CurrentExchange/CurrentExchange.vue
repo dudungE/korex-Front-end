@@ -29,16 +29,16 @@
                 <option value="USD">🇺🇸 미국 USD</option>
                 <option value="JPY">🇯🇵 일본 JPY</option>
                 <option value="EUR">🇪🇺 유럽연합 EUR</option>
+                <option value="GBP">🇬🇧 영국 GBP</option>
+                <option value="AUD">🇦🇺 오스트레일리아 AUD</option>
+                <option value="CAD">🇨🇦 캐나다 CAD</option>
+                <option value="CHF">🇨🇭 스위스 CHF</option>
+                <option value="CNY">🇨🇳 중국 CNY</option>
               </select>
 
-              <input 
-                type="text" 
-                v-model="displayAmount" 
-                class="amount-input" 
-                placeholder="0" 
-                @input="onAmountInput" 
-                :disabled="balancesLoading"
-              />
+
+              <input type="text" v-model="displayAmount" class="amount-input" placeholder="0" @input="onAmountInput"
+                :disabled="balancesLoading" />
             </div>
           </div>
 
@@ -56,29 +56,26 @@
             </div>
 
             <div class="currency-input-row">
-              <select 
-                v-model="toCurrency" 
-                class="currency-dropdown" 
-                @change="onCurrencyChange"
-                :disabled="fromCurrency !== 'KRW' || balancesLoading"
-              >
+              <select v-model="toCurrency" class="currency-dropdown" @change="onCurrencyChange"
+                :disabled="fromCurrency !== 'KRW' || balancesLoading">
                 <template v-if="fromCurrency === 'KRW'">
                   <option value="USD">🇺🇸 미국 USD</option>
                   <option value="JPY">🇯🇵 일본 JPY</option>
                   <option value="EUR">🇪🇺 유럽연합 EUR</option>
+                  <option value="GBP">🇬🇧 영국 GBP</option>
+                  <option value="AUD">🇦🇺 오스트레일리아 AUD</option>
+                  <option value="CAD">🇨🇦 캐나다 CAD</option>
+                  <option value="CHF">🇨🇭 스위스 CHF</option>
+                  <option value="CNY">🇨🇳 중국 CNY</option>
                 </template>
                 <template v-else>
                   <option value="KRW">🇰🇷 한국 KRW</option>
                 </template>
               </select>
 
-              <input 
-                type="text" 
-                :value="formatNumber(simulationResult?.toAmount || 0)" 
-                class="amount-input" 
-                placeholder="0" 
-                readonly 
-              />
+
+              <input type="text" :value="formatNumber(simulationResult?.toAmount || 0)" class="amount-input"
+                placeholder="0" readonly />
             </div>
           </div>
 
@@ -99,14 +96,16 @@
               </div>
               <div class="fee-row">
                 <span class="fee-label">총 차감 금액</span>
-                <span class="fee-value">{{ formatNumber(simulationResult.totalDeductedAmount || 0) }} {{ fromCurrency }}</span>
+                <span class="fee-value">{{ formatNumber(simulationResult.totalDeductedAmount || 0) }} {{ fromCurrency
+                }}</span>
               </div>
               <div class="fee-row total-row">
                 <span class="fee-label">실제 받을 금액</span>
-                <span class="fee-value total-amount">{{ formatNumber(simulationResult.toAmount || 0) }} {{ toCurrency }}</span>
+                <span class="fee-value total-amount">{{ formatNumber(simulationResult.toAmount || 0) }} {{ toCurrency
+                }}</span>
               </div>
             </div>
-            
+
             <div v-if="simulationResult.rateUpdateTime" class="rate-update-time">
               <small>환율 업데이트: {{ simulationResult.rateUpdateTime }}</small>
             </div>
@@ -122,11 +121,7 @@
           </div>
 
           <!-- 환전하기 버튼 -->
-          <button 
-            class="exchange-btn" 
-            :disabled="!canExecuteExchange"
-            @click="executeExchange"
-          >
+          <button class="exchange-btn" :disabled="!canExecuteExchange" @click="executeExchange">
             {{ getButtonText() }}
           </button>
         </div>
@@ -136,7 +131,7 @@
             <h3>환율 차트</h3>
             <span class="chart-period" v-if="!chartLoading && chartRates.length > 0">
               {{ formatNumber(simulationResult?.exchangeRate || 0) }}
-            </span> 
+            </span>
           </div>
 
           <!-- 로딩 상태 -->
@@ -147,11 +142,7 @@
 
           <!-- 실제 차트 컴포넌트 -->
           <div v-else-if="chartRates.length > 0" class="chart-container">
-            <ExchangeRateChart 
-              :rates="chartRates" 
-              :currencies="getChartCurrencies()"
-              :height="150"
-            />
+            <ExchangeRateChart :rates="chartRates" :currencies="getChartCurrencies()" :height="150" />
           </div>
 
           <!-- 차트 데이터가 없을 때 -->
@@ -191,8 +182,14 @@ const balances = reactive({
   KRW: 0,
   USD: 0,
   JPY: 0,
-  EUR: 0
+  EUR: 0,
+  GBP: 0,
+  AUD: 0,
+  CAD: 0,
+  CHF: 0,
+  CNY: 0
 })
+
 
 // 원본 잔액 데이터 (서버 응답 그대로 저장)
 const balanceData = reactive({})
@@ -227,22 +224,22 @@ const getApiHeaders = () => {
 const fetchBalances = async () => {
   balancesLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     console.log('잔액 조회 시작...')
-    
+
     const response = await fetch('/api/balance', {
       method: 'GET',
       headers: getApiHeaders()
     })
-    
+
     const data = await response.json()
     console.log('잔액 API 응답:', data)
-    
+
     if (response.ok && data.success) {
       // 원본 데이터 저장
       Object.assign(balanceData, data.balances)
-      
+
       // 숫자형 잔액으로 변환하여 reactive 객체에 저장
       Object.keys(data.balances).forEach(currency => {
         if (balances.hasOwnProperty(currency)) {
@@ -252,12 +249,12 @@ const fetchBalances = async () => {
           balances[currency] = numericAmount
         }
       })
-      
+
       console.log('잔액 업데이트 완료:', balances)
     } else {
       console.error('잔액 조회 실패:', data)
       errorMessage.value = data.message || '잔액을 불러올 수 없습니다.'
-      
+
       // 인증 오류 처리
       if (response.status === 401) {
         errorMessage.value = '로그인이 만료되었습니다. 다시 로그인해 주세요.'
@@ -290,12 +287,12 @@ const getBalanceAmount = (currency) => {
 // ==================== Computed Properties ====================
 
 const canExecuteExchange = computed(() => {
-  return simulationResult.value && 
-         inputAmount.value && 
-         parseFloat(inputAmount.value) > 0 && 
-         !isAmountExceedsBalance.value &&
-         !loading.value &&
-         !balancesLoading.value
+  return simulationResult.value &&
+    inputAmount.value &&
+    parseFloat(inputAmount.value) > 0 &&
+    !isAmountExceedsBalance.value &&
+    !loading.value &&
+    !balancesLoading.value
 })
 
 const isAmountExceedsBalance = computed(() => {
@@ -341,7 +338,7 @@ const debouncedSimulation = () => {
   if (simulationTimer) {
     clearTimeout(simulationTimer)
   }
-  
+
   simulationTimer = setTimeout(() => {
     simulateExchange()
   }, 300)
@@ -354,7 +351,7 @@ const onCurrencyChange = () => {
   } else if (toCurrency.value === fromCurrency.value) {
     toCurrency.value = 'USD'
   }
-  
+
   simulateExchange()
   fetchChartData()
 }
@@ -438,10 +435,10 @@ const executeExchange = async () => {
     if (response.ok && data.success) {
       // 성공 처리
       alert(`환전이 완료되었습니다!\n거래번호: ${data.transactionId}`)
-      
+
       // 잔액 업데이트 (서버에서 최신 잔액 가져오기)
       await updateBalances()
-      
+
       // 입력 필드 초기화
       resetForm()
     } else {
@@ -484,18 +481,18 @@ const formatWithCommas = (value) => {
 
 const swapCurrencies = () => {
   if (balancesLoading.value) return
-  
+
   const temp = fromCurrency.value
   fromCurrency.value = toCurrency.value
   toCurrency.value = temp
-  
+
   resetForm()
   simulateExchange()
 }
 
 const setMaxAmount = () => {
   if (balancesLoading.value) return
-  
+
   const maxValue = balances[fromCurrency.value].toString()
   inputAmount.value = maxValue
   displayAmount.value = formatWithCommas(maxValue)
@@ -542,7 +539,7 @@ const fetchChartData = async () => {
   try {
     let targetCurrency = fromCurrency.value === 'KRW' ? toCurrency.value : fromCurrency.value
     const response = await fetch(`/api/exchange/by-currency/${targetCurrency}`)
-    
+
     if (response.ok) {
       const data = await response.json()
       chartRates.value = data.map(rate => ({
@@ -564,7 +561,7 @@ const fetchChartData = async () => {
 
 const parseRateValue = (rate) => {
   if (rate === undefined || rate === null) return null
-  const rateValue = typeof rate === 'string' 
+  const rateValue = typeof rate === 'string'
     ? parseFloat(rate.replace(/,/g, ''))
     : parseFloat(rate)
   return isNaN(rateValue) ? null : rateValue
@@ -575,9 +572,9 @@ const formatDate = (dateStr) => {
   try {
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return ''
-    return date.getFullYear() + '-' + 
-           String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-           String(date.getDate()).padStart(2, '0')
+    return date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0')
   } catch (error) {
     console.error('날짜 변환 오류:', error, dateStr)
     return ''
@@ -613,13 +610,13 @@ watch(toCurrency, onCurrencyChange)
 // 컴포넌트 마운트 시 실행
 onMounted(async () => {
   console.log('환전 컴포넌트 마운트 시작')
-  
+
   // 잔액과 차트 데이터를 병렬로 가져오기
   await Promise.all([
     fetchBalances(),
     fetchChartData()
   ])
-  
+
   console.log('환전 컴포넌트 초기화 완료')
 })
 </script>
@@ -931,10 +928,11 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-   /* position: relative; */
+  /* position: relative; */
   z-index: 1;
   /* contain: layout style; 레이아웃 격리 */
-  min-height: 300px; /* 최소 높이 보장 */
+  min-height: 300px;
+  /* 최소 높이 보장 */
 }
 
 .chart-header {
@@ -975,12 +973,17 @@ onMounted(async () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .chart-container {
-  flex : 1;
+  flex: 1;
 }
 
 .no-chart-data {
@@ -1013,13 +1016,14 @@ onMounted(async () => {
   .main-content {
     padding: 20px 16px;
   }
-  
+
   .exchange-main {
     flex-direction: column;
     gap: 20px;
   }
-  
-  .exchange-form, .chart-section {
+
+  .exchange-form,
+  .chart-section {
     flex: none;
   }
 }

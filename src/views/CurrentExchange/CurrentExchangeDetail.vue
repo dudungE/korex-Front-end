@@ -36,28 +36,29 @@
       <div v-else class="table-wrapper">
         <table class="transfer-table">
           <thead>
-          <tr>
-            <th>거래일시</th>
-            <th>FROM 통화</th>
-            <th>TO 통화</th>
-            <th>보낸 금액</th>
-            <th>받은 금액</th>
-            <th>환율</th>
-            <th>상세</th>
-          </tr>
+            <tr>
+              <th>거래일시</th>
+              <th>FROM 통화</th>
+              <th>TO 통화</th>
+              <th>보낸 금액</th>
+              <th>받은 금액</th>
+              <th>환율</th>
+              <th>상세</th>
+            </tr>
           </thead>
           <tbody>
-          <tr v-for="transaction in filteredTransactions" :key="transaction.id">
-            <td>{{ formatDateTime(transaction.createdAt) }}</td>
-            <td>{{ transaction.fromCurrencyCode }}</td>
-            <td>{{ transaction.toCurrencyCode }}</td>
-            <td class="expense">-{{ formatCurrencyAmount(transaction.sendAmount || transaction.totalDeductedAmount, transaction.fromCurrencyCode) }}</td>
-            <td class="income">+{{ formatCurrencyAmount(transaction.receiveAmount, transaction.toCurrencyCode) }}</td>
-            <td>{{ calculateExchangeRate(transaction) }}</td>
-            <td>
-              <button class="detail-btn" @click="viewDetail(transaction)">상세</button>
-            </td>
-          </tr>
+            <tr v-for="transaction in filteredTransactions" :key="transaction.id">
+              <td>{{ formatDateTime(transaction.createdAt) }}</td>
+              <td>{{ transaction.fromCurrencyCode }}</td>
+              <td>{{ transaction.toCurrencyCode }}</td>
+              <td class="expense">-{{ formatCurrencyAmount(transaction.sendAmount || transaction.totalDeductedAmount,
+                transaction.fromCurrencyCode) }}</td>
+              <td class="income">+{{ formatCurrencyAmount(transaction.receiveAmount, transaction.toCurrencyCode) }}</td>
+              <td>{{ calculateExchangeRate(transaction) }}</td>
+              <td>
+                <button class="detail-btn" @click="viewDetail(transaction)">상세</button>
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -77,27 +78,31 @@
         <div class="detail-list">
           <!-- 거래 종류 -->
           <div><strong>거래 종류:</strong> 환전</div>
-          
+
           <!-- FROM 통화 정보 -->
-          <div><strong>FROM 통화:</strong> {{ getCurrencyName(selectedTransaction.fromCurrencyCode) }} ({{ selectedTransaction.fromCurrencyCode }})</div>
-          <div><strong>보낸 금액:</strong> -{{ formatCurrencyAmount(selectedTransaction.sendAmount || selectedTransaction.totalDeductedAmount, selectedTransaction.fromCurrencyCode) }}</div>
-          
+          <div><strong>FROM 통화:</strong> {{ getCurrencyName(selectedTransaction.fromCurrencyCode) }} ({{
+            selectedTransaction.fromCurrencyCode }})</div>
+          <div><strong>보낸 금액:</strong> -{{ formatCurrencyAmount(selectedTransaction.sendAmount ||
+            selectedTransaction.totalDeductedAmount, selectedTransaction.fromCurrencyCode) }}</div>
+
           <!-- TO 통화 정보 -->
-          <div><strong>TO 통화:</strong> {{ getCurrencyName(selectedTransaction.toCurrencyCode) }} ({{ selectedTransaction.toCurrencyCode }})</div>
-          <div><strong>받은 금액:</strong> +{{ formatCurrencyAmount(selectedTransaction.receiveAmount, selectedTransaction.toCurrencyCode) }}</div>
-          
+          <div><strong>TO 통화:</strong> {{ getCurrencyName(selectedTransaction.toCurrencyCode) }} ({{
+            selectedTransaction.toCurrencyCode }})</div>
+          <div><strong>받은 금액:</strong> +{{ formatCurrencyAmount(selectedTransaction.receiveAmount,
+            selectedTransaction.toCurrencyCode) }}</div>
+
           <!-- 환율 정보 -->
           <div><strong>적용 환율:</strong> {{ calculateExchangeRate(selectedTransaction) }}</div>
-          
+
           <!-- 거래 일시 -->
           <div><strong>거래 일시:</strong> {{ formatDateTime(selectedTransaction.createdAt) }}</div>
-          
+
           <!-- 거래 ID -->
           <div><strong>거래 ID:</strong> {{ selectedTransaction.id }}</div>
-          
+
           <!-- 수수료 정보 -->
           <div><strong>수수료:</strong> {{ getExchangeFee(selectedTransaction) }}</div>
-          
+
           <!-- 메모/사유 (있는 경우) -->
           <div v-if="selectedTransaction.memo">
             <strong>거래 사유:</strong> {{ selectedTransaction.memo }}
@@ -119,10 +124,10 @@ export default {
   name: 'ExchangeHistory',
   setup() {
     const router = useRouter()
-    
+
     // 기본 설정
     const currentUserId = ref(localStorage.getItem('userId') || 1)
-    
+
     // 반응형 데이터
     const loading = ref(true)
     const error = ref(null)
@@ -137,8 +142,14 @@ export default {
       'KRW': { name: '원화', flag: '🇰🇷' },
       'USD': { name: '달러', flag: '🇺🇸' },
       'EUR': { name: '유로', flag: '🇪🇺' },
-      'JPY': { name: '엔화', flag: '🇯🇵' }
+      'JPY': { name: '엔화', flag: '🇯🇵' },
+      'GBP': { name: '파운드', flag: '🇬🇧' },
+      'AUD': { name: '호주달러', flag: '🇦🇺' },
+      'CAD': { name: '캐나다달러', flag: '🇨🇦' },
+      'CHF': { name: '스위스프랑', flag: '🇨🇭' },
+      'CNY': { name: '위안화', flag: '🇨🇳' }
     }
+
 
     // 필터링된 거래 목록
     const filteredTransactions = computed(() => {
@@ -152,8 +163,8 @@ export default {
       // 2. 선택된 통화 필터링 (FROM 또는 TO에 포함된 경우)
       if (selectedCurrencyFilter.value !== 'all') {
         filtered = filtered.filter(transaction => {
-          return transaction.fromCurrencyCode === selectedCurrencyFilter.value || 
-                 transaction.toCurrencyCode === selectedCurrencyFilter.value
+          return transaction.fromCurrencyCode === selectedCurrencyFilter.value ||
+            transaction.toCurrencyCode === selectedCurrencyFilter.value
         })
       }
 
@@ -162,7 +173,7 @@ export default {
         const start = new Date(startDate.value)
         const end = new Date(endDate.value)
         end.setHours(23, 59, 59, 999) // 종료일의 마지막 시간까지 포함
-        
+
         filtered = filtered.filter(transaction => {
           const transactionDate = new Date(transaction.createdAt)
           return transactionDate >= start && transactionDate <= end
@@ -195,20 +206,20 @@ export default {
     const loadTransactions = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/transaction/history/${currentUserId.value}`, 
+          `http://localhost:8080/api/transaction/history/${currentUserId.value}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
           }
         )
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const data = await response.json()
-        
+
         if (data) {
           if (data.success && Array.isArray(data.transactions)) {
             allTransactions.value = data.transactions
@@ -254,7 +265,7 @@ export default {
     const formatCurrencyAmount = (amount, currencyCode) => {
       if (!amount && amount !== 0) return `0 ${currencyCode}`
       const cleanAmount = parseFloat(amount.toString().replace(/,/g, ''))
-      
+
       if (currencyCode === 'KRW') {
         return new Intl.NumberFormat('ko-KR').format(Math.floor(cleanAmount)) + '원'
       }
@@ -280,23 +291,23 @@ export default {
     const calculateExchangeRate = (transaction) => {
       const sendAmount = transaction.sendAmount || transaction.totalDeductedAmount
       const receiveAmount = transaction.receiveAmount
-      
+
       if (!sendAmount || !receiveAmount) return '-'
-      
+
       const cleanSendAmount = parseFloat(sendAmount.toString().replace(/,/g, ''))
       const cleanReceiveAmount = parseFloat(receiveAmount.toString().replace(/,/g, ''))
-      
+
       if (cleanSendAmount === 0) return '-'
-      
+
       const rate = cleanReceiveAmount / cleanSendAmount
-      
+
       // JPY는 100단위로 표시
       if (transaction.toCurrencyCode === 'JPY' && transaction.fromCurrencyCode === 'KRW') {
         return `${(rate * 100).toFixed(2)}`
       } else if (transaction.fromCurrencyCode === 'JPY' && transaction.toCurrencyCode === 'KRW') {
         return `${(rate / 100).toFixed(2)}`
       }
-      
+
       return rate.toFixed(4)
     }
 
@@ -306,7 +317,7 @@ export default {
       if (transaction.fee) {
         return formatCurrencyAmount(transaction.fee, transaction.fromCurrencyCode)
       }
-      
+
       // 수수료 정보가 없다면 기본값
       return '무료'
     }
@@ -314,11 +325,11 @@ export default {
     // 컴포넌트 마운트
     onMounted(() => {
       loadData()
-      
+
       // 기본 날짜 설정 (최근 1개월)
       const today = new Date()
       const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate())
-      
+
       startDate.value = oneMonthAgo.toISOString().split('T')[0]
       endDate.value = today.toISOString().split('T')[0]
     })
@@ -333,14 +344,14 @@ export default {
       startDate,
       endDate,
       selectedTransaction,
-      
+
       // 메서드
       onCurrencyFilterChange,
       fetchTransfers,
       viewDetail,
       closeModal,
       loadData,
-      
+
       // 헬퍼 함수
       getCurrencyName,
       formatCurrencyAmount,
@@ -358,7 +369,7 @@ export default {
   background-color: #fff;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -371,6 +382,7 @@ export default {
   flex-direction: column;
   gap: 12px;
 }
+
 .card-header .page-title {
   margin: 0;
   color: #008681;
@@ -409,6 +421,7 @@ export default {
   border: 1px solid #ccc;
   border-radius: 5px;
 }
+
 .filter-period button {
   padding: 6px 14px;
   background-color: #009b99;
@@ -418,12 +431,14 @@ export default {
   cursor: pointer;
   transition: 0.2s;
 }
+
 .filter-period button:hover {
   background-color: #008681;
 }
 
 /* 로딩/에러 상태 */
-.loading-container, .error-container {
+.loading-container,
+.error-container {
   text-align: center;
   padding: 2rem;
   color: #666;
@@ -468,6 +483,7 @@ export default {
   white-space: normal;
   word-break: break-word;
 }
+
 .transfer-table td {
   padding: 8px;
   background-color: #F9FEFD;
@@ -490,19 +506,21 @@ export default {
   white-space: nowrap;
   transition: 0.2s;
 }
+
 .detail-btn:hover {
   background-color: #009b99;
   color: white;
 }
 
 /* 금액별 색상 */
-.income { 
-  color: #2e8b57; 
-  font-weight: 500; 
+.income {
+  color: #2e8b57;
+  font-weight: 500;
 }
-.expense { 
-  color: #dc2626; 
-  font-weight: 500; 
+
+.expense {
+  color: #dc2626;
+  font-weight: 500;
 }
 
 /* 빈 상태 */
@@ -515,11 +533,11 @@ export default {
 /* ================ 해외송금과 동일한 모달 스타일 ================ */
 .modal-overlay {
   position: fixed;
-  top: 0; 
-  left: 0; 
-  right: 0; 
+  top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -533,13 +551,13 @@ export default {
   padding: 24px;
   border-radius: 12px;
   position: relative;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   font-size: 15px;
 }
 
 .close-btn {
   position: absolute;
-  top: 12px; 
+  top: 12px;
   right: 12px;
   border: none;
   background: transparent;
@@ -548,8 +566,8 @@ export default {
   color: #6b7280;
 }
 
-.close-btn:hover { 
-  color: #111827; 
+.close-btn:hover {
+  color: #111827;
 }
 
 .detail-list {
@@ -560,26 +578,50 @@ export default {
 }
 
 /* 강조 색상 통일 */
-h2 { 
-  color: #00908C; 
-  font-size: 20px; 
-  margin-bottom: 16px; 
+h2 {
+  color: #00908C;
+  font-size: 20px;
+  margin-bottom: 16px;
 }
 
-strong { 
-  color: #111827; 
+strong {
+  color: #111827;
 }
 
 /* 모바일 */
 @media (max-width: 768px) {
-  .page-title { font-size: 24px; margin-bottom: 20px }
-  .filter-period { flex-wrap: wrap; justify-content: center }
-  .filter-period input { width: 130px; }
-  .currency-filter { width: 150px; }
-  .table-wrapper { padding: 10px 0; }
-  .transfer-table { min-width: unset; font-size: 13px; }
-  .detail-btn { padding: 3px 6px; font-size: 12px; }
-  
+  .page-title {
+    font-size: 24px;
+    margin-bottom: 20px
+  }
+
+  .filter-period {
+    flex-wrap: wrap;
+    justify-content: center
+  }
+
+  .filter-period input {
+    width: 130px;
+  }
+
+  .currency-filter {
+    width: 150px;
+  }
+
+  .table-wrapper {
+    padding: 10px 0;
+  }
+
+  .transfer-table {
+    min-width: unset;
+    font-size: 13px;
+  }
+
+  .detail-btn {
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+
   .foreign-transfer-page {
     max-width: 100%;
     padding: 0.5rem;

@@ -12,7 +12,13 @@
             <option value="USD">🇺🇸 달러 (USD)</option>
             <option value="EUR">🇪🇺 유로 (EUR)</option>
             <option value="JPY">🇯🇵 엔화 (JPY)</option>
+            <option value="GBP">🇬🇧 파운드 (GBP)</option>
+            <option value="AUD">🇦🇺 호주달러 (AUD)</option>
+            <option value="CAD">🇨🇦 캐나다달러 (CAD)</option>
+            <option value="CHF">🇨🇭 스위스프랑 (CHF)</option>
+            <option value="CNY">🇨🇳 위안화 (CNY)</option>
           </select>
+
           <input type="date" v-model="startDate" />
           <span>~</span>
           <input type="date" v-model="endDate" />
@@ -35,30 +41,30 @@
       <div v-else class="table-wrapper">
         <table class="transfer-table">
           <thead>
-          <tr>
-            <th>거래타입</th>
-            <th>상대방</th>
-            <th>통화</th>
-            <th>금액</th>
-            <th>거래일시</th>
-            <th>상세</th>
-          </tr>
+            <tr>
+              <th>거래타입</th>
+              <th>상대방</th>
+              <th>통화</th>
+              <th>금액</th>
+              <th>거래일시</th>
+              <th>상세</th>
+            </tr>
           </thead>
           <tbody>
-          <tr v-for="transaction in filteredTransactions" :key="transaction.id">
-            <td :class="getTransactionTypeClass(transaction)">
-              {{ getTransactionTypeText(transaction) }}
-            </td>
-            <td>{{ getCounterparty(transaction) }}</td>
-            <td>{{ selectedCurrency }}</td>
-            <td :class="getTransactionTypeClass(transaction)">
-              {{ getTransactionAmountDisplay(transaction) }}
-            </td>
-            <td>{{ formatDateTime(transaction.createdAt) }}</td>
-            <td>
-              <button class="detail-btn" @click="viewDetail(transaction)">상세</button>
-            </td>
-          </tr>
+            <tr v-for="transaction in filteredTransactions" :key="transaction.id">
+              <td :class="getTransactionTypeClass(transaction)">
+                {{ getTransactionTypeText(transaction) }}
+              </td>
+              <td>{{ getCounterparty(transaction) }}</td>
+              <td>{{ selectedCurrency }}</td>
+              <td :class="getTransactionTypeClass(transaction)">
+                {{ getTransactionAmountDisplay(transaction) }}
+              </td>
+              <td>{{ formatDateTime(transaction.createdAt) }}</td>
+              <td>
+                <button class="detail-btn" @click="viewDetail(transaction)">상세</button>
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -78,7 +84,7 @@
         <div class="detail-list">
           <!-- 거래 종류 -->
           <div><strong>거래 종류:</strong> 친구송금</div>
-          
+
           <!-- 송금인/수취인 정보 -->
           <div v-if="selectedTransaction.fromUserName">
             <strong>송금인:</strong> {{ selectedTransaction.fromUserName }}
@@ -86,29 +92,29 @@
           <div v-if="selectedTransaction.toUserName">
             <strong>수취인:</strong> {{ selectedTransaction.toUserName }}
           </div>
-          
+
           <!-- 통화 정보 -->
           <div><strong>통화:</strong> {{ selectedCurrency }}</div>
-          
+
           <!-- 송금 금액 -->
           <div><strong>거래 금액:</strong> {{ getTransactionAmountDisplay(selectedTransaction) }}</div>
-          
+
           <!-- 원화 환산 (외화인 경우) -->
           <div v-if="selectedCurrency !== 'KRW'">
             <strong>원화 환산:</strong> {{ getTransactionAmountKRW(selectedTransaction) }}
           </div>
-          
+
           <!-- 거래 일시 -->
           <div><strong>거래 일시:</strong> {{ formatDateTime(selectedTransaction.createdAt) }}</div>
-          
+
           <!-- 거래 ID -->
           <div><strong>거래 ID:</strong> {{ selectedTransaction.id }}</div>
-          
+
           <!-- 연락처 정보 (있는 경우) -->
           <div v-if="getRecipientPhone(selectedTransaction)">
             <strong>연락처:</strong> {{ getRecipientPhone(selectedTransaction) }}
           </div>
-          
+
           <!-- 메모/사유 (있는 경우) -->
           <div v-if="selectedTransaction.memo">
             <strong>거래 사유:</strong> {{ selectedTransaction.memo }}
@@ -130,10 +136,10 @@ export default {
   name: 'FriendTransferHistory',
   setup() {
     const router = useRouter()
-    
+
     // 기본 설정
     const currentUserId = ref(localStorage.getItem('userId') || 1)
-    
+
     // 반응형 데이터
     const loading = ref(true)
     const error = ref(null)
@@ -163,8 +169,8 @@ export default {
 
       // 2. 선택된 통화와 관련된 거래만 필터링
       filtered = filtered.filter(transaction => {
-        return transaction.fromCurrencyCode === selectedCurrency.value || 
-               transaction.toCurrencyCode === selectedCurrency.value
+        return transaction.fromCurrencyCode === selectedCurrency.value ||
+          transaction.toCurrencyCode === selectedCurrency.value
       })
 
       // 3. 기간 필터링
@@ -172,7 +178,7 @@ export default {
         const start = new Date(startDate.value)
         const end = new Date(endDate.value)
         end.setHours(23, 59, 59, 999) // 종료일의 마지막 시간까지 포함
-        
+
         filtered = filtered.filter(transaction => {
           const transactionDate = new Date(transaction.createdAt)
           return transactionDate >= start && transactionDate <= end
@@ -205,20 +211,20 @@ export default {
     const loadTransactions = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/transaction/history/${currentUserId.value}`, 
+          `http://localhost:8080/api/transaction/history/${currentUserId.value}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
           }
         )
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const data = await response.json()
-        
+
         if (data) {
           if (data.success && Array.isArray(data.transactions)) {
             allTransactions.value = data.transactions
@@ -248,16 +254,16 @@ export default {
       try {
         const response = await fetch(`http://localhost:8080/api/exchange/realtime/${selectedCurrency.value}`)
         const rateData = await response.json()
-        
+
         if (rateData && rateData.length > 0 && rateData[0].base_rate) {
           const baseRateStr = rateData[0].base_rate
           const cleanRate = baseRateStr.replace(/,/g, '')
           let rate = parseFloat(cleanRate)
-          
+
           if (selectedCurrency.value === 'JPY') {
             rate = rate / 100
           }
-          
+
           exchangeRate.value = rate
         } else {
           exchangeRate.value = selectedCurrency.value === 'JPY' ? 9.4 : 1300
@@ -339,7 +345,7 @@ export default {
     const formatCurrencyAmount = (amount, currencyCode) => {
       if (!amount && amount !== 0) return `0 ${currencyCode}`
       const cleanAmount = parseFloat(amount.toString().replace(/,/g, ''))
-      
+
       if (currencyCode === 'KRW') {
         return new Intl.NumberFormat('ko-KR').format(Math.floor(cleanAmount)) + '원'
       }
@@ -369,11 +375,11 @@ export default {
     // 컴포넌트 마운트
     onMounted(() => {
       loadData()
-      
+
       // 기본 날짜 설정 (최근 1개월)
       const today = new Date()
       const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate())
-      
+
       startDate.value = oneMonthAgo.toISOString().split('T')[0]
       endDate.value = today.toISOString().split('T')[0]
     })
@@ -389,14 +395,14 @@ export default {
       startDate,
       endDate,
       selectedTransaction,
-      
+
       // 메서드
       onCurrencyChange,
       fetchTransfers,
       viewDetail,
       closeModal,
       loadData,
-      
+
       // 헬퍼 함수
       getTransactionTypeClass,
       getTransactionTypeText,
@@ -417,7 +423,7 @@ export default {
   background-color: #fff;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -430,6 +436,7 @@ export default {
   flex-direction: column;
   gap: 12px;
 }
+
 .card-header .page-title {
   margin: 0;
   color: #008681;
@@ -467,6 +474,7 @@ export default {
   border: 1px solid #ccc;
   border-radius: 5px;
 }
+
 .filter-period button {
   padding: 6px 14px;
   background-color: #009b99;
@@ -476,12 +484,14 @@ export default {
   cursor: pointer;
   transition: 0.2s;
 }
+
 .filter-period button:hover {
   background-color: #008681;
 }
 
 /* 로딩/에러 상태 */
-.loading-container, .error-container {
+.loading-container,
+.error-container {
   text-align: center;
   padding: 2rem;
   color: #666;
@@ -526,6 +536,7 @@ export default {
   white-space: normal;
   word-break: break-word;
 }
+
 .transfer-table td {
   padding: 8px;
   background-color: #F9FEFD;
@@ -548,19 +559,21 @@ export default {
   white-space: nowrap;
   transition: 0.2s;
 }
+
 .detail-btn:hover {
   background-color: #009b99;
   color: white;
 }
 
 /* 거래타입별 색상 */
-.income { 
-  color: #2e8b57; 
-  font-weight: 500; 
+.income {
+  color: #2e8b57;
+  font-weight: 500;
 }
-.expense { 
-  color: #dc2626; 
-  font-weight: 500; 
+
+.expense {
+  color: #dc2626;
+  font-weight: 500;
 }
 
 /* 빈 상태 */
@@ -573,11 +586,11 @@ export default {
 /* ================ 해외송금과 동일한 모달 스타일 ================ */
 .modal-overlay {
   position: fixed;
-  top: 0; 
-  left: 0; 
-  right: 0; 
+  top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -591,13 +604,13 @@ export default {
   padding: 24px;
   border-radius: 12px;
   position: relative;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   font-size: 15px;
 }
 
 .close-btn {
   position: absolute;
-  top: 12px; 
+  top: 12px;
   right: 12px;
   border: none;
   background: transparent;
@@ -606,8 +619,8 @@ export default {
   color: #6b7280;
 }
 
-.close-btn:hover { 
-  color: #111827; 
+.close-btn:hover {
+  color: #111827;
 }
 
 .detail-list {
@@ -618,24 +631,48 @@ export default {
 }
 
 /* 강조 색상 통일 */
-h2 { 
-  color: #00908C; 
-  font-size: 20px; 
-  margin-bottom: 16px; 
+h2 {
+  color: #00908C;
+  font-size: 20px;
+  margin-bottom: 16px;
 }
 
-strong { 
-  color: #111827; 
+strong {
+  color: #111827;
 }
 
 /* 모바일 */
 @media (max-width: 768px) {
-  .page-title { font-size: 24px; margin-bottom: 20px }
-  .filter-period { flex-wrap: wrap; justify-content: center }
-  .filter-period input { width: 130px; }
-  .currency-filter { width: 150px; }
-  .table-wrapper { padding: 10px 0; }
-  .transfer-table { min-width: unset; font-size: 13px; }
-  .detail-btn { padding: 3px 6px; font-size: 12px; }
+  .page-title {
+    font-size: 24px;
+    margin-bottom: 20px
+  }
+
+  .filter-period {
+    flex-wrap: wrap;
+    justify-content: center
+  }
+
+  .filter-period input {
+    width: 130px;
+  }
+
+  .currency-filter {
+    width: 150px;
+  }
+
+  .table-wrapper {
+    padding: 10px 0;
+  }
+
+  .transfer-table {
+    min-width: unset;
+    font-size: 13px;
+  }
+
+  .detail-btn {
+    padding: 3px 6px;
+    font-size: 12px;
+  }
 }
 </style>

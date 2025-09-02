@@ -403,7 +403,7 @@ const fetchSupportedCurrencies = async () => {
   currencyError.value = ''
 
   try {
-    const response = await fetch('http://localhost:8080/api/transfer/currencies', {
+    const response = await fetch('http://localhost:8080/api/currency/currencies', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
