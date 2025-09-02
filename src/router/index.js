@@ -64,7 +64,7 @@ const router = createRouter({
         {
             path: '/ForeignTransfer',
             name: 'ForeignTransfer',
-            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/TransferRequest.vue'),
+            component: () => import('@/views/ForeignTransfer/views/TransferRequest/TransferRequest.vue'),
             // meta: {requiresAuth: true}
         },
         {
@@ -134,7 +134,7 @@ const router = createRouter({
         {
             path: '/ForeignTransfer/info',
             name: 'ForeignTransferInfo',
-            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/information.vue'),
+            component: () => import('@/views/ForeignTransfer/views/TransferRequest/information.vue'),
         },
         {
             path: '/inquiry/list',

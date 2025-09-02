@@ -3,13 +3,13 @@
     <h1>등록</h1>
 
     <form @submit.prevent="onSubmit">
-      <!-- 1. 수취인 이름 입력 -->
+      <!-- 1. 수취인 이름 -->
       <div class="form-group">
         <label for="name">받는 분 이름</label>
         <input id="name" v-model.trim="form.name" type="text" placeholder="예: 홍길동" required />
       </div>
 
-      <!-- 2. 수취인이 받는 통화 선택 -->
+      <!-- 2. 송금할 통화 -->
       <div class="form-group">
         <label for="selectedCurrency">송금할 통화</label>
         <select id="selectedCurrency" v-model="form.selectedCurrency" required>
@@ -18,7 +18,7 @@
         </select>
       </div>
 
-      <!-- 3. 수취인 은행명 선택 -->
+      <!-- 3. 은행 선택 -->
       <div class="form-group">
         <label for="bankName">받는 분 은행명</label>
         <select id="bankName" v-model="form.bankName" required>
@@ -27,26 +27,29 @@
         </select>
       </div>
 
-      <!-- 4. 수취인 계좌번호 입력 -->
+      <!-- 4. 계좌번호 -->
       <div class="form-group">
         <label for="accountNumber">받는 분 계좌번호</label>
-        <input id="accountNumber" v-model.trim="form.accountNumber" type="text" placeholder="예: 123-456-789" required />
+        <input
+            id="accountNumber"
+            v-model="form.accountNumber"
+            type="text"
+            placeholder="예: 123-123456-12"
+            required
+            @input="formatAccountNumber"
+        />
       </div>
 
-      <!-- 5. 수취인 연락처 입력 -->
+      <!-- 5. 연락처 -->
       <div class="form-group">
         <label for="phoneNumber">받는 분 연락처</label>
-
         <div style="display: flex; gap: 0.5rem;">
-          <!-- 국가 선택 -->
           <select v-model="form.countryCode" required>
             <option value="" disabled>국가 선택</option>
             <option v-for="c in countryOptions" :key="c.code" :value="c.code">
               {{ c.flag }} {{ c.name }} ({{ c.phonePrefix }})
             </option>
           </select>
-
-          <!-- 번호 입력 -->
           <input
               id="phoneNumber"
               v-model.trim="form.localPhoneNumber"
@@ -58,29 +61,31 @@
         </div>
       </div>
 
-      <!-- 6. 수취인 이메일 주소 입력 -->
+      <!-- 6. 이메일 -->
       <div class="form-group">
         <label for="email">받는 분 이메일 주소</label>
         <input id="email" v-model.trim="form.email" type="email" placeholder="example@domain.com" />
       </div>
 
-      <!-- 7. 수취인 국가 (거주지) 선택 -->
+      <!-- 7. 국가 -->
       <div class="form-group">
-        <label for="country" class="required">받는 분 거주지</label>
+        <label for="country">받는 분 거주지</label>
         <select id="country" v-model="form.country" required>
           <option value="" disabled>국가를 선택하세요</option>
-          <option v-for="c in countryOptions" :key="c.code" :value="c.name">{{ c.flag }} {{ c.name }}</option>
+          <option v-for="c in countryOptions" :key="c.code" :value="c.name">
+            {{ c.flag }} {{ c.name }}
+          </option>
         </select>
       </div>
 
-      <!-- 8. 수취인 영문 주소 입력 -->
+      <!-- 8. 영문 주소 -->
       <div class="form-group">
         <label for="engAddress">받는 분 영문 주소</label>
         <textarea
             id="engAddress"
             v-model.trim="form.engAddress"
             rows="3"
-            placeholder="예: 14, changkuengguro, jonglo"
+            placeholder="예: 14, Changkuengguro, Jonglo"
             required
         ></textarea>
       </div>
@@ -90,8 +95,6 @@
         <button type="submit" :disabled="isSubmitting">{{ isSubmitting ? '등록 중...' : '등록' }}</button>
       </div>
 
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <p v-if="success" class="success-message">수취인이 등록되었습니다.</p>
     </form>
   </section>
 </template>
@@ -102,68 +105,72 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// --------------------
-// 폼 상태 (camelCase 통일)
-// --------------------
 const form = reactive({
   name: '',
   selectedCurrency: '',
   bankName: '',
   accountNumber: '',
-  countryCode: '',         // 국가 코드
-  localPhoneNumber: '',    // 현지 번호
+  countryCode: '',
+  localPhoneNumber: '',
   email: '',
   country: '',
-  engAddress: '',          // ✅ camelCase
-  relationRecipient: '',   // 관계 추가
+  engAddress: ''
 })
 
-// --------------------
-// 옵션
-// --------------------
 const currencyOptions = ['USD', 'EUR', 'JPY', 'KRW']
-const bankOptions = ['KOREX', 'BANK OF AMERICA', 'CITIBANK']
+const bankOptions = ['KOREX BANK', 'BANK OF AMERICA', 'CITIBANK']
 const countryOptions = [
   { code: 'US', name: 'USA', flag: '🇺🇸', phonePrefix: '+1' },
   { code: 'JP', name: 'JAPAN', flag: '🇯🇵', phonePrefix: '+81' },
-  { code: 'KR', name: 'KOREA', flag: '🇰🇷', phonePrefix: '+82' }
+  { code: 'KR', name: 'KOREA', flag: '🇰🇷', phonePrefix: '+82' },
+  { code: 'DE', name: 'GERMANY', flag: '🇩🇪', phonePrefix: '+49' },
+  { code: 'FR', name: 'FRANCE', flag: '🇫🇷', phonePrefix: '+33' },
+  { code: 'ES', name: 'SPAIN', flag: '🇪🇸', phonePrefix: '+34' },
+  { code: 'IT', name: 'ITALY', flag: '🇮🇹', phonePrefix: '+39' },
+  { code: 'GB', name: 'UNITED KINGDOM', flag: '🇬🇧', phonePrefix: '+44' },
+  { code: 'NL', name: 'NETHERLANDS', flag: '🇳🇱', phonePrefix: '+31' },
+  { code: 'SE', name: 'SWEDEN', flag: '🇸🇪', phonePrefix: '+46' },
+  { code: 'CH', name: 'SWITZERLAND', flag: '🇨🇭', phonePrefix: '+41' },
+  { code: 'BE', name: 'BELGIUM', flag: '🇧🇪', phonePrefix: '+32' },
+  { code: 'AT', name: 'AUSTRIA', flag: '🇦🇹', phonePrefix: '+43' }
 ]
 
-// --------------------
-// 상태
-// --------------------
 const isSubmitting = ref(false)
 const error = ref('')
 const success = ref(false)
 
-// --------------------
-// 수취인 등록
-// --------------------
+function formatAccountNumber() {
+  let numbers = form.accountNumber.replace(/\D/g, '')
+  if (numbers.length > 3 && numbers.length <= 9) {
+    numbers = numbers.replace(/^(\d{3})(\d{1,6})$/, '$1-$2')
+  } else if (numbers.length > 9) {
+    numbers = numbers.replace(/^(\d{3})(\d{6})(\d{1,2})$/, '$1-$2-$3')
+  }
+  form.accountNumber = numbers
+}
+
 async function onSubmit() {
   error.value = ''
   success.value = false
   isSubmitting.value = true
 
-  // 국가 코드 + 현지 번호 합치기
   const countryObj = countryOptions.find(c => c.code === form.countryCode)
   const fullPhoneNumber = countryObj ? `${countryObj.phonePrefix}${form.localPhoneNumber}` : form.localPhoneNumber
   const countryNumber = countryObj ? countryObj.phonePrefix.replace('+', '') : ''
-
-  // JWT 토큰
   const token = localStorage.getItem('accessToken')
 
-  // payload 구성 (DTO 필드명과 일치)
   const payload = {
     name: form.name,
     bankName: form.bankName,
     accountNumber: form.accountNumber,
-    countryNumber: countryNumber,
+    countryNumber: countryNumber,      // 국가번호만
     country: form.country,
-    phoneNumber: fullPhoneNumber,
+    phoneNumber: form.localPhoneNumber, // 현지 번호만 DB에
     email: form.email,
-    relationRecipient: form.relationRecipient || '기타',
-    currency: form.selectedCurrency,
-    engAddress: form.engAddress // ✅ camelCase 맞춤
+    relationRecipient: '기타',          // 기본값
+    currencyCode: form.selectedCurrency,
+    engAddress: form.engAddress,
+    isActive: true
   }
 
   try {
@@ -173,7 +180,7 @@ async function onSubmit() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     })
 
     if (!res.ok) {
@@ -181,8 +188,10 @@ async function onSubmit() {
       throw new Error(errMsg || '등록 실패')
     }
 
-    success.value = true
-    setTimeout(() => router.push('/recipients'), 800)
+    // ✅ 성공 시 alert
+    alert('수취인이 등록되었습니다.')
+    router.push('/recipients')
+
   } catch (e) {
     error.value = e?.message || '오류가 발생했습니다.'
     console.error('등록 오류:', e)
@@ -192,7 +201,6 @@ async function onSubmit() {
 }
 </script>
 
-
 <style scoped>
 .recipient-form {
   max-width: 700px;
@@ -201,7 +209,7 @@ async function onSubmit() {
   background: #fff;
   border-radius: 10px;
   border: 1px solid #e0e0e0;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 .recipient-form h1 {
   font-size: 1.6rem;
@@ -238,7 +246,6 @@ textarea {
 .form-actions {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
   margin-top: 1.5rem;
 }
 button {
