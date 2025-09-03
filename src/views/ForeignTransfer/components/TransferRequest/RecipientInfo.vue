@@ -5,35 +5,29 @@
     <div class="info-table-v4">
       <div class="info-row-v4">
         <span class="info-label-v4">이름</span>
-        <span class="info-value-v4">{{ localRecipient?.name || '-' }}</span>
+        <span class="info-value-v4">{{ selectedRecipient?.name || '-' }}</span>
       </div>
 
       <div class="info-row-v4">
         <span class="info-label-v4">송금 통화</span>
-        <span class="info-value-v4">{{ localRecipient?.currency || '-' }}</span>
+        <span class="info-value-v4">{{ selectedRecipient?.currencyCode || '-' }}</span>
       </div>
 
       <div class="info-row-v4">
         <span class="info-label-v4">계좌번호</span>
         <span class="info-value-v4">
-    {{ localRecipient?.bank ? localRecipient.bank + ' / ' : 'KOREX BANK / ' }}
-    {{ localRecipient?.accountNumber || '-' }} <!-- account -> accountNumber 로 변경 -->
-  </span>
+          {{ selectedRecipient?.bank ? selectedRecipient.bank + ' / ' : 'KOREX BANK / ' }}
+          {{ selectedRecipient?.accountNumber || '-' }}
+        </span>
       </div>
 
       <div class="info-row-v4 input-row">
         <label class="input-label-v4">관계 증빙 서류</label>
         <div class="file-row-v4">
           <small>예: 가족관계증명서, 기본증명서 (최대 5MB)</small>
-          <input
-              type="file"
-              ref="relationFileInput"
-              @change="onFileChange"
-              multiple
-              style="display:none"
-          />
-          <button type="button" class="file-button-v4" @click="relationFileInput.click()">파일 선택</button>
-          <span class="file-names-v4">{{ relationFiles.map(f => f.name).join(', ') || '선택된 파일 없음' }}</span>
+          <input type="file" ref="relationFileInput" @change="onFileChange" multiple style="display:none" />
+          <button type="button" class="file-button-v4" @click="triggerFileSelect">파일 선택</button>
+          <span class="file-names-v4">{{ relationFiles.map(f => f.name).join(', ') }}</span>
         </div>
       </div>
     </div>
@@ -41,7 +35,11 @@
     <div class="relationship-select-wrapper-v4">
       <label for="relationship-v4" class="select-label-v4">보내는 분과의 관계</label>
       <div class="custom-select-v4">
-        <select id="relationship-v4" v-model="localRelationship" class="select-field-v4">
+        <select
+            id="relationship-v4"
+            :value="relationship"
+            class="select-field-v4"
+            @change="onRelationshipChange">
           <option value="" disabled>선택하세요</option>
           <option value="my">본인</option>
           <option value="family">가족</option>
@@ -50,61 +48,31 @@
         <div class="select-arrow-v4"></div>
       </div>
     </div>
+
   </section>
 </template>
 
 <script setup>
-import { ref, watch, toRefs, computed } from 'vue'
+import { ref, computed, toRef, watch } from 'vue'
 
 const props = defineProps({
   selectedRecipient: { type: Object, default: () => ({}) },
   relationship: { type: String, default: '' },
-  relationFilesProp: { type: Array, default: () => [] }
+  relationFiles: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['update:relationship', 'update:relationFiles', 'update:isValid'])
+const emit = defineEmits(['update:selectedRecipient', 'update:relationship', 'update:relationFiles', 'update:isValid'])
 
-const { selectedRecipient, relationship, relationFilesProp } = toRefs(props)
+// props를 그대로 v-model로 사용
+const selectedRecipient = toRef(props, 'selectedRecipient')
+const relationship = toRef(props, 'relationship')
+const relationFiles = toRef(props, 'relationFiles')
 
-const localRecipient = ref(selectedRecipient.value)
-const localRelationship = ref(relationship.value)
-const relationFiles = ref(relationFilesProp.value)
-
+// 파일 input ref
 const relationFileInput = ref(null)
+const triggerFileSelect = () => relationFileInput.value?.click()
 
-// 유효성 검사
-const isValid = computed(() => {
-  return !!localRecipient.value && !!localRelationship.value;
-})
-
-// watch: 부모 prop 변경 시 로컬 상태 업데이트
-watch(selectedRecipient, (newVal) => {
-  if(newVal) localRecipient.value = { ...newVal }
-}, { immediate: true, deep: true });
-
-watch(relationship, (newVal) => {
-  localRelationship.value = newVal;
-});
-
-watch(relationFilesProp, (newVal) => {
-  relationFiles.value = newVal;
-});
-
-// watch: 로컬 상태 변경 시 부모 컴포넌트에 emit
-watch(localRelationship, (newVal) => {
-  emit('update:relationship', newVal);
-});
-
-watch(relationFiles, (newVal) => {
-  emit('update:relationFiles', newVal);
-});
-
-// watch: isValid 변경 시 부모 컴포넌트에 알림
-watch(isValid, (newVal) => {
-  emit('update:isValid', newVal);
-}, { immediate: true });
-
-// 파일 선택
+// 파일 선택 처리
 const onFileChange = (event) => {
   const files = Array.from(event.target.files)
   const filteredFiles = files.filter(f => {
@@ -114,9 +82,16 @@ const onFileChange = (event) => {
     }
     return true
   })
-
-  relationFiles.value = filteredFiles
+  emit('update:relationFiles', filteredFiles)
 }
+
+const onRelationshipChange = (event) => {
+  emit('update:relationship', event.target.value)
+}
+
+// 유효성 체크
+const isValid = computed(() => !!selectedRecipient.value?.accountNumber && !!relationship.value)
+watch(isValid, (val) => emit('update:isValid', val), { immediate: true })
 </script>
 
 <style scoped>

@@ -57,7 +57,6 @@ import axios from 'axios'
 const emit = defineEmits(['agreed-success'])
 
 const submitting = ref(false)
-const transactionId = ref(null)
 
 const terms = ref([
   { id: 1, title:'해외 송금 서비스 이용약관', content:`1. 송금 한도: 5,000,000원 / 건\n2. 송금 수수료: 1~2% (환율 변동 포함)\n3. 환율 변동 책임: 이용자 부담\n4. 해외 수취인 정보 제공 동의\n5. 분쟁 해결 및 고객 지원 안내\n6. 부정 송금, 사기 등 불법행위 시 서비스 제한`, required:true, agreed:false, showContent:true },
@@ -100,25 +99,16 @@ async function agreeTerms() {
   try {
     submitting.value = true
     const token = localStorage.getItem('accessToken')
-    const url = transactionId.value
-        ? `/api/foreign-transfer/terms/${transactionId.value}`
-        : '/api/foreign-transfer/terms'
 
-    const method = transactionId.value ? 'put' : 'post'
-    const payload = {
-      ...Object.fromEntries(terms.value.map((t, i) => [`agree${i+1}`, t.agreed]))
-    }
+    // payload 정의
+    const payload = Object.fromEntries(
+        terms.value.map((t, i) => [`agree${i+1}`, t.agreed])
+    )
 
-    const res = await axios({
-      method,
-      url,
-      data: payload,
+    // 항상 POST 요청
+    const res = await axios.post('/api/foreign-transfer/terms', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
-
-    if (res.data.transactionId) {
-      transactionId.value = res.data.transactionId
-    }
 
     emit('agreed-success')
 
@@ -129,6 +119,7 @@ async function agreeTerms() {
     submitting.value = false
   }
 }
+
 </script>
 
 <style scoped>

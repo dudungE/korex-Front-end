@@ -45,7 +45,7 @@
             <strong>이름:</strong> {{ localSelectedRecipient.name }}
             <strong>은행명:</strong> {{ localSelectedRecipient.bank || 'KOREX BANK' }}
             <strong>계좌번호:</strong> {{ localSelectedRecipient.accountNumber }}
-            <strong>통화:</strong> {{ localSelectedRecipient.currency }}
+            <strong>통화:</strong> {{ localSelectedRecipient.currencyCode }}
           </p>
         </div>
       </div>
@@ -232,14 +232,25 @@ const countryCodes = [
   { value: '+44', text: '+44 (UK)' },
 ]
 
+// -----------------------------
 // 유효성 체크
+// -----------------------------
 const canProceed = ref(false)
-watch([localSenderName, localSelectedReason, localSelectedRecipient], () => {
-  canProceed.value = !!localSenderName.value && !!localSelectedReason.value && !!localSelectedRecipient.value
-  emit('update:isValid', canProceed.value)
-})
+watch(
+    [localSenderName, localSelectedReason, localSelectedRecipient, localSenderPhoneNumber, localSenderEmail],
+    () => {
+      canProceed.value = !!localSenderName.value &&
+          !!localSelectedReason.value &&
+          !!localSelectedRecipient.value &&
+          !!localSenderPhoneNumber.value &&
+          !!localSenderEmail.value
+      emit('update:isValid', canProceed.value)
+    }
+)
 
+// -----------------------------
 // props emit
+// -----------------------------
 watch(localSenderName, val => emit('update:senderName', val))
 watch(localSelectedReason, val => emit('update:selectedReason', val))
 watch(localSelectedRecipient, val => emit('update:selectedRecipient', val))
@@ -250,7 +261,9 @@ watch(localSenderCountry, val => emit('update:senderCountry', val))
 watch(localSenderAddress, val => emit('update:senderAddress', val))
 watch(localStaffMessage, val => emit('update:staffMessage', val))
 
+// -----------------------------
 // 수취인 모달
+// -----------------------------
 async function openRecipientModal() {
   try {
     const response = await axios.get('/api/ForeignTransfer/recipients/active')
@@ -272,13 +285,15 @@ function onSelectRecipient(recipient) {
     name: recipient.name,
     bank: recipient.bankName,
     accountNumber: recipient.account,
-    currency: recipient.currency,
+    currencyCode: recipient.currencyCode,
     email: recipient.email
   }
   showRecipientModal.value = false
 }
 
+// -----------------------------
 // 파일 선택
+// -----------------------------
 function onFileChange(event, type) {
   const files = Array.from(event.target.files)
   if (type === 'identity') {
@@ -292,6 +307,9 @@ function onFileChange(event, type) {
 function triggerIdentityInput() { if(identityInput.value) identityInput.value.click() }
 function triggerReasonInput() { if(reasonInput.value) reasonInput.value.click() }
 
+// -----------------------------
+// 저장된 데이터 반환
+// -----------------------------
 const saveSenderDataLocal = () => ({
   senderName: localSenderName.value,
   selectedReason: localSelectedReason.value,

@@ -25,29 +25,34 @@
         v-model:staffMessage="staffMessage"
         v-model:identityFiles="identityFiles"
         v-model:reasonFiles="reasonFiles"
+        v-model:countryCode="localSenderCountryCode"
+        v-model:phoneNumber="localSenderPhoneNumber"
+        v-model:email="localSenderEmail"
+        v-model:country="localSenderCountry"
+        v-model:address="localSenderAddress"
         @update:isValid="remitInfoValid = $event"
     />
 
     <WithdrawInfo
         v-if="currentStep === 3"
         ref="withdrawInfoComponent"
-        :selected-recipient="localSelectedRecipient"
-        :initial-amount="Number(amountInput) || 0"
+        v-model:selectedAccount="selectedAccount"
+        v-model:selectedCurrency="selectedCurrency"
+        v-model:amountInput="amountInput"
         v-model:totalAmountKRW="totalAmountKRW"
         v-model:feeAmountKRW="feeAmountKRW"
-        @update:selectedAccount="selectedAccount = $event"
-        @update:selectedCurrency="selectedCurrency = $event"
-        @update:amountInput="amountInput = $event"
-        @update:totalAmountKRW="totalAmountKRW = $event"
-        @update:feeAmountKRW="feeAmountKRW = $event"
-        @update:isValid="isWithdrawValid = $event"
+        v-model:isValid="isWithdrawValid"
+        v-model:accountPin="accountPin"
+        :selected-recipient="localSelectedRecipient"
+        :initial-amount="Number(amountInput) || 0"
     />
 
     <RecipientInfo
         v-if="currentStep === 4"
-        v-model:selectedRecipient="localSelectedRecipient"
         v-model:relationship="relationship"
         v-model:relationFiles="relationFiles"
+        :selected-recipient="localSelectedRecipient"
+        @update:selectedRecipient="localSelectedRecipient = $event"
     />
 
     <ConfirmationStep
@@ -105,6 +110,11 @@ const localSelectedRecipient = ref(null)
 const staffMessage = ref('')
 const identityFiles = ref([])
 const reasonFiles = ref([])
+const localSenderCountryCode = ref('')   // 국가 번호, 예: +82
+const localSenderPhoneNumber = ref('')   // 연락처
+const localSenderEmail = ref('')         // 이메일
+const localSenderCountry = ref('')       // 거주 국가
+const localSenderAddress = ref('')       // 영문 주소
 
 const amountInput = ref(0)
 const selectedCurrency = ref('USD')
@@ -113,6 +123,7 @@ const totalAmountKRW = ref(0)
 const feeAmountKRW = ref(0)
 const isWithdrawValid = ref(false)
 const remitInfoValid = ref(false)
+const accountPin = ref('')
 
 const relationship = ref('')
 const relationFiles = ref([])
@@ -121,6 +132,10 @@ const relationFiles = ref([])
 const termsAgreeComponent = ref(null)
 const remitInfoComponent = ref(null)
 const withdrawInfoComponent = ref(null)
+
+// STEP 데이터
+const senderInfo = ref({})   // 전체 송금 정보 저장
+
 
 // STEP 이름
 const stepNames = ['약관동의', '송금정보', '출금정보', '수취인 정보', '확인', '완료']
@@ -143,8 +158,14 @@ const nextStep = async () => {
         break
       case 2:
         if (!remitInfoValid.value) {
-          alert('송금 정보를 올바르게 입력해주세요.')
+          alert('보내는 분 정보가 누락되었거나 올바르지 않습니다.')
           return
+        }
+        if (remitInfoComponent.value) {
+          senderInfo.value = {
+            ...senderInfo.value,
+            ...remitInfoComponent.value.saveSenderDataLocal()
+          }
         }
         currentStep.value++
         break
@@ -153,65 +174,23 @@ const nextStep = async () => {
           alert('출금 정보가 올바르지 않습니다.')
           return
         }
+        if (withdrawInfoComponent.value) {
+          senderInfo.value = {
+            ...senderInfo.value,
+            ...withdrawInfoComponent.value.saveWithdrawDataLocal?.()
+          }
+        }
         currentStep.value++
         break
       case 4:
-        if (!localSelectedRecipient.value || !relationship.value) {
+        if (!localSelectedRecipient || !relationship) {
           alert('수취인 정보가 올바르게 입력되지 않았습니다.')
           return
         }
         currentStep.value++
         break
       case 5:
-        // STEP 5: 송금 완료
-        try {
-          const requestPayload = {
-            senderName: localSenderName.value,
-            transferReason: localSelectedReason.value,
-            recipientId: localSelectedRecipient.value.id,
-            amount: Number(amountInput.value),
-            currency: selectedCurrency.value,
-            fee: feeAmountKRW.value,
-            totalAmountKRW: totalAmountKRW.value,
-            accountType: selectedAccount.value?.accountType
-          }
-
-          const requestRes = await axios.post('/api/foreign-transfer/request', requestPayload, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          const transactionId = requestRes.data.transferId
-
-          const formData = new FormData()
-          formData.append('name', localSenderName.value)
-          formData.append('transferReason', localSelectedReason.value)
-          formData.append('relationRecipient', JSON.stringify({
-            name: localSelectedRecipient.value.name,
-            accountNumber: localSelectedRecipient.value.accountNumber,
-            bank: localSelectedRecipient.value.bank
-          }))
-          formData.append('staffMessage', staffMessage.value)
-
-          if (identityFiles.value.length > 0) formData.append('idFile', identityFiles.value[0])
-          if (reasonFiles.value.length > 0) formData.append('proofDocumentFile', reasonFiles.value[0])
-          if (relationFiles.value.length > 0) formData.append('relationDocumentFile', relationFiles.value[0])
-
-          await axios.post(`/api/foreign-transfer/sender/create?transactionId=${transactionId}`, formData, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          })
-
-          alert('송금 요청이 완료되었습니다.')
-          currentStep.value++ // STEP 6 완료
-        } catch (err) {
-          console.error('송금 처리 실패', err)
-          alert('송금 처리 중 오류가 발생했습니다.')
-        }
+        await submitTransfer()
         break
       default:
         currentStep.value++
@@ -222,7 +201,6 @@ const nextStep = async () => {
   }
 }
 
-
 // 수취인 목록 확인 후 STEP 이동
 const checkRecipientsAndProceed = async () => {
   try {
@@ -231,12 +209,75 @@ const checkRecipientsAndProceed = async () => {
     if (list.length === 0) {
       alert('먼저 수취인을 등록해주세요.')
       router.push('/recipients')
-    } else {
-      currentStep.value++
+      return
     }
+    currentStep.value++
   } catch(err) {
     console.error(err)
     alert('수취인 목록 조회 실패')
+  }
+}
+
+// -----------------------------
+// 송금 제출 (STEP 5)
+// -----------------------------
+const submitTransfer = async () => {
+  try {
+    // 계좌 선택 여부 및 타입 체크
+    if (!selectedAccount.value) {
+      alert('출금 계좌가 선택되지 않았습니다.')
+      return
+    }
+
+    const accountType = selectedAccount.value.accountType
+    if (!accountType) {
+      alert('출금 계좌 타입이 누락되었습니다. 관리자에게 문의하세요.')
+      return
+    }
+
+    // 금액 입력 체크
+    if (!amountInput.value || amountInput.value <= 0) {
+      alert('송금 금액을 올바르게 입력해주세요.')
+      return
+    }
+
+    const formData = new FormData()
+
+    // 기본 정보
+    formData.append('senderName', localSenderName.value)
+    formData.append('accountPassword', accountPin.value)
+    formData.append('transferReason', localSelectedReason.value)
+    formData.append('withdrawalMethod', selectedAccount.value.withdrawalMethod || '')
+    formData.append('accountType', accountType)  // enum 이름 그대로
+    formData.append('accountNumber', selectedAccount.value.accountNumber)
+    formData.append('currencyCode', selectedCurrency.value)
+    formData.append('transferAmount', Number(amountInput.value))
+    formData.append('relationRecipient', relationship.value || '')
+    formData.append('staffMessage', staffMessage.value)
+    formData.append('countryNumber', localSenderCountryCode.value)
+    formData.append('phoneNumber', localSenderPhoneNumber.value)
+    formData.append('email', localSenderEmail.value)
+    formData.append('country', localSenderCountry.value)
+    formData.append('engAddress', localSenderAddress.value)
+
+    // 파일 추가
+    if (identityFiles.value.length > 0) formData.append('idFile', identityFiles.value[0])
+    if (reasonFiles.value.length > 0) formData.append('proofDocumentFile', reasonFiles.value[0])
+    if (relationFiles.value.length > 0) formData.append('relationDocumentFile', relationFiles.value[0])
+
+    // Axios 요청
+    await axios.post('/api/foreign-transfer/request', formData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    })
+
+    alert('송금 요청이 완료되었습니다.')
+    currentStep.value++
+
+  } catch (err) {
+    console.error('송금 처리 실패', err)
+    alert('송금 처리 중 오류가 발생했습니다.')
   }
 }
 
