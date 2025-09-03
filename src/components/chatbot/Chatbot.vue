@@ -1,17 +1,14 @@
 <template>
     
-    <div class="chatbot-container" :class="{ open: isOpen }" :style="containerStyle">
+    <div v-if="isOpen" class="chatbot-container" :class="{ minimized: isMinimized }" :style="containerStyle">
         <div class="toggle-handle" @mousedown="startDrag" @touchstart.prevent="startDrag">
-      <button class="toggle-btn" @click="toggleOpen">
-        {{ isOpen ? '➖' : '💬' }}
+      <button class="toggle-btn" @click="toggleMinimize">
+        {{ isMinimized ? '💬' : '➖' }}
       </button>
     </div>
 
-        <!-- <button class="toggle-btn" @click="toggleOpen">
-            {{ isOpen ? '닫기' : '챗봇' }}
-        </button> -->
         
-      <div v-if="isOpen" class="chatbot-body">
+      <div v-if="!isMinimized" class="chatbot-body">
         <div class="messages" ref="messagesContainer">
           <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.sender === '사용자' ? 'user' : 'bot']">
             <span class="sender">{{ msg.sender }}:</span> {{ msg.text }}
@@ -41,6 +38,7 @@
     data() {
       return {
         isOpen: false,
+        isMinimized: false,
         inputText: '',
         messages: [],
         isSending: false,
@@ -90,6 +88,8 @@
       window.addEventListener('touchmove', this.onDrag, { passive: false });
       window.addEventListener('touchend', this.stopDrag);
       window.addEventListener('resize', this.onWindowResize);
+      // 헤더 아이콘 토글 이벤트 리스너
+      window.addEventListener('toggle-chatbot', this.onToggleEvent);
     },
     beforeUnmount() {
       window.removeEventListener('mousemove', this.onDrag);
@@ -97,17 +97,41 @@
       window.removeEventListener('touchmove', this.onDrag);
       window.removeEventListener('touchend', this.stopDrag);
       window.removeEventListener('resize', this.onWindowResize);
+      window.removeEventListener('toggle-chatbot', this.onToggleEvent);
     },
     methods: {
+      onToggleEvent() {
+        // 헤더 아이콘으로 전체 열기/닫기
+        const willOpen = !this.isOpen;
+        this.isOpen = willOpen;
+        if (willOpen) {
+          // 열 때는 확장 상태로 시작
+          this.isMinimized = false;
+        } else {
+          // 닫을 때 위치 초기화
+          const vw = window.innerWidth;
+          this.posX = Math.max(0, vw - this.containerWidth - 20);
+        }
+      },
+      toggleMinimize() {
+        // 내부 버튼: 최소화/복원만 담당
+        this.isMinimized = !this.isMinimized;
+        if (this.isMinimized) {
+          // 최소화 시 스크롤 복원 불필요
+          return;
+        }
+        // 복원 시 메시지 하단으로 스크롤
+        this.$nextTick(() => this.scrollToBottom());
+      },
       toggleOpen() {
+        // (미사용) 필요 시 외부에서 열기/닫기
         const willOpen = !this.isOpen;
         this.isOpen = willOpen;
         if (!willOpen) {
-          // 닫을 때 위치를 초기(X는 오른쪽 20px)로 리셋
           const vw = window.innerWidth;
           this.posX = Math.max(0, vw - this.containerWidth - 20);
-          // 필요 시 Y 위치도 초기값으로 복원하려면 아래 주석 해제
-          this.posY = 150;
+        } else {
+          this.isMinimized = false;
         }
         this.$nextTick(() => this.scrollToBottom());
       },
@@ -149,6 +173,7 @@
         }
       },
       startDrag(e) {
+        if (!this.isOpen) return; // 닫힌 상태에서는 드래그 금지
         const point = e.touches ? e.touches[0] : e;
         this.dragging = true;
         this.resizing = false;
@@ -156,6 +181,7 @@
         this.dragOffsetY = point.clientY - this.posY;
       },
       startResize(e) {
+        if (!this.isOpen) return; // 닫힌 상태에서는 리사이즈 금지
         const point = e.touches ? e.touches[0] : e;
         this.resizing = true;
         this.dragging = false;
@@ -236,13 +262,11 @@
   z-index: 500;
   display: flex; /* 자식 요소를 가로로 배치 */
   transition: transform 0.2s ease;
-  /* 닫혔을 때 핸들(50px)만 보이도록 이동 */
-  transform: translateX(calc(100% - 50px));
   user-select: none;
-}
-.chatbot-container.open {
-  transform: translateX(0);
-}
+ }
+ .chatbot-container.minimized {
+  transform: translateX(calc(100% - 30px)); /* 핸들만 보이도록 */
+ }
 
 /* 버튼을 담는 핸들 영역 */
 .toggle-handle {
@@ -257,7 +281,6 @@
 }
 
 .toggle-btn {
-  /* position: absolute 제거 */
   width: 20px;
   height: 20px;
   background-color: #009490;
@@ -338,7 +361,6 @@
   cursor: se-resize;
 }
 
-/* 대각선 가이드 (선택) */
 .resize-handle::before {
   content: '';
   position: absolute;
