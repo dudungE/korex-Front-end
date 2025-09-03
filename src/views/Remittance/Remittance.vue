@@ -3,9 +3,9 @@
     <!-- 1단계: 초기 화면 -->
     <div v-if="currentStep === 1" class="step-container step-1">
       <div class="step-content">
-        <h2 class="page-title">친구간 송금</h2>
+        <h2 class="page-title">친구 송금</h2>
         <div class="welcome-card">
-          <h3>간편하고 빠른 친구간 송금</h3>
+          <h3>간편하고 빠른 친구 송금</h3>
           <p>원하는 통화로 직접 송금하세요</p>
           <button class="send-button" @click="nextStep">
             보내기
@@ -54,7 +54,7 @@
         <!-- 통화 선택 -->
         <div class="currency-section">
           <h3>어떤 통화로 송금하시겠어요?</h3>
-          <p class="section-description">선택한 통화로 바로 송금됩니다 (환전 없음)</p>
+          <p class="section-description">선택한 통화로 바로 송금됩니다.</p>
 
           <!-- 통화 로딩 상태 -->
           <div v-if="isLoadingCurrencies" class="loading-message">
