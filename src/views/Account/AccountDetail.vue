@@ -664,14 +664,29 @@ export default {
 
     // 거래 관련 함수들 (AccountView.vue 형식)
     const getTransactionDescription = (transaction) => {
-      if (transaction.transactionType === 'TRANSFER') {
-        return transaction.fromUserId === parseInt(currentUserId.value)
+      switch (transaction.transactionType) {
+        case 'TRANSFER':
+          return transaction.fromUserId === parseInt(currentUserId.value)
           ? `${transaction.toUserName}님에게 송금`
           : `${transaction.fromUserName}님으로부터 수신`
-      } else if (transaction.transactionType === 'EXCHANGE') {
-        return `${transaction.fromCurrencyCode} → ${transaction.toCurrencyCode} 환전`
+        case 'EXCHANGE':
+          return `${transaction.fromCurrencyCode} → ${transaction.toCurrencyCode} 환전`
+        case 'DEPOSIT':
+          return `${transaction.fromCurrencyCode} 충전`
+        case 'WITHDRAW':
+          return `${transaction.toCurrencyCode} 출금`
+        default:
+          return '기타'
       }
-      return '거래'
+      
+      // if (transaction.transactionType === 'TRANSFER') {
+      //   return transaction.fromUserId === parseInt(currentUserId.value)
+      //     ? `${transaction.toUserName}님에게 송금`
+      //     : `${transaction.fromUserName}님으로부터 수신`
+      // } else if (transaction.transactionType === 'EXCHANGE') {
+      //   return `${transaction.fromCurrencyCode} → ${transaction.toCurrencyCode} 환전`
+      // }
+      // return '거래'
     }
 
     const getTransactionMethod = (transaction) => {
