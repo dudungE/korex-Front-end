@@ -10,8 +10,6 @@
         style="height: 100%; border-right: 0"
       >
         <a-menu-item key="info">개인정보</a-menu-item>
-        <a-menu-item key="exchange">환전내역</a-menu-item>
-        <a-menu-item key="remittance">송금내역</a-menu-item>
         <a-menu-item key="calendar">캘린더</a-menu-item>
       </a-menu>
     </a-layout-sider>
@@ -27,16 +25,12 @@
 import { ref, computed, markRaw } from 'vue'
 
 import MyInfo from './mypage/MyInfo.vue'
-import ExchangeHistory from './mypage/ExchangeHistory.vue'
-import RemittanceHistory from './mypage/RemittanceHistory.vue'
 import CalendarView from './mypage/CalendarView.vue'
 
 const activeSection = ref('info')
 
 const componentsMap = {
   info: markRaw(MyInfo),
-  exchange: markRaw(ExchangeHistory),
-  remittance: markRaw(RemittanceHistory),
   calendar: markRaw(CalendarView),
 }
 
