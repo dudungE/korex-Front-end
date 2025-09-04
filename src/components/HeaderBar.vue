@@ -32,7 +32,7 @@
           <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
           <ul class="dropdown-menu" v-show="exchangeMenu">
             <li class="section-title" @click="goToExchange()">환전</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
+            <li class="section-title" @click="goToExchangeDetail()">환전내역조회</li>
             <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
@@ -41,8 +41,8 @@
           <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
           <ul class="dropdown-menu" v-show="friendMenu">
             <li class="section-title" @click="goToRemittance()">친구송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
+            <li class="section-title" @click="goToRemittanceDetail()">송금내역조회</li>
+            <li class="section-title" @click="goToFavoriteFriends()">친구즐겨찾기</li>
           </ul>
         </div>
 
@@ -53,15 +53,6 @@
             <li class="section-title" @click="goToTransferRequest()">해외송금신청</li>
             <li class="section-title" @click="goToForeignTransferList()">거래내역조회</li>
             <li class="section-title" @click="goToRecipients()">수취인조회</li>
-          </ul>
-        </div>
-
-        <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
-          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
-          <ul class="dropdown-menu" v-show="accountMenu">
-            <li class="section-title" @click="goToAccount()">계좌조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
           </ul>
         </div>
 
@@ -102,7 +93,6 @@ const rateMenu = ref(false)
 const exchangeMenu = ref(false)
 const friendMenu = ref(false)
 const foreignMenu = ref(false)
-const accountMenu = ref(false)
 const supportMenu = ref(false)
 
 // 네비게이션 메서드
@@ -110,8 +100,10 @@ const goToRateLookup = () => router.push('/rate-lookup')
 const goToRateCalculator = () => router.push('/rate-calculator')
 const goToRateAlert = () => router.push('/rate-alert')
 const goToExchange = () => router.push('/exchange')
+const goToExchangeDetail = () => router.push('/exchange/list')
 const goToRemittance = () => router.push('/remittance')
-const goToAccount = () => router.push('/account')
+const goToRemittanceDetail = () => router.push('/remittance/list')
+const goToFavoriteFriends = () => router.push('/favorites')
 const goToReservationExchange = () => router.push('/exchange/reservation')
 const goToLogin = () => router.push('/login')
 const goToMyPage = () => router.push('/mypage')
