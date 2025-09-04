@@ -1,6 +1,5 @@
 <template>
   <div class="signup-wrapper">
-    <SignupHeader :currentStep="3" />
     <main class="signup-section">
       <div class="form-card with-divider">
         <!-- Left: 안내 -->
@@ -185,7 +184,7 @@
 
             <div class="actions">
               <button type="button" class="btn-prev" @click="goPrev">이전</button>
-              <button type="submit" class="btn-next">가입하기</button>
+              <button type="button" class="btn-next" @click="handleNext">다음</button>
             </div>
           </a-form>
         </section>
@@ -200,10 +199,11 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import SignupHeader from '@/components/auth/SignupHeader.vue'
+import { useSignupStore } from '@/stores/signup'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const signupStore = useSignupStore()
 
 const signupForm = ref({
   id: '',
@@ -238,7 +238,7 @@ const startCooldown = (sec = 60) => {
 }
 
 function goPrev() {
-  router.push('/signup/account-info')
+  router.push('/signup/identity')
 }
 
 // 이메일 인증 코드 발송
@@ -344,11 +344,29 @@ const handleSignup = async () => {
     message.error(msg)
   }
 }
+
+const handleNext = () => {
+  if (!emailVerified.value) return message.warning('이메일 인증을 완료해주세요.')
+
+  signupStore.setSignupData({
+    loginId: signupForm.value.id,
+    password: signupForm.value.password,
+    passwordCheck: signupForm.value.confirmPassword,
+    name: signupForm.value.name,
+    email: signupForm.value.email,
+    emailCode: signupForm.value.emailCode,
+    phone: signupForm.value.phone.replace(/\D/g, ''),
+    birth: signupForm.value.birthdate.replace(/\D/g, '')
+  })
+
+  router.push('/signup/account')
+}
 </script>
 
 <style scoped>
 .signup-wrapper { 
-  min-height: 100vh; 
+  border-radius: 16px;
+  min-height: calc(100% + 40px);
   background: #f5f7fb;
  }
  
@@ -361,6 +379,7 @@ const handleSignup = async () => {
 .form-card {
   display: grid;
   grid-template-columns: 360px 1px 1fr;
+  margin-top: 20px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(20,20,20,.06);

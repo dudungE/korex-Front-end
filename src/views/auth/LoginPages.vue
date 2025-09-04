@@ -66,7 +66,7 @@
             <span>〉</span>
             <router-link to="/reset-password" class="login-link">비밀번호 변경</router-link>
             <span>〉</span>
-            <router-link to="/sign-up" class="login-link">회원가입</router-link>
+            <router-link to="/signup" class="login-link">회원가입</router-link>
           </div>
         </div>
       </div>
