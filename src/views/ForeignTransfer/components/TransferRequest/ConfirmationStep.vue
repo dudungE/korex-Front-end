@@ -10,14 +10,14 @@
       </div>
       <div class="info-row-v4">
         <label class="input-label-v4">계좌</label>
-        <span>{{ selectedAccount?.accountNumber || 'KOREX BANK' }} </span>
+        <span>{{ selectedAccount?.accountNumber || 'KOREX BANK' }}</span>
       </div>
       <div class="info-row-v4" v-if="staffMessage">
         <label class="input-label-v4">메시지</label>
         <span>{{ staffMessage }}</span>
       </div>
 
-      <!-- 보내는 분 서류 -->
+      <!-- 본인인증 서류 -->
       <div class="info-row-v4">
         <label class="input-label-v4">본인인증 서류</label>
         <span>{{ identityFiles.length ? identityFiles.map(f => f.name).join(', ') : '미등록' }}</span>
@@ -38,12 +38,9 @@
         <label class="input-label-v4">관계</label>
         <span>{{ relationship || '-' }}</span>
       </div>
-
       <div class="info-row-v4">
         <label class="input-label-v4">관계 증빙 서류</label>
-        <span>
-    {{ relationFiles.length ? relationFiles.map(f => f.name).join(', ') : '미등록' }}
-  </span>
+        <span>{{ relationFiles.length ? relationFiles.map(f => f.name).join(', ') : '미등록' }}</span>
       </div>
     </div>
 
@@ -67,11 +64,11 @@
       </div>
       <div class="info-row-v4 highlight-row">
         <label class="input-label-v4">수수료</label>
-        <span>{{ fee != null ? fee.toLocaleString() : '0' }} KRW</span>
+        <span>{{ fee != null ? fee.toLocaleString() : '0' }} {{ currency || '-' }}</span>
       </div>
       <div class="info-row-v4 highlight-row">
-        <label class="input-label-v4">총 KRW 금액</label>
-        <span>{{ totalAmountKRW != null ? totalAmountKRW.toLocaleString() : '0' }} 원</span>
+        <label class="input-label-v4">환전 금액</label>
+        <span>{{ convertedAmount != null ? convertedAmount.toLocaleString() : '0' }} {{ recipientCurrency || '-' }}</span>
       </div>
     </div>
   </section>
@@ -87,12 +84,14 @@ export default {
     relationship: { type: String, default: '' },
     relationFiles: { type: Array, default: () => [] },
     staffMessage: { type: String, default: '' },
-    amount: { type: Number, default: 0 },
+    amount: { type: Number, default: 0 },               // 송금액 (외화 기준)
     currency: { type: String, default: '' },
-    fee: { type: Number, default: 0 },
-    totalAmountKRW: { type: Number, default: 0 },
+    fee: { type: Number, default: 0 },                  // 수수료 (외화 기준)
+    totalAmountKRW: { type: Number, default: 0 },      // 총 KRW 금액
+    convertedAmount: { type: Number, default: 0 },      // 환전 금액
+    recipientCurrency: { type: String, default: '' },   // 수취 통화
     identityFiles: { type: Array, default: () => [] },
-    reason: { type: String, default: '' }, // 상위에서 받아온 값
+    reason: { type: String, default: '' },
     reasonFiles: { type: Array, default: () => [] },
   },
   computed: {
@@ -159,7 +158,6 @@ export default {
   text-align: right;
 }
 
-/* 강조 스타일: 송금 금액, 수수료, 총 KRW 금액 */
 .highlight-row span {
   font-weight: 700;
   color: #008681;

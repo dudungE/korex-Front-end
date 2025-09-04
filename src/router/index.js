@@ -65,7 +65,7 @@ const router = createRouter({
             path: '/ForeignTransfer',
             name: 'ForeignTransfer',
             component: () => import('@/views/ForeignTransfer/views/TransferRequest/TransferRequest.vue'),
-            // meta: {requiresAuth: true}
+            meta: {requiresAuth: true}
         },
         {
             path: '/account/detail/:currency', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency

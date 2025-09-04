@@ -33,19 +33,15 @@
         @update:isValid="remitInfoValid = $event"
     />
 
-
     <WithdrawInfo
         v-if="currentStep === 3"
         ref="withdrawInfoComponent"
         v-model:selectedAccount="selectedAccount"
         v-model:selectedCurrency="selectedCurrency"
         v-model:amountInput="amountInput"
-        v-model:totalAmountKRW="totalAmountKRW"
-        v-model:feeAmountKRW="feeAmountKRW"
         v-model:isValid="isWithdrawValid"
         v-model:accountPin="accountPin"
         :selected-recipient="localSelectedRecipient"
-        :initial-amount="Number(amountInput) || 0"
     />
 
     <RecipientInfo
@@ -62,14 +58,15 @@
         :selected-account="selectedAccount"
         :recipient="localSelectedRecipient"
         :relationship="relationship"
-        :relationFiles="relationFiles"
+        :relation-files="relationFiles"
         :reason="localSelectedReason"
         :identity-files="identityFiles"
         :reason-files="reasonFiles"
         :amount="amountInput"
-        :currency="selectedCurrency"
-        :totalAmountKRW="totalAmountKRW"
-        :fee="feeAmountKRW"
+        :currency="selectedAccount?.currencyCode || selectedCurrency"
+        :fee="feeInCurrency"
+        :converted-amount="convertedAmount"
+        :recipient-currency="recipientCurrency"
         :staff-message="staffMessage"
     />
 
@@ -125,6 +122,11 @@ const feeAmountKRW = ref(0)
 const isWithdrawValid = ref(false)
 const remitInfoValid = ref(false)
 const accountPin = ref('')
+const convertedAmount = ref(0)
+const recipientCurrency = ref('')
+const totalKRW = ref(0)
+const feeInCurrency = ref(0)
+
 
 const relationship = ref('')
 const relationFiles = ref([])
@@ -153,20 +155,9 @@ const nextStep = async () => {
     switch(currentStep.value) {
       case 1:
         if (termsAgreeComponent.value) {
-          // 프론트에서 상태만 확인
           await termsAgreeComponent.value.agreeTerms()
-          // 상위 컴포넌트에서 약관 동의 상태 받음
-          const termsState = termsAgreeComponent.value.terms.map(t => ({
-            id: t.id,
-            agreed: t.agreed
-          }))
-          // senderInfo에 약관 상태 저장
-          senderInfo.value = {
-            ...senderInfo.value,
-            terms: termsState
-          }
-
-          // 수취인 목록 체크 후 다음 STEP으로
+          const termsState = termsAgreeComponent.value.terms.map(t => ({id: t.id, agreed: t.agreed}))
+          senderInfo.value = {...senderInfo.value, terms: termsState}
           await checkRecipientsAndProceed()
         }
         break
@@ -189,15 +180,20 @@ const nextStep = async () => {
           return
         }
         if (withdrawInfoComponent.value) {
-          senderInfo.value = {
-            ...senderInfo.value,
-            ...withdrawInfoComponent.value.saveWithdrawDataLocal?.()
+          const withdrawData = withdrawInfoComponent.value.saveWithdrawDataLocal?.()
+          if (withdrawData) {
+            senderInfo.value = {...senderInfo.value, ...withdrawData}
+
+            // simulate API 기반 계산 값 가져오기
+            feeInCurrency.value = withdrawData.feeInCurrency ?? feeInCurrency.value
+            convertedAmount.value = withdrawData.convertedAmount ?? convertedAmount.value
+            totalAmountKRW.value = withdrawData.totalAmountKRW ?? totalAmountKRW.value
           }
+          currentStep.value++
+          break
         }
-        currentStep.value++
-        break
       case 4:
-        if (!localSelectedRecipient || !relationship) {
+        if (!localSelectedRecipient || !relationship.value) {
           alert('수취인 정보가 올바르게 입력되지 않았습니다.')
           return
         }
@@ -214,6 +210,7 @@ const nextStep = async () => {
     console.error(err)
   }
 }
+
 
 // 수취인 목록 확인 후 STEP 이동
 const checkRecipientsAndProceed = async () => {

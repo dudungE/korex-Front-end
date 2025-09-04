@@ -42,11 +42,12 @@
           <div style="display:flex; align-items:center; gap:8px;">
             <input
                 type="number"
+                step="1"
                 v-model.number="transferAmount"
                 class="input-field-v4"
                 :class="{ 'invalid-amount': isInvalidAmount }"
                 placeholder="송금 금액 입력"
-                @input="calculateAmounts"
+                @input="fetchConvertedAmount"
             />
             <span style="font-weight:600;">{{ selectedAccount?.currencyCode || 'KRW' }}</span>
           </div>
@@ -57,51 +58,44 @@
         </div>
       </div>
 
-      <!-- 수수료 계좌 표시 -->
-      <div class="info-row-v4">
-        <span class="input-label-v4">수수료 계좌</span>
-        <span class="input-field-v4" style="text-align:right">
-          원화(KRW) 계좌에서 차감
-        </span>
-      </div>
-
-      <!-- 수수료 표시 -->
-      <div class="info-row-v4">
-        <span class="input-label-v4">수수료</span>
-        <span class="input-field-v4" style="text-align:right">
-          {{ feeKRW.toLocaleString() }} KRW
-        </span>
-      </div>
-
       <!-- 환율 표시 -->
       <div class="info-row-v4">
         <span class="input-label-v4">환율</span>
         <span class="input-field-v4" style="text-align:right">
-          1 {{ recipientCurrency }} = {{ exchangeRate.toLocaleString() }} KRW
-        </span>
-      </div>
-
-      <!-- 총액(KRW) -->
-      <div class="info-row-v4">
-        <span class="input-label-v4">총 금액(KRW)</span>
-        <span class="input-field-v4" style="text-align:right">
-          {{ totalKRW.toLocaleString() }} 원
-        </span>
+    1 {{ selectedAccount?.currencyCode || '---' }} =
+    {{ (1 * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) }} {{ recipientCurrency }}
+  </span>
       </div>
 
       <!-- 환전 금액 표시 -->
-      <div v-if="selectedAccount && selectedAccount.currencyCode !== 'KRW'" class="info-row-v4">
+      <div v-if="selectedAccount && convertedAmount > 0" class="info-row-v4">
         <span class="input-label-v4">환전 금액</span>
         <span class="input-field-v4" style="text-align:right">
-          {{ convertedAmount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals}) }} {{ selectedAccount.currencyCode }}
-        </span>
+    {{ Number(convertedAmount).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) }} {{ recipientCurrency }}
+  </span>
+      </div>
+
+      <!-- 수수료 표시 -->
+      <div v-if="selectedAccount" class="info-row-v4">
+        <span class="input-label-v4">수수료</span>
+        <span class="input-field-v4" style="text-align:right">
+    {{ Number(feeInKRW).toLocaleString() }} KRW
+  </span>
+      </div>
+
+      <!-- 총 금액 -->
+      <div v-if="selectedAccount" class="info-row-v4">
+        <span class="input-label-v4">총 송금액</span>
+        <span class="input-field-v4" style="text-align:right">
+    {{ Number(totalAmountKRW).toLocaleString() }} KRW
+  </span>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -122,18 +116,21 @@ const emit = defineEmits([
 ])
 
 const accounts = ref([])
-const selectedAccount = ref(props.selectedRecipient || null)
+const selectedAccount = ref(null)
 const balance = ref(0)
 const transferAmount = ref(Number(props.initialAmount) || 0)
 const exchangeRate = ref(1)
 const recipientCurrency = ref('KRW')
-const feeRate = 0.01
-const isInvalidAmount = ref(false)
+const feeInKRW = ref(0)
 const convertedAmount = ref(0)
+const isInvalidAmount = ref(false)
+const totalAmountKRW = ref(0)
 
 const currencyDecimals = { KRW:0, USD:2, EUR:2, JPY:0, GBP:2, AUD:2, CAD:2, CHF:2, CNY:2 }
 const decimals = computed(() => currencyDecimals[selectedAccount.value?.currencyCode] ?? 2)
 const minAmounts = { KRW:1000, USD:10, EUR:10, JPY:100, GBP:10, AUD:10, CAD:10, CHF:10, CNY:10 }
+const minAmount = computed(() => selectedAccount.value ? minAmounts[selectedAccount.value.currencyCode] ?? 1 : 0)
+const maxAmount = computed(() => selectedAccount.value ? balance.value : 0)
 
 const filteredAccounts = computed(() => {
   if (!accounts.value.length) return []
@@ -141,137 +138,167 @@ const filteredAccounts = computed(() => {
   return accounts.value.filter(acc => acc.currencyCode === 'KRW' || acc.currencyCode === currency)
 })
 
-const feeKRW = computed(() => {
-  if (!selectedAccount.value) return 0
-  // 항상 원화 기준
-  const krwAmount = selectedAccount.value.currencyCode === 'KRW'
-      ? transferAmount.value
-      : transferAmount.value * exchangeRate.value
-  return Math.round(krwAmount * feeRate)
-})
-
-const totalKRW = computed(() => {
-  if (!selectedAccount.value) return 0
-  // 총액 = KRW 계좌 기준 송금액 + 수수료
-  const krwAmount = selectedAccount.value.currencyCode === 'KRW'
-      ? transferAmount.value
-      : transferAmount.value * exchangeRate.value
-  return Math.round(krwAmount + feeKRW.value)
-})
-
-const minAmount = computed(() => selectedAccount.value ? minAmounts[selectedAccount.value.currencyCode] ?? 1 : 0)
-const maxAmount = computed(() => {
-  if (!selectedAccount.value) return 0
-  const curr = selectedAccount.value.currencyCode
-  let max = curr === 'KRW'
-      ? Math.floor(balance.value / (1 + feeRate))
-      : Math.floor(balance.value / (1 + feeRate) * Math.pow(10, decimals.value)) / Math.pow(10, decimals.value)
-  return max < minAmount.value ? minAmount.value : max
-})
-
+// 계좌 불러오기
 const loadAccounts = async () => {
   try {
     const token = localStorage.getItem('accessToken')
     const res = await axios.get('/api/foreign-transfer/balances', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
-    if (Array.isArray(res.data?.balances)) {
-      accounts.value = res.data.balances.map(acc => ({
-        ...acc,
-        accountType: acc.accountType || 'KRW'
-      }))
-    }
+    if (Array.isArray(res.data?.balances)) accounts.value = res.data.balances
   } catch (e) {
     console.error('계좌 불러오기 실패', e)
   }
 }
 
+// 계좌 선택 시
 const onAccountSelect = async () => {
   if (!selectedAccount.value) return
-  selectedAccount.value.accountType ||= 'KRW'
-  await refreshBalance()
+  balance.value = selectedAccount.value.availableAmount || 0
   emit('update:selectedAccount', selectedAccount.value)
   emit('update:selectedCurrency', selectedAccount.value.currencyCode)
+  await fetchConvertedAmount()
 }
 
-const cachedRates = ref({})
-const lastFetched = ref({})
-
-const refreshBalance = async () => {
-  if (!selectedAccount.value) return
-  balance.value = selectedAccount.value.availableAmount || 0
-  const recipientCurr = props.selectedRecipient?.currencyCode || 'USD'
-  const now = Date.now()
-  const cacheTime = 60 * 1000
-
-  if (cachedRates.value[recipientCurr] && now - (lastFetched.value[recipientCurr] || 0) < cacheTime) {
-    exchangeRate.value = cachedRates.value[recipientCurr]
-    recipientCurrency.value = recipientCurr
-    calculateAmounts()
-    return
+const saveWithdrawDataLocal = () => {
+  return {
+    feeInCurrency: feeInKRW.value,
+    convertedAmount: convertedAmount.value,
+    totalAmountKRW: totalAmountKRW.value,
+    transferAmount: transferAmount.value,
+    selectedAccount: selectedAccount.value,
+    selectedCurrency: selectedAccount.value?.currencyCode
   }
+}
+
+// 환전 계산
+const fetchConvertedAmount = async () => {
+  if (!selectedAccount.value || !transferAmount.value) return
+
+  const from = selectedAccount.value.currencyCode
+  const to = props.selectedRecipient?.currencyCode || 'USD'
 
   try {
     const token = localStorage.getItem('accessToken')
-    const res = await axios.get('/api/exchange/real-time', {
+
+    // 1️⃣ 실시간 환율 GET
+    const rateRes = await axios.get('/api/exchange/real-time', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
-    const found = res.data.find(r => r.currency_code === recipientCurr)
-    const rate = found ? Number(found.send_rate?.replace(/,/g, '')) || Number(found.base_rate?.replace(/,/g, '')) : 1
-    exchangeRate.value = isNaN(rate) ? 1 : rate
-    recipientCurrency.value = recipientCurr
-    cachedRates.value[recipientCurr] = exchangeRate.value
-    lastFetched.value[recipientCurr] = now
+
+    // fromCurrency, toCurrency 각각 환율
+    const fromRateObj = rateRes.data.find(r => r.currency_code === from)
+    const toRateObj = rateRes.data.find(r => r.currency_code === to)
+
+    const fromRate = fromRateObj ? Number(fromRateObj.send_rate?.replace(/,/g, '')) || Number(fromRateObj.base_rate?.replace(/,/g, '')) : 1
+    const toRate = toRateObj ? Number(toRateObj.send_rate?.replace(/,/g, '')) || Number(toRateObj.base_rate?.replace(/,/g, '')) : 1
+
+    // 표시용 환율
+    exchangeRate.value = toRate / fromRate
+    recipientCurrency.value = to
+
+    // 2️⃣ 환전 시뮬레이션 POST (금액, 수수료, 총액 계산)
+    const simRes = await axios.post('/api/exchange/simulate', {
+      fromCurrency: from,
+      toCurrency: to,
+      amount: transferAmount.value
+    }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+
+    const simData = simRes.data
+    if (!simData.success) {
+      console.error('환전 시뮬레이션 실패:', simData.message)
+      return
+    }
+
+    // API 기준 값 반영
+    convertedAmount.value = simData.toAmount
+    feeInKRW.value = simData.fee
+    totalAmountKRW.value = simData.totalDeductedAmount
+
+    // 유효성 체크
+    isInvalidAmount.value = transferAmount.value < minAmount.value || transferAmount.value > maxAmount.value
+    emit('update:isValid', !isInvalidAmount.value && props.accountPin.length === 4)
+
+    // 부모 emit
+    emit('update:feeAmountKRW', feeInKRW.value)
+    emit('update:convertedAmount', convertedAmount.value)
+    emit('update:totalAmountKRW', totalAmountKRW.value)
+    emit('update:amountInput', transferAmount.value)
+
   } catch (err) {
-    console.error('환율 조회 실패:', err)
-    exchangeRate.value = 1
-    recipientCurrency.value = recipientCurr
+    console.error('환전 금액 계산 실패', err)
   }
-  calculateAmounts()
-}
-
-const calculateAmounts = () => {
-  if (!selectedAccount.value) {
-    isInvalidAmount.value = false
-    emit('update:isValid', false)
-    return
-  }
-
-  // 환전 금액 계산
-  convertedAmount.value = selectedAccount.value.currencyCode === 'KRW'
-      ? transferAmount.value
-      : Number((transferAmount.value * exchangeRate.value).toFixed(decimals.value))
-
-  const valid = transferAmount.value >= minAmount.value &&
-      transferAmount.value <= maxAmount.value &&
-      props.accountPin.length === 4
-
-  isInvalidAmount.value = !valid
-
-  emit('update:selectedAccount', selectedAccount.value)
-  emit('update:selectedCurrency', selectedAccount.value.currencyCode)
-  emit('update:amountInput', transferAmount.value)
-  emit('update:totalAmountKRW', totalKRW.value)
-  emit('update:feeAmountKRW', feeKRW.value)
-  emit('update:convertedAmount', convertedAmount.value)
-  emit('update:isValid', valid)
 }
 
 onMounted(async () => {
   await loadAccounts()
-  if (selectedAccount.value) await refreshBalance()
+})
+defineExpose({
+  saveWithdrawDataLocal
 })
 
-watch([selectedAccount, transferAmount, () => props.accountPin], calculateAmounts, { immediate: true })
 </script>
 
+
 <style scoped>
-.remit-info-section-v4 { background-color: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); font-family: 'Pretendard Variable', sans-serif; color: #333; }
-.section-title-v4 { font-size: 26px; font-weight: 700; color: #008681; margin-bottom: 28px; display: flex; justify-content: center; }
-.info-table-v4 { background-color: #f8f8f8; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 30px; }
-.info-row-v4 { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #eee; }
-.input-label-v4 { font-size: 15px; color: #666; font-weight: 500; flex-basis: 35%; flex-shrink: 0; text-align: left; }
-.input-field-v4 { flex-grow: 1; padding: 8px 12px; border: 1px solid #dcdcdc; border-radius: 6px; font-size: 16px; color: #333; width: auto; box-sizing: border-box; text-align: right; }
-.input-field-v4:focus { outline: none; border-color: #009b99; box-shadow: 0 0 0 3px rgba(61,153,112,0.1); }
-.invalid-amount { border-color: red !important; box-shadow: 0 0 0 3px rgba(255,0,0,0.1); }
+.remit-info-section-v4 {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  font-family: 'Pretendard Variable', sans-serif;
+  color: #333;
+}
+.section-title-v4 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #008681;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
+}
+.info-table-v4 {
+  background-color: #f8f8f8;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+.info-row-v4 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+}
+.input-label-v4 {
+  font-size: 15px;
+  color: #666;
+  font-weight: 500;
+  flex-basis: 35%;
+  flex-shrink: 0;
+  text-align: left;
+}
+.input-field-v4 {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  font-size: 16px;
+  color: #333;
+  width: auto;
+  box-sizing: border-box;
+  text-align: right;
+}
+.input-field-v4:focus {
+  outline: none;
+  border-color: #009b99;
+  box-shadow: 0 0 0 3px rgba(61,153,112,0.1);
+}
+.invalid-amount {
+  border-color: red !important;
+  box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+}
 </style>
