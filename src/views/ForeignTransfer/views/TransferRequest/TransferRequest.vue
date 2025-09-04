@@ -14,7 +14,7 @@
     </div>
 
     <!-- STEP 컴포넌트 -->
-    <TermsAgree v-if="currentStep === 1" ref="termsAgreeComponent" />
+    <TermsAgree v-show="currentStep === 1" ref="termsAgreeComponent" />
 
     <RemitInfo
         v-if="currentStep === 2"
@@ -25,13 +25,14 @@
         v-model:staffMessage="staffMessage"
         v-model:identityFiles="identityFiles"
         v-model:reasonFiles="reasonFiles"
-        v-model:countryCode="localSenderCountryCode"
-        v-model:phoneNumber="localSenderPhoneNumber"
-        v-model:email="localSenderEmail"
-        v-model:country="localSenderCountry"
-        v-model:address="localSenderAddress"
+        v-model:senderCountryCode="localSenderCountryCode"
+        v-model:senderPhoneNumber="localSenderPhoneNumber"
+        v-model:senderEmail="localSenderEmail"
+        v-model:senderCountry="localSenderCountry"
+        v-model:senderAddress="localSenderAddress"
         @update:isValid="remitInfoValid = $event"
     />
+
 
     <WithdrawInfo
         v-if="currentStep === 3"
@@ -152,7 +153,20 @@ const nextStep = async () => {
     switch(currentStep.value) {
       case 1:
         if (termsAgreeComponent.value) {
+          // 프론트에서 상태만 확인
           await termsAgreeComponent.value.agreeTerms()
+          // 상위 컴포넌트에서 약관 동의 상태 받음
+          const termsState = termsAgreeComponent.value.terms.map(t => ({
+            id: t.id,
+            agreed: t.agreed
+          }))
+          // senderInfo에 약관 상태 저장
+          senderInfo.value = {
+            ...senderInfo.value,
+            terms: termsState
+          }
+
+          // 수취인 목록 체크 후 다음 STEP으로
           await checkRecipientsAndProceed()
         }
         break
@@ -223,19 +237,11 @@ const checkRecipientsAndProceed = async () => {
 // -----------------------------
 const submitTransfer = async () => {
   try {
-    // 계좌 선택 여부 및 타입 체크
     if (!selectedAccount.value) {
       alert('출금 계좌가 선택되지 않았습니다.')
       return
     }
 
-    const accountType = selectedAccount.value.accountType
-    if (!accountType) {
-      alert('출금 계좌 타입이 누락되었습니다. 관리자에게 문의하세요.')
-      return
-    }
-
-    // 금액 입력 체크
     if (!amountInput.value || amountInput.value <= 0) {
       alert('송금 금액을 올바르게 입력해주세요.')
       return
@@ -243,38 +249,47 @@ const submitTransfer = async () => {
 
     const formData = new FormData()
 
-    // 기본 정보
-    formData.append('senderName', localSenderName.value)
-    formData.append('accountPassword', accountPin.value)
-    formData.append('transferReason', localSelectedReason.value)
-    formData.append('withdrawalMethod', selectedAccount.value.withdrawalMethod || '')
-    formData.append('accountType', accountType)  // enum 이름 그대로
-    formData.append('accountNumber', selectedAccount.value.accountNumber)
-    formData.append('currencyCode', selectedCurrency.value)
-    formData.append('transferAmount', Number(amountInput.value))
-    formData.append('relationRecipient', relationship.value || '')
-    formData.append('staffMessage', staffMessage.value)
-    formData.append('countryNumber', localSenderCountryCode.value)
-    formData.append('phoneNumber', localSenderPhoneNumber.value)
-    formData.append('email', localSenderEmail.value)
-    formData.append('country', localSenderCountry.value)
-    formData.append('engAddress', localSenderAddress.value)
+    const accountType = selectedAccount.value.accountType || 'KRW'
+    const currencyCode = selectedCurrency.value || 'KRW'
 
-    // 파일 추가
+    const requestPayload = {
+      senderName: localSenderName.value,
+      accountPassword: accountPin.value,
+      transferReason: localSelectedReason.value,
+      withdrawalMethod: selectedAccount.value.withdrawalMethod || '',
+      accountType: accountType,
+      accountNumber: selectedAccount.value.accountNumber,
+      currencyCode: currencyCode,
+      transferAmount: Number(amountInput.value), // 선택 계좌 기준
+      totalAmountKRW: totalAmountKRW.value,  // 추가
+      feeAmountKRW: feeAmountKRW.value,      // 추가
+      relationRecipient: relationship.value || '',
+      staffMessage: staffMessage.value,
+      countryNumber: localSenderCountryCode.value,
+      phoneNumber: localSenderPhoneNumber.value,
+      email: localSenderEmail.value,
+      country: localSenderCountry.value,
+      engAddress: localSenderAddress.value,
+      agree1: senderInfo.value.terms?.[0]?.agreed || false,
+      agree2: senderInfo.value.terms?.[1]?.agreed || false,
+      agree3: senderInfo.value.terms?.[2]?.agreed || false
+    }
+
+    formData.append('request', new Blob([JSON.stringify(requestPayload)], { type: 'application/json' }))
+
     if (identityFiles.value.length > 0) formData.append('idFile', identityFiles.value[0])
     if (reasonFiles.value.length > 0) formData.append('proofDocumentFile', reasonFiles.value[0])
     if (relationFiles.value.length > 0) formData.append('relationDocumentFile', relationFiles.value[0])
 
-    // Axios 요청
     await axios.post('/api/foreign-transfer/request', formData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'multipart/form-data'
       }
     })
 
     alert('송금 요청이 완료되었습니다.')
     currentStep.value++
-
   } catch (err) {
     console.error('송금 처리 실패', err)
     alert('송금 처리 중 오류가 발생했습니다.')

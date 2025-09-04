@@ -51,12 +51,9 @@
 </template>
 
 <script setup>
-import { ref, computed, defineEmits, defineExpose } from 'vue'
-import axios from 'axios'
+import { ref, computed, defineEmits, defineExpose, watch } from 'vue'
 
 const emit = defineEmits(['agreed-success'])
-
-const submitting = ref(false)
 
 const terms = ref([
   { id: 1, title:'해외 송금 서비스 이용약관', content:`1. 송금 한도: 5,000,000원 / 건\n2. 송금 수수료: 1~2% (환율 변동 포함)\n3. 환율 변동 책임: 이용자 부담\n4. 해외 수취인 정보 제공 동의\n5. 분쟁 해결 및 고객 지원 안내\n6. 부정 송금, 사기 등 불법행위 시 서비스 제한`, required:true, agreed:false, showContent:true },
@@ -88,39 +85,22 @@ function toggleAgreeAll() {
   agreeAll.value = !agreeAll.value
 }
 
+// 필수 약관 체크
 const isStepValid = computed(() => terms.value.filter(t => t.required).every(t => t.agreed))
 const areTermsAgreed = computed(() => isStepValid.value)
-defineExpose({ areTermsAgreed, agreeTerms })
 
-async function agreeTerms() {
+// 기존 agreeTerms를 프론트 상태 저장용으로 변경
+function agreeTerms() {
   if (!isStepValid.value) return alert('필수 약관에 동의해주세요.')
-  if (submitting.value) return false
-
-  try {
-    submitting.value = true
-    const token = localStorage.getItem('accessToken')
-
-    // payload 정의
-    const payload = Object.fromEntries(
-        terms.value.map((t, i) => [`agree${i+1}`, t.agreed])
-    )
-
-    // 항상 POST 요청
-    const res = await axios.post('/api/foreign-transfer/terms', payload, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-
-    emit('agreed-success')
-
-  } catch (err) {
-    console.error('약관 동의 실패:', err.response || err)
-    alert('약관 동의 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-  } finally {
-    submitting.value = false
-  }
+  // 프론트에서 상태만 저장
+  console.log('약관 동의 상태:', terms.value.map(t => ({ id: t.id, agreed: t.agreed })))
+  emit('agreed-success', terms.value.map(t => ({ id: t.id, agreed: t.agreed })))
 }
 
+// 상위 컴포넌트에서 상태 활용할 수 있도록 expose
+defineExpose({ areTermsAgreed, terms,agreeTerms })
 </script>
+
 
 <style scoped>
 /* 기존 스타일 그대로 유지 */

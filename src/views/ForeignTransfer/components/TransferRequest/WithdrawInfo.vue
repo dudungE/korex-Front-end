@@ -50,12 +50,19 @@
             />
             <span style="font-weight:600;">{{ selectedAccount?.currencyCode || 'KRW' }}</span>
           </div>
-          <!-- 최대/최소 안내 -->
           <div v-if="selectedAccount" style="font-size:12px; color:#666;">
             최대: {{ maxAmount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals}) }} {{ selectedAccount.currencyCode }} /
             최소: {{ minAmount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals}) }} {{ selectedAccount.currencyCode }}
           </div>
         </div>
+      </div>
+
+      <!-- 수수료 계좌 표시 -->
+      <div class="info-row-v4">
+        <span class="input-label-v4">수수료 계좌</span>
+        <span class="input-field-v4" style="text-align:right">
+          원화(KRW) 계좌에서 차감
+        </span>
       </div>
 
       <!-- 수수료 표시 -->
@@ -81,6 +88,14 @@
           {{ totalKRW.toLocaleString() }} 원
         </span>
       </div>
+
+      <!-- 환전 금액 표시 -->
+      <div v-if="selectedAccount && selectedAccount.currencyCode !== 'KRW'" class="info-row-v4">
+        <span class="input-label-v4">환전 금액</span>
+        <span class="input-field-v4" style="text-align:right">
+          {{ convertedAmount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals}) }} {{ selectedAccount.currencyCode }}
+        </span>
+      </div>
     </div>
   </section>
 </template>
@@ -90,7 +105,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
-  selectedRecipient: { type: Object, default: null }, // currencyCode 사용
+  selectedRecipient: { type: Object, default: null },
   initialAmount: { type: [Number, String], default: 0 },
   accountPin: { type: String, default: '' }
 })
@@ -101,11 +116,11 @@ const emit = defineEmits([
   'update:amountInput',
   'update:totalAmountKRW',
   'update:feeAmountKRW',
+  'update:convertedAmount',
   'update:isValid',
   'update:accountPin'
 ])
 
-// 상태 변수
 const accounts = ref([])
 const selectedAccount = ref(props.selectedRecipient || null)
 const balance = ref(0)
@@ -114,56 +129,36 @@ const exchangeRate = ref(1)
 const recipientCurrency = ref('KRW')
 const feeRate = 0.01
 const isInvalidAmount = ref(false)
+const convertedAmount = ref(0)
 
-// 소수점 자리 설정
-const currencyDecimals = {
-  KRW: 0,
-  USD: 2,
-  EUR: 2,
-  JPY: 0,
-  GBP: 2,
-  AUD: 2,
-  CAD: 2,
-  CHF: 2,
-  CNY: 2
-}
+const currencyDecimals = { KRW:0, USD:2, EUR:2, JPY:0, GBP:2, AUD:2, CAD:2, CHF:2, CNY:2 }
 const decimals = computed(() => currencyDecimals[selectedAccount.value?.currencyCode] ?? 2)
+const minAmounts = { KRW:1000, USD:10, EUR:10, JPY:100, GBP:10, AUD:10, CAD:10, CHF:10, CNY:10 }
 
-// 최소 금액 통화별
-const minAmounts = {
-  KRW: 1000,
-  USD: 10,
-  EUR: 10,
-  JPY: 100,
-  GBP: 10,
-  AUD: 10,
-  CAD: 10,
-  CHF: 10,
-  CNY: 10
-}
-
-// 선택 가능한 계좌 필터링
 const filteredAccounts = computed(() => {
   if (!accounts.value.length) return []
   const currency = props.selectedRecipient?.currencyCode || 'USD'
   return accounts.value.filter(acc => acc.currencyCode === 'KRW' || acc.currencyCode === currency)
 })
 
-// 수수료(KRW)
 const feeKRW = computed(() => {
   if (!selectedAccount.value) return 0
-  const amountKRW = selectedAccount.value.currencyCode === 'KRW' ? transferAmount.value : transferAmount.value * exchangeRate.value
-  return Math.round(amountKRW * feeRate)
+  // 항상 원화 기준
+  const krwAmount = selectedAccount.value.currencyCode === 'KRW'
+      ? transferAmount.value
+      : transferAmount.value * exchangeRate.value
+  return Math.round(krwAmount * feeRate)
 })
 
-// 총액(KRW)
 const totalKRW = computed(() => {
   if (!selectedAccount.value) return 0
-  const amountKRW = selectedAccount.value.currencyCode === 'KRW' ? transferAmount.value : transferAmount.value * exchangeRate.value
-  return Math.round(amountKRW + feeKRW.value)
+  // 총액 = KRW 계좌 기준 송금액 + 수수료
+  const krwAmount = selectedAccount.value.currencyCode === 'KRW'
+      ? transferAmount.value
+      : transferAmount.value * exchangeRate.value
+  return Math.round(krwAmount + feeKRW.value)
 })
 
-// 최소/최대 송금액
 const minAmount = computed(() => selectedAccount.value ? minAmounts[selectedAccount.value.currencyCode] ?? 1 : 0)
 const maxAmount = computed(() => {
   if (!selectedAccount.value) return 0
@@ -174,7 +169,6 @@ const maxAmount = computed(() => {
   return max < minAmount.value ? minAmount.value : max
 })
 
-// 계좌 불러오기
 const loadAccounts = async () => {
   try {
     const token = localStorage.getItem('accessToken')
@@ -192,7 +186,6 @@ const loadAccounts = async () => {
   }
 }
 
-// 계좌 선택 시 이벤트
 const onAccountSelect = async () => {
   if (!selectedAccount.value) return
   selectedAccount.value.accountType ||= 'KRW'
@@ -201,9 +194,9 @@ const onAccountSelect = async () => {
   emit('update:selectedCurrency', selectedAccount.value.currencyCode)
 }
 
-// 잔액 & 환율 갱신
 const cachedRates = ref({})
 const lastFetched = ref({})
+
 const refreshBalance = async () => {
   if (!selectedAccount.value) return
   balance.value = selectedAccount.value.availableAmount || 0
@@ -227,7 +220,6 @@ const refreshBalance = async () => {
     const rate = found ? Number(found.send_rate?.replace(/,/g, '')) || Number(found.base_rate?.replace(/,/g, '')) : 1
     exchangeRate.value = isNaN(rate) ? 1 : rate
     recipientCurrency.value = recipientCurr
-
     cachedRates.value[recipientCurr] = exchangeRate.value
     lastFetched.value[recipientCurr] = now
   } catch (err) {
@@ -238,13 +230,17 @@ const refreshBalance = async () => {
   calculateAmounts()
 }
 
-// 금액/유효성 계산 및 부모 emit
 const calculateAmounts = () => {
   if (!selectedAccount.value) {
     isInvalidAmount.value = false
     emit('update:isValid', false)
     return
   }
+
+  // 환전 금액 계산
+  convertedAmount.value = selectedAccount.value.currencyCode === 'KRW'
+      ? transferAmount.value
+      : Number((transferAmount.value * exchangeRate.value).toFixed(decimals.value))
 
   const valid = transferAmount.value >= minAmount.value &&
       transferAmount.value <= maxAmount.value &&
@@ -257,10 +253,10 @@ const calculateAmounts = () => {
   emit('update:amountInput', transferAmount.value)
   emit('update:totalAmountKRW', totalKRW.value)
   emit('update:feeAmountKRW', feeKRW.value)
+  emit('update:convertedAmount', convertedAmount.value)
   emit('update:isValid', valid)
 }
 
-// 초기 실행
 onMounted(async () => {
   await loadAccounts()
   if (selectedAccount.value) await refreshBalance()
@@ -270,7 +266,6 @@ watch([selectedAccount, transferAmount, () => props.accountPin], calculateAmount
 </script>
 
 <style scoped>
-/* 기존 스타일 그대로 */
 .remit-info-section-v4 { background-color: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); font-family: 'Pretendard Variable', sans-serif; color: #333; }
 .section-title-v4 { font-size: 26px; font-weight: 700; color: #008681; margin-bottom: 28px; display: flex; justify-content: center; }
 .info-table-v4 { background-color: #f8f8f8; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 30px; }

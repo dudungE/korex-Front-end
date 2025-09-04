@@ -51,7 +51,7 @@
     emit('selectRecipient', {
       name: recipient.name,
       bank: recipient.bankName,
-      account: recipient.accountNumber,
+      accountNumber: recipient.accountNumber,
       currencyCode: recipient.currencyCode,
       email: recipient.email
     })

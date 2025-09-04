@@ -117,7 +117,7 @@ const form = reactive({
   engAddress: ''
 })
 
-const currencyOptions = ['USD', 'EUR', 'JPY', 'KRW']
+const currencyOptions = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'KRW']
 const bankOptions = ['KOREX BANK', 'BANK OF AMERICA', 'CITIBANK']
 const countryOptions = [
   { code: 'US', name: 'USA', flag: '🇺🇸', phonePrefix: '+1' },

@@ -284,7 +284,7 @@ function onSelectRecipient(recipient) {
   localSelectedRecipient.value = {
     name: recipient.name,
     bank: recipient.bankName,
-    accountNumber: recipient.account,
+    accountNumber: recipient.accountNumber,
     currencyCode: recipient.currencyCode,
     email: recipient.email
   }
