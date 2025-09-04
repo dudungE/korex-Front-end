@@ -18,6 +18,8 @@
       </div>
     </template>
 
+    <Chatbot/>
+
     <div v-if="globalLoading" class="global-loading">
       <a-spin size="large" tip="로딩 중...">
         <div style="width: 100px; height: 100px;"></div>
@@ -32,6 +34,7 @@ import { useRoute, useRouter } from 'vue-router'
 import HeaderBar from '@/components/HeaderBar.vue'
 import FooterBar from '@/components/FooterBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import Chatbot from '@/components/chatbot/ChatBot.vue'
 import { useAuthStore } from '@/stores/auth'
 import { message } from 'ant-design-vue'
 import axios from 'axios'

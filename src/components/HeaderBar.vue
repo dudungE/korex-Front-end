@@ -32,7 +32,7 @@
           <a @click="goToExchange()" class="dropdown-toggle" style="cursor: pointer">환전</a>
           <ul class="dropdown-menu" v-show="exchangeMenu">
             <li class="section-title" @click="goToExchange()">환전</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">환전목록조회</li>
+            <li class="section-title" @click="goToExchangeDetail()">환전내역조회</li>
             <li class="section-title" @click="goToReservationExchange()">예약환전</li>
           </ul>
         </div>
@@ -41,8 +41,8 @@
           <a @click="goToRemittance()" class="dropdown-toggle" style="cursor: pointer">친구송금</a>
           <ul class="dropdown-menu" v-show="friendMenu">
             <li class="section-title" @click="goToRemittance()">친구송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">친구송금</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">친구송금</li>
+            <li class="section-title" @click="goToRemittanceDetail()">송금내역조회</li>
+            <li class="section-title" @click="goToFavoriteFriends()">친구즐겨찾기</li>
           </ul>
         </div>
 
@@ -56,15 +56,6 @@
           </ul>
         </div>
 
-        <div class="dropdown" @mouseenter="accountMenu=true" @mouseleave="accountMenu=false">
-          <a @click="goToAccount()" class="dropdown-toggle" style="cursor: pointer">계좌조회</a>
-          <ul class="dropdown-menu" v-show="accountMenu">
-            <li class="section-title" @click="goToAccount()">계좌조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율그래프')">계좌조회</li>
-            <li class="section-title" @click="alert('준비중인 기능입니다: 환율알림')">계좌조회</li>
-          </ul>
-        </div>
-
         <div class="dropdown" @mouseenter="supportMenu=true" @mouseleave="supportMenu=false">
           <a @click="goToSupport()" class="dropdown-toggle" style="cursor: pointer">고객센터</a>
           <ul class="dropdown-menu" v-show="supportMenu">
@@ -74,7 +65,7 @@
       </nav>
 
       <div class="header-icons">
-        <span class="icon chat" title="챗봇">💬</span>
+        <span class="icon chat" title="챗봇" @click="toggleChatbot">💬</span>
         <span class="icon search" title="검색">🔍</span>
         <span class="icon menu" title="메뉴">☰</span>
       </div>
@@ -102,7 +93,6 @@ const rateMenu = ref(false)
 const exchangeMenu = ref(false)
 const friendMenu = ref(false)
 const foreignMenu = ref(false)
-const accountMenu = ref(false)
 const supportMenu = ref(false)
 
 // 네비게이션 메서드
@@ -110,8 +100,10 @@ const goToRateLookup = () => router.push('/rate-lookup')
 const goToRateCalculator = () => router.push('/rate-calculator')
 const goToRateAlert = () => router.push('/rate-alert')
 const goToExchange = () => router.push('/exchange')
+const goToExchangeDetail = () => router.push('/exchange/list')
 const goToRemittance = () => router.push('/remittance')
-const goToAccount = () => router.push('/account')
+const goToRemittanceDetail = () => router.push('/remittance/list')
+const goToFavoriteFriends = () => router.push('/favorites')
 const goToReservationExchange = () => router.push('/exchange/reservation')
 const goToLogin = () => router.push('/login')
 const goToMyPage = () => router.push('/mypage')
@@ -136,6 +128,11 @@ const handleLogout = async () => {
   await authStore.logout()
   message.success('로그아웃되었습니다.')
   router.push('/')
+}
+
+// 챗봇 토글 이벤트 디스패치
+const toggleChatbot = () => {
+  window.dispatchEvent(new CustomEvent('toggle-chatbot'))
 }
 </script>
 
