@@ -26,7 +26,7 @@
       </div>
 
       <!-- 크기 조절 핸들 -->
-      <div class="resize-handle" @mousedown="startResize" @touchstart.prevent="startResize"></div>
+      <div v-if="!isMinimized" class="resize-handle" @mousedown="startResize" @touchstart.prevent="startResize"></div>
     </div>
   </template>
   
@@ -117,14 +117,11 @@
         // 내부 버튼: 최소화/복원만 담당
         this.isMinimized = !this.isMinimized;
         if (this.isMinimized) {
-          // 최소화 시 스크롤 복원 불필요
           return;
         }
-        // 복원 시 메시지 하단으로 스크롤
         this.$nextTick(() => this.scrollToBottom());
       },
       toggleOpen() {
-        // (미사용) 필요 시 외부에서 열기/닫기
         const willOpen = !this.isOpen;
         this.isOpen = willOpen;
         if (!willOpen) {

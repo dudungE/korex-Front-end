@@ -259,7 +259,7 @@ const toggleChatbot = () => {
 .chatbot-bubble {
   position: absolute;
   right: 0;
-  top: 60px;
+  top: 70px;
   background: #fff;
   border: 1.5px solid #009490;
   border-radius: 24px;
