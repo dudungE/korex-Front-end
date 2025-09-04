@@ -50,7 +50,7 @@
                         </div>
                     </div>
 
-                    <!-- 🔥 범례 - 원본 통화 금액과 원화 환산 금액 함께 표시 -->
+                    <!-- 원본 통화 금액과 원화 환산 금액 함께 표시 -->
                     <div class="chart-legend">
                         <div v-for="(segment, index) in chartSegments" :key="segment.id" class="legend-item"
                             :class="{ highlighted: highlightedIndex === index }">
@@ -62,7 +62,7 @@
                                         ({{ segment.otherCount }}개 통화)
                                     </span>
                                 </div>
-                                <!-- 🔥 원본 통화 금액 표시 추가 -->
+                                <!-- 원본 통화 금액 표시 추가 -->
                                 <div v-if="!segment.isOther" class="legend-original-amount">
                                     {{ formatCurrencyAmount(segment.originalAmount, segment.currency) }}
                                 </div>
@@ -78,94 +78,7 @@
                 </div>
             </div>
 
-            <!-- 통화별 지갑 -->
-            <div class="currency-wallets-section">
-                <div class="section-header">
-                    <h3>통화별 계좌</h3>
-                    <div class="currency-controls">
-                        <!-- 통화 선택 드롭다운 - 🔥 모든 통화 표시용으로 변경 -->
-                        <select class="currency-selector" v-model="selectedCurrencyFilter" @change="filterCurrency">
-                            <option v-for="wallet in allWalletsForDropdown" :key="wallet.code" :value="wallet.code">
-                                {{ wallet.flag }} {{ wallet.name }} ({{ wallet.code }})
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 선택된 통화 상세 정보 -->
-                <div v-if="selectedCurrencyWallet" class="selected-currency-detail">
-                    <div class="currency-detail-card">
-                        <div class="currency-header-large">
-                            <div class="currency-flag-large">{{ selectedCurrencyWallet.flag }}</div>
-                            <div class="currency-info-large">
-                                <div class="currency-name-large">{{ selectedCurrencyWallet.name }}</div>
-                                <div class="currency-code-large">{{ selectedCurrencyWallet.code }}</div>
-                            </div>
-                        </div>
-                        <div class="currency-balance-large">
-                            {{ formatCurrencyAmount(selectedCurrencyWallet.amount, selectedCurrencyWallet.code) }}
-                        </div>
-                        <div class="currency-krw-large">
-                            ≈ {{ formatAmount(convertToKRW(selectedCurrencyWallet.amount,
-                                selectedCurrencyWallet.exchangeRate)) }}
-                        </div>
-                        <div class="currency-actions">
-                            <button class="action-btn exchange-btn" @click="goToExchange(selectedCurrencyWallet.code)">
-                                환전하기
-                            </button>
-                            <button class="action-btn detail-btn"
-                                @click="goToWalletDetail(selectedCurrencyWallet.code)">
-                                상세보기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 자주 쓰는 계좌 즐겨찾기 카드 -->
-            <div class="favorite-accounts-card">
-                <div class="favorite-header">
-                    <h3>⭐ 친구 즐겨찾기</h3>
-                    <button class="manage-btn" @click="toggleManageMode">
-                        {{ isManagingFavorites ? '완료' : '관리' }}
-                    </button>
-                </div>
-
-                <div class="favorite-accounts-list">
-                    <div v-for="account in favoriteAccounts" :key="account.favoriteId" class="favorite-account-item"
-                        :class="{ 'manage-mode': isManagingFavorites }"
-                        @click="!isManagingFavorites && openTransferModal(account)">
-                        <div class="account-avatar">
-                            <span class="avatar-icon">{{ account.icon }}</span>
-                        </div>
-                        <div class="account-details">
-                            <div class="account-name">{{ account.realName }}</div>
-                            <div class="account-info">
-                                <span class="account-number">{{ account.phoneNumber }}</span>
-                            </div>
-                            <div class="last-transfer">{{ account.lastTransfer }}</div>
-                        </div>
-                        <div class="quick-actions">
-                            <button v-if="!isManagingFavorites" class="quick-transfer-btn"
-                                @click.stop="openTransferModal(account)">
-                                💸 송금
-                            </button>
-                            <button v-else class="delete-btn" @click.stop="deleteFavorite(account.favoriteId)">
-                                🗑️ 삭제
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <button v-if="favoriteAccounts.length < 4" class="add-favorite-btn" @click="openAddModal">
-                    + 자주 송금하는 친구 추가
-                </button>
-                <div v-else class="max-favorites-notice">
-                    최대 4명까지 등록 가능합니다
-                </div>
-            </div>
-
-            <!-- 🔥 거래 내역 (최근 4개만) - 빈 상태 처리 추가 -->
+            <!-- 거래 내역 (동적 개수) -->
             <div class="transaction-history">
                 <div class="section-header">
                     <h3>최근 거래 내역</h3>
@@ -190,140 +103,11 @@
                             <div class="transaction-desc">{{ getTransactionDescription(transaction) }}</div>
                             <div class="transaction-date">{{ formatTransactionDate(transaction.createdAt) }}</div>
                         </div>
-                        <!-- 🔥 수정된 부분 - 통화별로 올바르게 표시 -->
+                        <!-- 통화별로 올바르게 표시 -->
                         <div class="transaction-amount" :class="getTransactionType(transaction)">
                             {{ getTransactionType(transaction) === 'expense' ? '-' : '+' }}{{
                                 getFormattedTransactionAmount(transaction) }}
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 친구 추가 모달 -->
-        <div v-if="showAddModal" class="modal-overlay" @click="closeAddModal">
-            <div class="modal-content" @click.stop>
-                <div class="modal-header">
-                    <h3>친구 추가</h3>
-                    <button class="close-btn" @click="closeAddModal">×</button>
-                </div>
-
-                <form @submit.prevent="addFriend" class="add-friend-form">
-                    <div class="form-group">
-                        <label for="friendName">친구 이름</label>
-                        <input type="text" id="friendName" v-model="newFriend.name" placeholder="친구 이름을 입력하세요"
-                            :class="{ error: errors.name }" required>
-                        <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="friendPhone">전화번호</label>
-                        <input type="tel" id="friendPhone" v-model="newFriend.phoneNumber"
-                            placeholder="전화번호를 입력하세요 (예: 010-1234-5678)" :class="{ error: errors.phoneNumber }"
-                            maxlength="13" @input="formatPhoneNumber" required>
-                        <span v-if="errors.phoneNumber" class="error-message">{{ errors.phoneNumber }}</span>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button type="button" class="cancel-btn" @click="closeAddModal">취소</button>
-                        <button type="submit" class="confirm-btn" :disabled="isVerifying">
-                            {{ isVerifying ? '확인 중...' : '추가' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 송금 모달 -->
-        <div v-if="showTransferModal" class="modal-overlay" @click="closeTransferModal">
-            <div class="modal-content transfer-modal" @click.stop>
-                <div class="modal-header">
-                    <h3>{{ selectedAccount?.realName }}에게 송금</h3>
-                    <button class="close-btn" @click="closeTransferModal">×</button>
-                </div>
-
-                <div class="transfer-form">
-                    <!-- 통화 선택 -->
-                    <div class="form-group">
-                        <label>송금할 통화 선택</label>
-                        <div class="currency-selection">
-                            <div v-for="wallet in availableWallets" :key="wallet.code" class="currency-card"
-                                :class="{ selected: selectedCurrency === wallet.code }" @click="selectCurrency(wallet)">
-                                <div class="currency-info">
-                                    <span class="currency-flag">{{ wallet.flag }}</span>
-                                    <div class="currency-details">
-                                        <div class="currency-name">{{ wallet.name }}</div>
-                                        <div class="currency-code">{{ wallet.code }}</div>
-                                    </div>
-                                </div>
-                                <div class="currency-balance">
-                                    <div class="balance-amount">{{ formatCurrencyAmount(wallet.amount, wallet.code) }}
-                                    </div>
-                                    <div class="balance-krw">{{ formatAmount(convertToKRW(wallet.amount,
-                                        wallet.exchangeRate)) }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 송금 금액 입력 -->
-                    <div class="form-group">
-                        <label>송금 금액</label>
-                        <div class="amount-input-container">
-                            <input type="number" v-model="transferAmount" :placeholder="`${selectedCurrency}로 입력`"
-                                class="amount-input" min="0" step="0.01">
-                            <span class="currency-symbol">{{ selectedCurrency }}</span>
-                        </div>
-                        <div class="balance-info">
-                            사용 가능한 잔액: {{ formatCurrencyAmount(selectedWalletBalance, selectedCurrency) }}
-                        </div>
-                        <div v-if="transferAmount && parseFloat(transferAmount) > selectedWalletBalance"
-                            class="error-message">
-                            잔액이 부족합니다
-                        </div>
-                    </div>
-
-                    <!-- 계좌 비밀번호 입력 -->
-                    <div class="form-group">
-                        <label>계좌 비밀번호</label>
-                        <input type="password" v-model="accountPassword" placeholder="계좌 비밀번호 4자리를 입력하세요"
-                            class="password-input" maxlength="6" pattern="[0-9]{6}" @input="validatePassword" required>
-                        <div class="password-dots">
-                            <span v-for="i in 4" :key="i" class="password-dot"
-                                :class="{ filled: accountPassword.length >= i }"></span>
-                        </div>
-                        <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
-                    </div>
-
-                    <!-- 송금 확인 정보 -->
-                    <div v-if="transferAmount && selectedCurrency && accountPassword.length === 4"
-                        class="transfer-summary">
-                        <div class="summary-title">송금 정보</div>
-                        <div class="summary-row">
-                            <span>받는 사람</span>
-                            <span>{{ selectedAccount?.realName }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>송금 금액</span>
-                            <span>{{ formatCurrencyAmount(parseFloat(transferAmount), selectedCurrency) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>수수료</span>
-                            <span class="free">무료</span>
-                        </div>
-                        <div class="summary-row total">
-                            <span>총 차감 금액</span>
-                            <span>{{ formatCurrencyAmount(parseFloat(transferAmount), selectedCurrency) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- 송금 버튼 -->
-                    <div class="modal-actions">
-                        <button type="button" class="cancel-btn" @click="closeTransferModal">취소</button>
-                        <button type="button" class="confirm-btn transfer-confirm-btn" :disabled="!canTransfer"
-                            @click="confirmTransfer">
-                            {{ isTransferring ? '송금 중...' : '송금하기' }}
-                        </button>
                     </div>
                 </div>
             </div>
@@ -343,40 +127,12 @@ export default {
 
         // 상태 관리
         const isLoading = ref(true)
-        const isTransferring = ref(false)
         const highlightedIndex = ref(-1)
-        const selectedCurrencyFilter = ref('KRW') // 🔥 통화별 계좌용 - KRW로 다시 설정
-        const isManagingFavorites = ref(false)
-
-        // 친구 추가 모달 관련 상태
-        const showAddModal = ref(false)
-        const isVerifying = ref(false)
-        const newFriend = ref({
-            name: '',
-            phoneNumber: ''
-        })
-        const errors = ref({
-            name: '',
-            phoneNumber: ''
-        })
-
-        // 전화번호 전달용 
-        const rawPhone = ref('')
-
-        // 송금 모달 관련 상태
-        const showTransferModal = ref(false)
-        const selectedAccount = ref(null)
-        const selectedCurrency = ref('KRW')
-        const transferAmount = ref('')
-        const accountPassword = ref('')
-        const passwordError = ref('')
 
         // 데이터 - DTO는 4개 필드만, 환율은 별도 관리
         const balanceData = ref([]) // DTO: code, name, amount, flag 만
         const exchangeRates = ref({}) // 통화별 환율 저장
-        const favoriteAccounts = ref([])
-        const recentTransactions = ref([])
-        const supportedCurrencies = ref([])
+        const allTransactions = ref([]) // 모든 거래 저장
         const userId = localStorage.getItem('userId')
 
         // API 설정
@@ -413,7 +169,6 @@ export default {
                         // JPY는 100단위 통화이므로 환율을 100으로 나눔
                         if (currencyCode === 'JPY') {
                             rate = rate / 100
-
                         }
                         return rate
                     }
@@ -426,38 +181,6 @@ export default {
                 }
             },
 
-            // 즐겨찾기 목록 조회
-            async getFavorites() {
-                try {
-                    const response = await axios.get('/api/favorites')
-                    return response.data
-                } catch (error) {
-                    console.error('Favorites API Error:', error)
-                    throw error
-                }
-            },
-
-            // 즐겨찾기 추가
-            async addFavorite(friendData) {
-                try {
-                    const response = await axios.post('/api/favorites', friendData)
-                    return response.data
-                } catch (error) {
-                    console.error('Add Favorite API Error:', error)
-                    throw error
-                }
-            },
-
-            // 즐겨찾기 삭제
-            async deleteFavorite(favoriteId) {
-                try {
-                    await axios.delete(`/api/favorites/${favoriteId}`)
-                } catch (error) {
-                    console.error('Delete Favorite API Error:', error)
-                    throw error
-                }
-            },
-
             // 거래내역 조회
             async getTransactionHistory(userId) {
                 try {
@@ -465,32 +188,6 @@ export default {
                     return response.data
                 } catch (error) {
                     console.error('Transaction History API Error:', error)
-                    throw error
-                }
-            },
-
-            // 지원 통화 목록 조회
-            async getSupportedCurrencies() {
-                try {
-                    const response = await axios.get('/api/transfer/currencies')
-                    return response.data
-                } catch (error) {
-                    console.error('Supported Currencies API Error:', error)
-                    throw error
-                }
-            },
-
-            // 송금 실행
-            async executeTransfer(transferData) {
-                try {
-                    const response = await axios.post('/api/transfer/execute', transferData, {
-                        headers: {
-                            'X-User-Id': userId
-                        }
-                    })
-                    return response.data
-                } catch (error) {
-                    console.error('Transfer API Error:', error)
                     throw error
                 }
             }
@@ -524,7 +221,6 @@ export default {
 
         // Computed Properties - DTO와 환율 정보 결합
         const currencyWallets = computed(() => {
-
             return balanceData.value.map(balance => {
                 const exchangeRate = exchangeRates.value[balance.code] || 1
                 const krwAmount = convertToKRW(balance.amount, exchangeRate)
@@ -547,24 +243,14 @@ export default {
             }, 0)
         })
 
-        // 🔥 차트용 - 잔액이 있는 지갑만 정렬 (KRW 우선순위 제거, 원화 환산 금액 기준)
+        // 잔액이 있는 지갑만 정렬 (KRW 우선순위 제거, 원화 환산 금액 기준)
         const sortedWallets = computed(() => {
             return [...currencyWallets.value]
                 .filter(wallet => parseCleanFloat(wallet.amount) > 0) // 잔액이 0보다 큰 지갑만
                 .sort((a, b) => b.krwAmount - a.krwAmount) // 원화 환산 금액 기준으로만 정렬
         })
 
-        // 🔥 드롭다운용 - 모든 통화 표시, KRW 우선
-        const allWalletsForDropdown = computed(() => {
-            return [...currencyWallets.value]
-                .sort((a, b) => {
-                    if (a.code === 'KRW') return -1
-                    if (b.code === 'KRW') return 1
-                    return b.krwAmount - a.krwAmount
-                })
-        })
-
-        // 🔥 잔액이 있는 지갑 개수
+        // 잔액이 있는 지갑 개수
         const availableWalletsCount = computed(() => sortedWallets.value.length)
 
         // 상위 4개 지갑 (차트용)
@@ -580,12 +266,7 @@ export default {
             }, 0)
         })
 
-        // 선택된 통화 지갑
-        const selectedCurrencyWallet = computed(() => {
-            return currencyWallets.value.find(wallet => wallet.code === selectedCurrencyFilter.value)
-        })
-
-        // 🔥 차트 세그먼트 계산 - 원본 통화 금액 포함
+        // 차트 세그먼트 계산 - 원본 통화 금액 포함
         const chartSegments = computed(() => {
             const total = totalBalance.value
             if (total === 0) {
@@ -622,7 +303,7 @@ export default {
                     currency: wallet.code,
                     name: wallet.name,
                     flag: wallet.flag,
-                    originalAmount: wallet.amount,  // 🔥 원본 통화 금액 추가
+                    originalAmount: wallet.amount,  // 원본 통화 금액 추가
                     krwAmount,
                     percentage,
                     color: wallet.color,
@@ -658,26 +339,18 @@ export default {
             return segments
         })
 
-        // 송금 가능한 지갑
-        const availableWallets = computed(() => {
-            return currencyWallets.value.filter(wallet => parseCleanFloat(wallet.amount) > 0)
-        })
-
-        // 선택된 통화의 잔액
-        const selectedWalletBalance = computed(() => {
-            const wallet = currencyWallets.value.find(w => w.code === selectedCurrency.value)
-            return wallet ? parseCleanFloat(wallet.amount) : 0
-        })
-
-        // 송금 가능 여부
-        const canTransfer = computed(() => {
-            const amount = parseFloat(transferAmount.value)
-            return amount > 0 &&
-                amount <= selectedWalletBalance.value &&
-                selectedAccount.value &&
-                accountPassword.value.length === 4 &&
-                !passwordError.value &&
-                !isTransferring.value
+        // **핵심 추가**: 차트 범례 개수에 따른 동적 거래내역 표시
+        const recentTransactions = computed(() => {
+            const chartSegmentsCount = chartSegments.value.length
+            
+            // 차트 범례 개수에 따라 거래내역 표시 개수 조정
+            // 기본 4개, 범례가 5개면 6개, 범례가 6개면 8개 표시
+            let displayCount = Math.max(4, chartSegmentsCount + 1)
+            
+            // 최대 8개까지만 표시
+            displayCount = Math.min(displayCount, 8)
+            
+            return allTransactions.value.slice(0, displayCount)
         })
 
         // 데이터 로드 - 잔액 DTO와 환율을 분리해서 로드
@@ -696,23 +369,11 @@ export default {
                     await loadExchangeRates(currencyCodes)
                 }
 
-                // 4. 🔥 통화별 계좌는 KRW 기본값으로 고정
-                selectedCurrencyFilter.value = 'KRW'
-
             } catch (error) {
                 console.error('Failed to load balance data:', error)
                 balanceData.value = []
                 exchangeRates.value = { 'KRW': 1 }
                 alert('계좌 정보를 불러오는데 실패했습니다.')
-            }
-        }
-
-        const loadFavorites = async () => {
-            try {
-                const data = await api.getFavorites()
-                favoriteAccounts.value = data
-            } catch (error) {
-                console.error('Failed to load favorites:', error)
             }
         }
 
@@ -729,18 +390,10 @@ export default {
                     transactions = data.data
                 }
 
-                recentTransactions.value = transactions.slice(0, 4)
+                // **수정**: 모든 거래를 저장하고 computed에서 동적으로 처리
+                allTransactions.value = transactions
             } catch (error) {
                 console.error('Failed to load transaction history:', error)
-            }
-        }
-
-        const loadSupportedCurrencies = async () => {
-            try {
-                const data = await api.getSupportedCurrencies()
-                supportedCurrencies.value = data
-            } catch (error) {
-                console.error('Failed to load supported currencies:', error)
             }
         }
 
@@ -750,9 +403,7 @@ export default {
             try {
                 await Promise.all([
                     loadBalanceData(), // 잔액과 환율 정보를 함께 로드
-                    loadFavorites(),
-                    loadTransactionHistory(),
-                    loadSupportedCurrencies()
+                    loadTransactionHistory()
                 ])
             } catch (error) {
                 console.error('Failed to load initial data:', error)
@@ -770,227 +421,17 @@ export default {
             highlightedIndex.value = -1
         }
 
-        const filterCurrency = () => {
-            // 드롭다운 선택에 따른 처리는 computed에서 자동으로 됨
-        }
-
-        const validatePassword = () => {
-            const password = accountPassword.value
-            if (password.length > 0 && !/^\d+$/.test(password)) {
-                passwordError.value = '숫자만 입력 가능합니다'
-            } else if (password.length > 4) {
-                accountPassword.value = password.slice(0, 4)
-                passwordError.value = ''
-            } else {
-                passwordError.value = ''
-            }
-        }
-
-        const formatPhoneNumber = (event) => {
-            let value = event.target.value.replace(/\D/g, '')
-
-            if (value.length <= 3) {
-                value = value
-            } else if (value.length <= 7) {
-                value = value.slice(0, 3) + '-' + value.slice(3)
-            } else {
-                value = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11)
-            }
-            newFriend.value.phoneNumber = value
-            rawPhone.value = value.replace(/\D/g, '').slice(0, 11)
-        }
-
-        const toggleManageMode = () => {
-            isManagingFavorites.value = !isManagingFavorites.value
-        }
-
-        const deleteFavorite = async (favoriteId) => {
-            if (confirm('정말로 즐겨찾기에서 삭제하시겠습니까?')) {
-                try {
-                    await api.deleteFavorite(favoriteId)
-                    await loadFavorites()
-                    alert('즐겨찾기에서 삭제되었습니다.')
-                } catch (error) {
-                    if (error.response?.data?.message) {
-                        alert(error.response.data.message)
-                    } else {
-                        alert('삭제 중 오류가 발생했습니다.')
-                    }
-                }
-            }
-        }
-
-        // 모달 관리
-        const openAddModal = () => {
-            showAddModal.value = true
-            console.log("지갑", currencyWallets.value)
-            resetForm()
-        }
-
-        const closeAddModal = () => {
-            showAddModal.value = false
-            resetForm()
-        }
-
-        const openTransferModal = (account) => {
-            selectedAccount.value = account
-            selectedCurrency.value = 'KRW'
-            transferAmount.value = ''
-            accountPassword.value = ''
-            passwordError.value = ''
-            showTransferModal.value = true
-        }
-
-        const closeTransferModal = () => {
-            showTransferModal.value = false
-            selectedAccount.value = null
-            selectedCurrency.value = 'KRW'
-            transferAmount.value = ''
-            accountPassword.value = ''
-            passwordError.value = ''
-        }
-
-        const selectCurrency = (wallet) => {
-            selectedCurrency.value = wallet.code
-        }
-
-        // 친구 추가
-        const addFriend = async () => {
-            errors.value = {
-                name: '',
-                phoneNumber: ''
-            }
-
-            if (!newFriend.value.name.trim()) {
-                errors.value.name = '친구 이름을 입력해주세요'
-                return
-            }
-
-            if (!newFriend.value.phoneNumber.trim()) {
-                errors.value.phoneNumber = '전화번호를 입력해주세요'
-                return
-            }
-
-            if (!validatePhoneNumber(newFriend.value.phoneNumber)) {
-                errors.value.phoneNumber = '올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)'
-                return
-            }
-
-            isVerifying.value = true
-            try {
-                const friendData = {
-                    name: newFriend.value.name.trim(),
-                    phoneNumber: rawPhone.value
-                }
-
-                await api.addFavorite(friendData)
-                await loadFavorites()
-                alert(`${friendData.name}님이 즐겨찾기에 추가되었습니다!`)
-                closeAddModal()
-
-            } catch (error) {
-                if (error.response?.status === 400) {
-                    const message = error.response.data.message || '잘못된 요청입니다.'
-                    if (message.includes('사용자를 찾을 수 없습니다') || message.includes('등록되지 않은 사용자')) {
-                        errors.value.name = '등록되지 않은 사용자입니다'
-                    } else if (message.includes('이미 즐겨찾기') || message.includes('중복')) {
-                        errors.value.name = '이미 즐겨찾기에 등록된 친구입니다'
-                    } else if (message.includes('최대') || message.includes('4명')) {
-                        alert('최대 4명까지만 등록할 수 있습니다')
-                    } else {
-                        alert(message)
-                    }
-                } else {
-                    alert('친구 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
-                }
-            } finally {
-                isVerifying.value = false
-            }
-        }
-
-        // 송금 확인
-        const confirmTransfer = async () => {
-            if (!canTransfer.value) return
-
-            const transferData = {
-                recipientName: selectedAccount.value.realName,
-                recipientPhone: selectedAccount.value.phoneNumber,
-                fromCurrencyCode: selectedCurrency.value,
-                toCurrencyCode: selectedCurrency.value,
-                sendAmount: parseFloat(transferAmount.value),
-                transactionPassword: accountPassword.value
-            }
-
-            if (confirm(`${selectedAccount.value.realName}님에게 ${formatCurrencyAmount(transferData.sendAmount, selectedCurrency.value)}를 송금하시겠습니까?`)) {
-                isTransferring.value = true
-
-                try {
-                    await api.executeTransfer(transferData)
-
-                    await Promise.all([
-                        loadBalanceData(),
-                        loadFavorites(),
-                        loadTransactionHistory()
-                    ])
-
-                    alert('송금이 완료되었습니다!')
-                    closeTransferModal()
-
-                } catch (error) {
-                    let errorMessage = '송금 중 오류가 발생했습니다. 다시 시도해주세요.'
-
-                    if (error.response?.data?.message) {
-                        const message = error.response.data.message
-                        if (message.includes('비밀번호') || message.includes('password')) {
-                            passwordError.value = '계좌 비밀번호가 올바르지 않습니다'
-                            return
-                        } else if (message.includes('잔액') || message.includes('balance')) {
-                            errorMessage = '잔액이 부족합니다'
-                        } else if (message.includes('사용자') || message.includes('user')) {
-                            errorMessage = '받는 사람을 찾을 수 없습니다'
-                        } else {
-                            errorMessage = message
-                        }
-                    }
-
-                    alert(errorMessage)
-                } finally {
-                    isTransferring.value = false
-                }
-            }
-        }
-
-        const resetForm = () => {
-            newFriend.value = {
-                name: '',
-                phoneNumber: ''
-            }
-            errors.value = {
-                name: '',
-                phoneNumber: ''
-            }
-        }
-
-        const validatePhoneNumber = (phoneNumber) => {
-            const phoneRegex = /^010-\d{4}-\d{4}$/
-            return phoneRegex.test(phoneNumber)
-        }
-
         // 네비게이션 함수들
-        const goToWalletDetail = (currency) => {
-            router.push(`/account/detail/${currency}`)
-        }
-
-        const goToExchange = (currency) => {
-            router.push(`/exchange?from=${currency}`)
-        }
-
         const goToTransactionHistory = () => {
-            router.push('/account/transactions')
+            router.push({
+                path: '/account/detail',
+                query: { 
+                    currencyCode: 'KRW'  // 기본값을 KRW로 설정
+                }
+            })
         }
 
-        // 🔥 핵심 헬퍼 함수 수정
-
+        // 핵심 헬퍼 함수들
         // 콤마가 포함된 문자열을 안전하게 숫자로 변환
         const parseCleanFloat = (value) => {
             if (typeof value === 'number') return value
@@ -1016,14 +457,10 @@ export default {
             }).format(cleanAmount) + ' ' + currency
         }
 
-        // 🔥 핵심 수정: convertToKRW 함수
+        // 핵심 수정: convertToKRW 함수
         const convertToKRW = (amount, rate) => {
-            // console.log(`convertToKRW 호출: amount="${amount}", rate=${rate}`)
-
             // 콤마 제거 후 파싱
             const cleanAmount = parseCleanFloat(amount)
-            // console.log(`cleanAmount: ${cleanAmount}`)
-
             // 환율 적용
             const result = Math.floor(cleanAmount * rate)
 
@@ -1091,7 +528,7 @@ export default {
             }
         }
 
-        // 🔥 새로 추가된 함수 - 거래내역 금액을 올바른 통화로 포맷팅
+        // 새로 추가된 함수 - 거래내역 금액을 올바른 통화로 포맷팅
         const getFormattedTransactionAmount = (transaction) => {
             const amount = getTransactionAmount(transaction)
             const isExpense = getTransactionType(transaction) === 'expense'
@@ -1119,7 +556,6 @@ export default {
             return `${year}년 ${month}월 ${day}일`
         }
 
-
         // 컴포넌트 마운트
         onMounted(() => {
             loadInitialData()
@@ -1128,53 +564,23 @@ export default {
         return {
             // 상태
             isLoading,
-            isTransferring,
             highlightedIndex,
             balanceData,
             exchangeRates,
             currencyWallets,
             sortedWallets,
-            allWalletsForDropdown, // 🔥 추가
-            selectedCurrencyFilter,
-            selectedCurrencyWallet,
             totalBalance,
             availableWalletsCount,
             topWallets,
             otherWallets,
             otherWalletsTotal,
             chartSegments,
-            favoriteAccounts,
-            recentTransactions,
-            isManagingFavorites,
-            showAddModal,
-            newFriend,
-            errors,
-            isVerifying,
-            showTransferModal,
-            selectedAccount,
-            selectedCurrency,
-            transferAmount,
-            accountPassword,
-            passwordError,
-            availableWallets,
-            selectedWalletBalance,
-            canTransfer,
+            recentTransactions, // computed로 변경
+            allTransactions,    // 추가
 
             // 메소드
             highlightSegment,
             unhighlightSegment,
-            filterCurrency,
-            validatePassword,
-            toggleManageMode,
-            deleteFavorite,
-            openAddModal,
-            closeAddModal,
-            openTransferModal,
-            closeTransferModal,
-            selectCurrency,
-            confirmTransfer,
-            addFriend,
-            formatPhoneNumber,
             formatAmount,
             formatCurrencyAmount,
             convertToKRW,
@@ -1183,10 +589,8 @@ export default {
             getTransactionIcon,
             getTransactionDescription,
             getTransactionAmount,
-            getFormattedTransactionAmount, // 🔥 새로 추가된 함수
+            getFormattedTransactionAmount,
             formatTransactionDate,
-            goToWalletDetail,
-            goToExchange,
             goToTransactionHistory,
             loadInitialData
         }
@@ -1195,12 +599,171 @@ export default {
 </script>
 
 <style scoped>
-/* 동일한 CSS 코드 유지 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#app {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0 2rem;
+}
+
+.main-content {
+    flex: 1;
+    padding: 40px 48px;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2rem;
+}
+
+.loading-container,
+.no-account-data {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    gap: 1rem;
+}
+
+.loading-spinner {
+    font-size: 1.2rem;
+    color: #20c997;
+    font-weight: 600;
+}
+
+.retry-btn {
+    background: #20c997;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.retry-btn:hover {
+    background: #17a2b8;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* **핵심 추가**: 양쪽 카드의 최소 높이를 동일하게 맞춤 */
+.total-balance-card,
+.transaction-history {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    min-height: 600px; /* 최소 높이 설정 */
+    display: flex;
+    flex-direction: column;
+}
+
+.balance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.balance-title {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.total-amount {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #20c997;
+    margin-bottom: 2rem;
+}
+
+.currency-chart-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    flex: 1; /* 남은 공간 모두 사용 */
+}
+
+.donut-chart {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+}
+
+.chart-segment {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.chart-segment:hover {
+    stroke-width: 30;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.chart-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: white;
+    border-radius: 50%;
+    width: 90px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-total {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.chart-currencies {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.other-count {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-weight: 400;
+    display: block;
+    margin-top: 0.125rem;
+}
+
 .chart-legend {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    overflow: hidden auto; /* 내용이 길어지면 스크롤 */
 }
 
 .legend-item {
@@ -1265,11 +828,40 @@ export default {
     color: #20c997;
 }
 
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.more-btn {
+    background: none;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    color: #20c997;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.more-btn:hover {
+    background: #f8f9fa;
+}
+
 .no-transaction-data {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 3rem 1rem;
+    flex: 1; /* 남은 공간 모두 사용 */
 }
 
 .no-transaction-message {
@@ -1288,486 +880,12 @@ export default {
     font-weight: 500;
 }
 
-/* 나머지 CSS는 동일하게 유지... */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-#app {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f8f9fa;
-    min-height: 100vh;
-    padding: 0 2rem;
-}
-
-.main-content {
-    flex: 1;
-    padding: 40px 48px;
-}
-
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 2rem;
-}
-
-.loading-container,
-.no-account-data {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 400px;
-    gap: 1rem;
-}
-
-.loading-spinner {
-    font-size: 1.2rem;
-    color: #20c997;
-    font-weight: 600;
-}
-
-.retry-btn {
-    background: #20c997;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.retry-btn:hover {
-    background: #17a2b8;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-
-.total-balance-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.balance-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.balance-title {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 1rem;
-}
-
-.total-amount {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #20c997;
-    margin-bottom: 2rem;
-}
-
-.currency-chart-container {
-    display: flex;
-    align-items: flex-start;
-    gap: 2rem;
-}
-
-.donut-chart {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    flex-shrink: 0;
-}
-
-.chart-segment {
-    transition: all 0.3s ease;
-    cursor: pointer;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.chart-segment:hover {
-    stroke-width: 30;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
-}
-
-.chart-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    background: white;
-    border-radius: 50%;
-    width: 90px;
-    height: 90px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.chart-total {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-bottom: 0.25rem;
-    font-weight: 500;
-}
-
-.chart-currencies {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #333;
-}
-
-.other-count {
-    font-size: 0.7rem;
-    color: #6c757d;
-    font-weight: 400;
-    display: block;
-    margin-top: 0.125rem;
-}
-
-.currency-wallets-section {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.section-header h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.currency-controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.currency-selector {
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    color: #333;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-width: 180px;
-}
-
-.currency-selector:hover,
-.currency-selector:focus {
-    outline: none;
-    border-color: #20c997;
-    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.1);
-}
-
-.selected-currency-detail {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.currency-detail-card {
-    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
-    padding: 2rem;
-    border-radius: 16px;
-    color: white;
-    text-align: center;
-}
-
-.currency-header-large {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.currency-flag-large {
-    font-size: 3rem;
-}
-
-.currency-info-large {
-    text-align: left;
-}
-
-.currency-name-large {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.currency-code-large {
-    font-size: 1rem;
-    opacity: 0.8;
-}
-
-.currency-balance-large {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.currency-krw-large {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
-}
-
-.currency-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.action-btn {
-    padding: 0.75rem 1.5rem;
-    border: 2px solid white;
-    border-radius: 8px;
-    background: transparent;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.action-btn:hover {
-    background: white;
-    color: #20c997;
-}
-
-.favorite-accounts-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.favorite-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.favorite-header h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.manage-btn {
-    background: none;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    color: #20c997;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.manage-btn:hover {
-    background-color: #20c997;
-    color: white;
-}
-
-.favorite-accounts-list {
-    margin-bottom: 1.5rem;
-}
-
-.favorite-account-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.25rem;
-    border-radius: 12px;
-    background: #f8f9fa;
-    margin-bottom: 0.75rem;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-
-.favorite-account-item:hover {
-    background: #e9ecef;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.favorite-account-item.manage-mode {
-    background: #fff3cd !important;
-    border: 1px solid #ffeaa7;
-}
-
-.favorite-account-item.manage-mode:hover {
-    background: #fff3cd !important;
-}
-
-.account-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.account-details {
-    flex: 1;
-}
-
-.account-name {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 0.25rem;
-    font-size: 1rem;
-}
-
-.account-info {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.account-number {
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.last-transfer {
-    font-size: 0.8rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.quick-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-}
-
-.quick-transfer-btn {
-    background: #20c997;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.quick-transfer-btn:hover {
-    background: #17a2b8;
-    transform: scale(1.05);
-}
-
-.delete-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.delete-btn:hover {
-    background: #c82333;
-    transform: scale(1.05);
-}
-
-.add-favorite-btn {
-    width: 100%;
-    background: none;
-    border: 2px dashed #e9ecef;
-    border-radius: 12px;
-    padding: 1.25rem;
-    color: #6c757d;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.add-favorite-btn:hover {
-    border-color: #20c997;
-    color: #20c997;
-    background: rgba(32, 201, 151, 0.05);
-}
-
-.max-favorites-notice {
-    text-align: center;
-    padding: 1.25rem;
-    color: #6c757d;
-    font-size: 0.9rem;
-    background: #f8f9fa;
-    border-radius: 12px;
-    border: 1px dashed #e9ecef;
-}
-
-.transaction-history {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.more-btn {
-    background: none;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    color: #20c997;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.more-btn:hover {
-    background: #f8f9fa;
-}
-
 .transaction-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    flex: 1; /* 남은 공간 모두 사용 */
+    overflow-y: auto; /* 내용이 많아지면 스크롤 */
 }
 
 .transaction-item {
@@ -1778,6 +896,7 @@ export default {
     border-radius: 12px;
     background: #f8f9fa;
     transition: all 0.2s;
+    flex-shrink: 0; /* 아이템 크기 고정 */
 }
 
 .transaction-item:hover {
@@ -1822,316 +941,10 @@ export default {
     color: #20c997;
 }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.transfer-modal {
-    max-width: 600px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.modal-header h3 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-}
-
-.close-btn:hover {
-    color: #dc3545;
-}
-
-.add-friend-form,
-.transfer-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.form-group label {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9rem;
-}
-
-.form-group input,
-.form-group select {
-    padding: 0.75rem;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #20c997;
-    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.1);
-}
-
-.form-group input.error {
-    border-color: #dc3545;
-}
-
-.error-message {
-    color: #dc3545;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.password-input {
-    text-align: center;
-    font-size: 1.2rem;
-    letter-spacing: 0.5rem;
-    font-family: monospace;
-}
-
-.password-dots {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.password-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #e9ecef;
-    transition: all 0.2s;
-}
-
-.password-dot.filled {
-    background: #20c997;
-    transform: scale(1.2);
-}
-
-.currency-selection {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.currency-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.currency-card:hover {
-    border-color: #20c997;
-    background: rgba(32, 201, 151, 0.05);
-}
-
-.currency-card.selected {
-    border-color: #20c997;
-    background: rgba(32, 201, 151, 0.1);
-}
-
-.currency-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.currency-flag {
-    font-size: 1.5rem;
-}
-
-.currency-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.currency-name {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.95rem;
-}
-
-.currency-code {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-.currency-balance {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.balance-amount {
-    font-weight: 700;
-    color: #20c997;
-    font-size: 1rem;
-}
-
-.balance-krw {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-.amount-input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.amount-input {
-    flex: 1;
-    padding-right: 4rem;
-}
-
-.currency-symbol {
-    position: absolute;
-    right: 1rem;
-    color: #6c757d;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.balance-info {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
-
-.transfer-summary {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #e9ecef;
-}
-
-.summary-title {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 1rem;
-    font-size: 1rem;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.summary-row:last-child {
-    border-bottom: none;
-}
-
-.summary-row.total {
-    font-weight: 700;
-    color: #333;
-    font-size: 1.05rem;
-    margin-top: 0.5rem;
-    padding-top: 1rem;
-    border-top: 2px solid #e9ecef;
-}
-
-.free {
-    color: #20c997;
-    font-weight: 600;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.cancel-btn,
-.confirm-btn {
-    flex: 1;
-    padding: 0.75rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.cancel-btn {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    color: #6c757d;
-}
-
-.cancel-btn:hover {
-    background: #e9ecef;
-}
-
-.confirm-btn {
-    background: #20c997;
-    border: none;
-    color: white;
-}
-
-.confirm-btn:hover:not(:disabled) {
-    background: #17a2b8;
-}
-
-.confirm-btn:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
 @media (max-width: 1200px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 
     .currency-chart-container {
@@ -2139,11 +952,16 @@ export default {
         gap: 1.5rem;
         align-items: center;
     }
+
+    .total-balance-card,
+    .transaction-history {
+        min-height: auto; /* 모바일에서는 최소 높이 제거 */
+    }
 }
 
 @media (max-width: 768px) {
     .main-content {
-        margin: 1rem;
+        padding: 2rem 1rem;
     }
 
     .dashboard-grid {
@@ -2167,37 +985,10 @@ export default {
         height: 80px;
     }
 
-    .quick-actions {
-        flex-direction: row;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
     .total-balance-card,
-    .favorite-accounts-card,
-    .currency-wallets-section,
     .transaction-history {
         padding: 1.5rem;
-    }
-
-    .modal-content {
-        max-width: 95%;
-        margin: 1rem;
-    }
-
-    .currency-card {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-
-    .currency-actions {
-        flex-direction: column;
-    }
-
-    .currency-selector {
-        min-width: auto;
-        width: 100%;
+        min-height: auto;
     }
 }
 </style>
