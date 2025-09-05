@@ -70,8 +70,8 @@ const router = createRouter({
         {
             path: '/ForeignTransfer',
             name: 'ForeignTransfer',
-            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/TransferRequest.vue'),
-            // meta: {requiresAuth: true}
+            component: () => import('@/views/ForeignTransfer/views/TransferRequest/TransferRequest.vue'),
+            meta: {requiresAuth: true}
         },
         {
             path: '/account/detail', // 나중에 통화별 id 나 코드 받아서 넘겨야함 ex) /account/:currency
@@ -154,7 +154,7 @@ const router = createRouter({
         {
             path: '/ForeignTransfer/info',
             name: 'ForeignTransferInfo',
-            component: () => import('@/views/ForeignTransfer/views/TransferRepuest/information.vue'),
+            component: () => import('@/views/ForeignTransfer/views/TransferRequest/information.vue'),
         },
         {
             path: '/inquiry/list',

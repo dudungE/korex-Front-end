@@ -3,13 +3,13 @@
     <h1>수정</h1>
 
     <form @submit.prevent="onSubmit">
-      <!-- 1. 수취인 이름 -->
+      <!-- 이름 -->
       <div class="form-group">
         <label for="name">받는 분 이름</label>
         <input id="name" v-model.trim="form.name" type="text" placeholder="예: 홍길동" required />
       </div>
 
-      <!-- 2. 송금할 통화 -->
+      <!-- 통화 -->
       <div class="form-group">
         <label for="selectedCurrency">송금할 통화</label>
         <select id="selectedCurrency" v-model="form.selectedCurrency" required>
@@ -18,7 +18,7 @@
         </select>
       </div>
 
-      <!-- 3. 은행명 -->
+      <!-- 은행명 -->
       <div class="form-group">
         <label for="bankName">받는 분 은행명</label>
         <select id="bankName" v-model="form.bankName" required>
@@ -27,13 +27,21 @@
         </select>
       </div>
 
-      <!-- 4. 계좌번호 -->
+      <!-- 계좌번호 -->
       <div class="form-group">
         <label for="accountNumber">받는 분 계좌번호</label>
-        <input id="accountNumber" v-model.trim="form.accountNumber" type="text" placeholder="예: 123-456-789" required />
+        <input
+            id="accountNumber"
+            v-model.trim="form.accountNumber"
+            type="text"
+            placeholder="예: 123-123456-12"
+            required
+            @input="formatAccountNumber"
+        />
       </div>
 
-      <!-- 5. 연락처 -->
+
+      <!-- 연락처 -->
       <div class="form-group">
         <label for="phoneNumber">받는 분 연락처</label>
         <div style="display: flex; gap: 0.5rem;">
@@ -43,44 +51,52 @@
               {{ c.flag }} {{ c.name }} ({{ c.phonePrefix }})
             </option>
           </select>
-          <input id="phoneNumber" v-model.trim="form.localPhoneNumber" type="tel" placeholder="예: 1012345678" required style="flex:1" />
+          <input
+              id="phoneNumber"
+              v-model.trim="form.localPhoneNumber"
+              type="tel"
+              placeholder="예: 123456789"
+              required
+              style="flex: 1"
+          />
         </div>
       </div>
 
-      <!-- 6. 이메일 -->
+      <!-- 이메일 -->
       <div class="form-group">
         <label for="email">받는 분 이메일 주소</label>
         <input id="email" v-model.trim="form.email" type="email" placeholder="example@domain.com" />
       </div>
 
-      <!-- 7. 거주 국가 -->
+      <!-- 거주지 -->
       <div class="form-group">
         <label for="country">받는 분 거주지</label>
         <select id="country" v-model="form.country" required>
           <option value="" disabled>국가를 선택하세요</option>
-          <option v-for="c in countryOptions" :key="c.code" :value="c.name">{{ c.flag }} {{ c.name }}</option>
+          <option v-for="c in countryOptions" :key="c.code" :value="c.name">
+            {{ c.flag }} {{ c.name }}
+          </option>
         </select>
       </div>
 
-      <!-- 8. 영문 주소 -->
+      <!-- 영문 주소 -->
       <div class="form-group">
         <label for="engAddress">받는 분 영문 주소</label>
         <textarea
             id="engAddress"
             v-model.trim="form.engAddress"
             rows="3"
-            placeholder="예: 14, changkuengguro, jonglo"
+            placeholder="예: 221B Baker Street, Marylebone, London NW1 6XE"
             required
         ></textarea>
       </div>
 
       <!-- 버튼 -->
       <div class="form-actions">
-        <button type="submit" :disabled="isSubmitting">{{ isSubmitting ? '수정 중...' : '수정' }}</button>
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? '수정 중...' : '수정' }}
+        </button>
       </div>
-
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <p v-if="success" class="success-message">수취인이 수정되었습니다.</p>
     </form>
   </section>
 </template>
@@ -99,16 +115,16 @@ const form = reactive({
   selectedCurrency: '',
   bankName: '',
   accountNumber: '',
-  countryCode: '',        // 국가 코드
-  localPhoneNumber: '',   // 현지 번호
+  countryCode: '',
+  localPhoneNumber: '',
   email: '',
   country: '',
-  engAddress: '',         // 영문 주소
-  relationRecipient: '',  // 관계
+  engAddress: '',
+  relationRecipient: ''
 })
 
 const currencyOptions = ['USD', 'EUR', 'JPY', 'KRW']
-const bankOptions = ['KOREX','BANK OF AMERICA', 'CITIBANK']
+const bankOptions = ['KOREX BANK','BANK OF AMERICA', 'CITIBANK']
 const countryOptions = [
   { code: 'US', name: 'USA', flag: '🇺🇸', phonePrefix: '+1' },
   { code: 'JP', name: 'JAPAN', flag: '🇯🇵', phonePrefix: '+81' },
@@ -116,8 +132,6 @@ const countryOptions = [
 ]
 
 const isSubmitting = ref(false)
-const error = ref('')
-const success = ref(false)
 
 // --------------------
 // 기존 값 불러오기
@@ -133,9 +147,9 @@ onMounted(async () => {
     if (!res.ok) throw new Error('수취인 조회 실패')
     const data = await res.json()
 
-    // 데이터 매핑
     form.name = data.name || ''
-    form.selectedCurrency = currencyOptions.includes(data.currency) ? data.currency : ''
+    // currencyCode로 불러오기
+    form.selectedCurrency = currencyOptions.includes(data.currencyCode) ? data.currencyCode : ''
     form.bankName = bankOptions.includes(data.bankName) ? data.bankName : ''
     form.accountNumber = data.accountNumber || ''
     form.email = data.email || ''
@@ -143,44 +157,61 @@ onMounted(async () => {
     form.engAddress = data.engAddress || ''
     form.relationRecipient = data.relationRecipient || ''
 
-    // 전화번호 분리
+    // 전화번호 및 국가코드 처리
     if (data.phoneNumber) {
       const matchedCountry = countryOptions.find(c => data.phoneNumber.startsWith(c.phonePrefix))
       if (matchedCountry) {
         form.countryCode = matchedCountry.code
-        form.localPhoneNumber = data.phoneNumber.replace(matchedCountry.phonePrefix, '')
+        form.localPhoneNumber = data.phoneNumber.replace(matchedCountry.phonePrefix, '').replace(/\D/g, '')
       } else {
-        form.localPhoneNumber = data.phoneNumber
+        form.localPhoneNumber = data.phoneNumber.replace(/\D/g, '')
       }
     }
+
+    if (!form.countryCode && data.country) {
+      const matchedCountry = countryOptions.find(c => c.name === data.country)
+      if (matchedCountry) form.countryCode = matchedCountry.code
+    }
+
   } catch (e) {
-    error.value = e?.message || '데이터를 불러오는 중 오류가 발생했습니다.'
+    alert(e?.message || '데이터를 불러오는 중 오류가 발생했습니다.')
     console.error('Error fetching recipient:', e)
   }
 })
 
 // --------------------
+// 계좌번호 자동 하이픈
+// --------------------
+function formatAccountNumber() {
+  let numbers = form.accountNumber.replace(/\D/g, '')
+  if (numbers.length > 3 && numbers.length <= 9) {
+    numbers = numbers.replace(/^(\d{3})(\d+)/, '$1-$2')
+  } else if (numbers.length > 9) {
+    numbers = numbers.replace(/^(\d{3})(\d{6})(\d+)/, '$1-$2-$3')
+  }
+  form.accountNumber = numbers
+}
+
+// --------------------
 // 수정 전송
 // --------------------
 async function onSubmit() {
-  error.value = ''
-  success.value = false
   isSubmitting.value = true
 
   const country = countryOptions.find(c => c.code === form.countryCode)
-  const fullPhoneNumber = country ? `${country.phonePrefix}${form.localPhoneNumber}` : form.localPhoneNumber
   const countryNumber = country ? country.phonePrefix.replace('+', '') : ''
+  const phoneNumber = form.localPhoneNumber.replace(/\D/g, '')
 
   const payload = {
     name: form.name,
     bankName: form.bankName,
     accountNumber: form.accountNumber,
     countryNumber: countryNumber,
+    phoneNumber: phoneNumber,
     country: form.country,
-    phoneNumber: fullPhoneNumber,
     email: form.email,
     relationRecipient: form.relationRecipient || '기타',
-    currency: form.selectedCurrency,
+    currencyCode: form.selectedCurrency, // ★ currencyCode로 전송
     engAddress: form.engAddress
   }
 
@@ -195,10 +226,11 @@ async function onSubmit() {
     })
 
     if (!res.ok) throw new Error('수정 실패')
-    success.value = true
-    setTimeout(() => router.push('/recipients'), 800)
+
+    alert('수취인이 수정되었습니다.')
+    router.push('/recipients')
   } catch (e) {
-    error.value = e?.message || '오류가 발생했습니다.'
+    alert('오류가 발생했습니다: ' + e.message)
     console.error('Error updating recipient:', e)
   } finally {
     isSubmitting.value = false
@@ -266,17 +298,5 @@ button {
 }
 button:hover {
   background: #008681;
-}
-.error-message {
-  color: #dc2626;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  text-align: center;
-}
-.success-message {
-  color: #00908C;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  text-align: center;
 }
 </style>

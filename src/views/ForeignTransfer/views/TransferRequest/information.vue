@@ -78,7 +78,7 @@
       <h2 class="section-title">고객센터 안내</h2>
       <p>
         문의 사항은 <strong>02-5173-1111</strong> / <strong>02-8080-1111</strong> 으로 연락주시거나,
-        <a href="#">KOSA 챗봇</a>을 이용해주세요.
+        <a href="#">고객센터</a>, <a href="#">챗봇</a>을 이용해주세요.
       </p>
     </section>
   </div>
