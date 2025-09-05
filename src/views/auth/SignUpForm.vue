@@ -173,11 +173,14 @@
                   { pattern: /^\d{4}-\d{2}-\d{2}$/, message: '생년월일은 YYYY-MM-DD 형식이어야 합니다' }
                 ]"
               >
-                <a-input
+                <a-date-picker
                   v-model:value="signupForm.birthdate"
                   placeholder="YYYY-MM-DD"
-                  :maxlength="10"
-                  @input="formatBirthdate"
+                  style="width: 100%;"
+                  :disabled-date="disabledFutureDate"
+                  :allow-clear="true"
+                  format="YYYY-MM-DD"
+                  @change="onBirthdateChange"
                 />
               </a-form-item>
             </div>
@@ -200,6 +203,7 @@ import { message } from 'ant-design-vue'
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSignupStore } from '@/stores/signup'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -307,15 +311,16 @@ function formatPhone(e) {
   signupForm.value.phone = out
 }
 
-function formatBirthdate(e) {
-  const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 8)
-  let out = digits
-  if (digits.length > 4 && digits.length <= 6) {
-    out = digits.slice(0, 4) + '-' + digits.slice(4)
-  } else if (digits.length > 6) {
-    out = digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6)
+function disabledFutureDate(current) {
+  return current && current > dayjs()
+}
+
+function onBirthdateChange(date) {
+  if (!date) {
+    signupForm.value.birthdate = ''
+    return
   }
-  signupForm.value.birthdate = out
+  signupForm.value.birthdate = dayjs(date).format('YYYY-MM-DD')
 }
 
 // 회원가입 처리

@@ -63,9 +63,9 @@
 
           <div class="login-links">
             <router-link to="/find-id" class="login-link">아이디 찾기</router-link>
-            <span>〉</span>
+            <span>|</span>
             <router-link to="/reset-password" class="login-link">비밀번호 변경</router-link>
-            <span>〉</span>
+            <span>|</span>
             <router-link to="/signup" class="login-link">회원가입</router-link>
           </div>
         </div>

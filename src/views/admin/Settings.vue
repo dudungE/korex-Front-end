@@ -6,12 +6,19 @@
     <a-card class="fee-card" title="친구송금 수수료">
       <a-form layout="inline">
         <a-form-item label="수수료 (%)">
+          <a-slider
+            v-model:value="fees.domestic"
+            :min="0"
+            :max="10"
+            :step="0.01"
+            style="width: 200px"
+          />
           <a-input-number
             v-model:value="fees.domestic"
             :min="0"
-            :max="100"
-            :step="0.1"
-            style="width: 120px"
+            :max="10"
+            :step="0.01"
+            style="width: 80px; margin-left: 12px"
           />
         </a-form-item>
         <a-button type="primary" @click="saveFee('domestic')">저장</a-button>
@@ -21,12 +28,19 @@
     <a-card class="fee-card" title="해외송금 수수료">
       <a-form layout="inline">
         <a-form-item label="수수료 (%)">
+          <a-slider
+            v-model:value="fees.foreign"
+            :min="0"
+            :max="10"
+            :step="0.01"
+            style="width: 200px"
+          />
           <a-input-number
             v-model:value="fees.foreign"
             :min="0"
-            :max="100"
-            :step="0.1"
-            style="width: 120px"
+            :max="10"
+            :step="0.01"
+            style="width: 80px; margin-left: 12px"
           />
         </a-form-item>
         <a-button type="primary" @click="saveFee('foreign')">저장</a-button>
@@ -35,15 +49,22 @@
 
     <a-card class="fee-card" title="환전 수수료">
       <a-form layout="inline">
-        <a-form-item label="수수료 (%)">
+             <a-form-item label="수수료 (%)">
+          <a-slider
+            v-model:value="fees.exchange"
+            :min="0"
+            :max="10"
+            :step="0.01"
+            style="width: 200px"
+          />
           <a-input-number
             v-model:value="fees.exchange"
             :min="0"
-            :max="100"
-            :step="0.1"
-            style="width: 120px"
+            :max="10"
+            :step="0.01"
+            style="width: 80px; margin-left: 12px"
           />
-        </a-form-item>
+        </a-form-item>                                                                                   
         <a-button type="primary" @click="saveFee('exchange')">저장</a-button>
       </a-form>
     </a-card>
@@ -53,17 +74,36 @@
 <script setup>
 import { reactive } from "vue";
 import { message } from "ant-design-vue";
+import axios from 'axios'
 
 const fees = reactive({
   domestic: 0,
   foreign: 0,
   exchange: 0,
-});
+})
 
-const saveFee = (type) => {
-  message.success(`${type} 수수료가 저장되었습니다: ${fees[type]}%`);
-  // 실제 API 연동 시 여기에서 axios.post('/api/fees', { type, value: fees[type] })
-};
+const feeLabel = {
+  domestic: '친구송금',
+  foreign: '해외송금',
+  exchange: '환전'
+}
+
+const saveFee = async (type) => {
+  try {
+    const value = Number(fees[type]).toFixed(2)
+
+    // 백엔드 API 호출
+    await axios.post('/api/settings/fee', {
+      type,
+      rate: value
+    })
+
+    message.success(`${feeLabel[type]} 수수료가 저장되었습니다: ${value}%`)
+  } catch (err) {
+    const msg = err?.response?.data?.message || '수수료 저장 중 오류가 발생했습니다.'
+    message.error(msg)
+  }
+}
 </script>
 
 <style scoped>
