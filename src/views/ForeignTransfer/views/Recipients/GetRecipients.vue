@@ -28,57 +28,6 @@
           <tbody>
           <tr v-for="recipient in recipients" :key="recipient.recipientId">
             <td>{{ recipient.name }}</td>
-            <td>{{ recipient.selectedCurrency }}</td>
-            <td>{{ recipient.bankName }}</td>
-            <td>{{ recipient.accountNumber }}</td>
-            <td>{{ recipient.phoneNumber }}</td>
-            <td>{{ recipient.email }}</td>
-            <td class="action-buttons">
-              <button @click="editRecipient(recipient.recipientId)" class="icon-btn">
-                <span class="material-icons">edit</span>
-              </button>
-              <button @click="deleteRecipient(recipient.recipientId)" class="icon-btn danger">
-                <span class="material-icons">delete</span>
-              </button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</template>
-
-<template>
-  <div class="recipient-page">
-    <div class="recipient-card">
-      <!-- 제목 + 추가 버튼 -->
-      <div class="card-header">
-        <h1>수취인 목록</h1>
-        <div class="list-actions">
-          <button @click="goToCreate" class="icon-btn">
-            <span class="material-icons">add</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 테이블 -->
-      <div class="table-wrapper">
-        <table class="recipient-table">
-          <thead>
-          <tr>
-            <th>이름</th>
-            <th>통화</th>
-            <th>은행명</th>
-            <th>계좌번호</th>
-            <th>연락처</th>
-            <th>이메일</th>
-            <th></th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="recipient in recipients" :key="recipient.recipientId">
-            <td>{{ recipient.name }}</td>
             <td>{{ recipient.currency }}</td>
             <td>{{ recipient.bankName }}</td>
             <td>{{ recipient.accountNumber }}</td>
