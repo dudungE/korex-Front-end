@@ -10,7 +10,7 @@
         <template v-else>
           <a @click="goToLogin()" style="cursor: pointer">로그인</a>
         </template>
-        <a href="#">인증센터</a>
+        <a href="#">test</a>
         <span class="lang">Language ▼</span>
       </div>
     </div>
