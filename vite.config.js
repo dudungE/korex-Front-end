@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://15.165.184.243:8080', // Spring Boot 서버 주소
+        target: 'http://ko-forex.shop', // Spring Boot 서버 주소
         changeOrigin: true,
         secure: false
       }

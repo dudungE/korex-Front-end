@@ -403,7 +403,7 @@ const fetchSupportedCurrencies = async () => {
   currencyError.value = ''
 
   try {
-    const response = await fetch('http://15.165.184.243:8080/api/currency/currencies', {
+    const response = await fetch('http://ko-forex.shop/api/currency/currencies', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -447,7 +447,7 @@ const fetchUserBalances = async () => {
   balanceError.value = ''
 
   try {
-    const response = await fetch(`http://15.165.184.243:8080/api/balance/${userId}`, {
+    const response = await fetch(`http://ko-forex.shop/api/balance/${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -574,7 +574,7 @@ const verifyRecipientName = async () => {
   if (!recipientName.value.trim()) return
   
   try {
-    const response = await fetch("http://15.165.184.243:8080/api/user/exists?name=" + encodeURIComponent(recipientName.value), {
+    const response = await fetch("http://ko-forex.shop/api/user/exists?name=" + encodeURIComponent(recipientName.value), {
       method: "GET"
     })
     const exists = await response.json()
@@ -599,7 +599,7 @@ const verifyRecipientPhone = async () => {
   if (!recipientPhone.value.trim()) return
 
   try {
-    const response = await fetch("http://15.165.184.243:8080/api/user/verify-recipient", {
+    const response = await fetch("http://ko-forex.shop/api/user/verify-recipient", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -643,7 +643,7 @@ const executeTransfer = async () => {
       transactionPassword: transactionPassword.value,
     }
 
-    const response = await fetch('http://15.165.184.243:8080/api/transfer/execute', {
+    const response = await fetch('http://ko-forex.shop/api/transfer/execute', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

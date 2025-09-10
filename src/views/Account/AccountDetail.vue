@@ -435,7 +435,7 @@ export default {
     // 잔액 조회 (AccountView.vue 형식에 맞춤)
     const loadBalance = async () => {
       try {
-        const response = await fetch(`http://15.165.184.243:8080/api/balance/${currentUserId.value}`, {
+        const response = await fetch(`http://ko-forex.shop/api/balance/${currentUserId.value}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -482,7 +482,7 @@ export default {
     // 환율 조회 (AccountView.vue 형식에 맞춤)
     const loadExchangeRate = async () => {
       try {
-        const response = await fetch(`http://15.165.184.243:8080/api/exchange/realtime/${selectedCurrency.value}`)
+        const response = await fetch(`http://ko-forex.shop/api/exchange/realtime/${selectedCurrency.value}`)
         const rateData = await response.json()
 
         if (rateData && rateData.length > 0 && rateData[0].base_rate) {
@@ -516,7 +516,7 @@ export default {
         })
 
         const response = await fetch(
-          `http://15.165.184.243:8080/api/transaction/history/${currentUserId.value}?${params}`,
+          `http://ko-forex.shop/api/transaction/history/${currentUserId.value}?${params}`,
           {
             method: 'GET',
             headers: {

@@ -211,7 +211,7 @@ export default {
     const loadTransactions = async () => {
       try {
         const response = await fetch(
-          `http://15.165.184.243:8080/api/transaction/history/${currentUserId.value}`,
+          `http://ko-forex.shop/api/transaction/history/${currentUserId.value}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -252,7 +252,7 @@ export default {
       }
 
       try {
-        const response = await fetch(`http://15.165.184.243:8080/api/exchange/realtime/${selectedCurrency.value}`)
+        const response = await fetch(`http://ko-forex.shop/api/exchange/realtime/${selectedCurrency.value}`)
         const rateData = await response.json()
 
         if (rateData && rateData.length > 0 && rateData[0].base_rate) {
