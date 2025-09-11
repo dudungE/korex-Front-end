@@ -262,7 +262,7 @@ export default {
         const userId = localStorage.getItem('userId')
         
         // API 설정
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://ko-forex.shop'
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ko-forex.shop'
         
         // Axios 기본 설정
         axios.defaults.baseURL = API_BASE_URL

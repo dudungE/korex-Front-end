@@ -206,7 +206,7 @@ export default {
     const loadTransactions = async () => {
       try {
         const response = await fetch(
-          `http://ko-forex.shop/api/transaction/history/${currentUserId.value}`,
+          `https://ko-forex.shop/api/transaction/history/${currentUserId.value}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
