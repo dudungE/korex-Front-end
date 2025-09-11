@@ -17,19 +17,19 @@ const router = createRouter({
             path: '/rate-lookup',
             name: 'RateLookup',
             component: () => import('@/views/ExchangeInfo/RateLookup.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: false}
         },
         {
             path: '/rate-calculator',
             name: 'RateCalculator',
             component: () => import('@/views/ExchangeInfo/Calculator.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: false}
         },
         {
             path: '/rate-alert',
             name: 'RateAlert', 
             component: () => import('@/views/ExchangeInfo/RateAlert.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: false}
         },
         {
             path: '/rate-chart',
@@ -41,7 +41,7 @@ const router = createRouter({
             path: '/rate-news',
             name: 'News',
             component: () => import('@/views/News.vue'),
-            meta: {requiresAuth: true}
+            meta: {requiresAuth: false}
         },
         {
             path: '/exchange',
